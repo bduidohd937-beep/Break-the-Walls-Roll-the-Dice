@@ -118,6 +118,11 @@ function App() {
   const [gatherReward, setGatherReward] = useState<string | null>(null);
   const [gatherTimingX, setGatherTimingX] = useState(50);
   const [gatherTimingDir, setGatherTimingDir] = useState(1);
+  const [gatherCombo, setGatherCombo] = useState(0);
+  const [gatherStamina, setGatherStamina] = useState(100);
+  const [gatherSwing, setGatherSwing] = useState(false);
+  const [fishingCast, setFishingCast] = useState(false);
+  const [fishingResult, setFishingResult] = useState<string | null>(null);
   const [equipmentFilter, setEquipmentFilter] = useState<Equipment["type"]>("도끼");
   const [farmTick, setFarmTick] = useState(Date.now());
   const gatherRequiredHits = gatheringActivity === "wood" ? 3 : gatheringActivity === "stone" ? 4 : 2;
@@ -204,6 +209,11 @@ function App() {
     setGatherTimingX(50);
     setGatherTimingDir(1);
     setGatherReward(null);
+    setGatherCombo(0);
+    setGatherStamina(100);
+    setGatherSwing(false);
+    setFishingCast(type === "fish");
+    setFishingResult(null);
     setFishingMinigameOpen(type === "fish");
   };
 
@@ -212,6 +222,11 @@ function App() {
     setFishingState("idle");
     setFishingMinigameOpen(false);
     setGatherReward(null);
+    setGatherCombo(0);
+    setGatherStamina(100);
+    setGatherSwing(false);
+    setFishingCast(false);
+    setFishingResult(null);
     setActiveTab("gather");
   };
 
@@ -563,17 +578,20 @@ function App() {
 
   const catchFish = () => {
     const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"]);
-    if (!equipped || !fishingMinigameOpen) return;
+    if (!equipped || !fishingMinigameOpen || !fishingCast) return;
     const distanceFromSweetSpot = Math.abs(fishingFishX - 50);
     if (distanceFromSweetSpot <= 8) {
-      const amount = equipped.bonus;
+      const amount = equipped.bonus + (distanceFromSweetSpot <= 3 ? 1 : 0);
       setSave((prev) => ({ ...prev, fish: prev.fish + amount }));
-      setGatherReward("🐟 물고기 +" + amount);
-      showMessage("🎣 낚시 성공! 물고기 +" + amount);
+      setFishingResult("🎉 PERFECT CATCH! 물고기 +" + amount);
+      setGatherReward("🐟 +" + amount);
+      showMessage(distanceFromSweetSpot <= 3 ? "🎯 완벽한 낚시! +" + amount : "🎣 낚시 성공! +" + amount);
     } else {
-      setGatherReward("💨 놓쳤다!");
-      showMessage("🐟 물고기가 미끼를 물었지만 놓쳤습니다.");
+      setFishingResult("💨 물고기가 도망갔다!");
+      setGatherReward("MISS");
+      showMessage("🐟 타이밍을 놓쳤습니다. 다시 입질을 기다리세요.");
     }
+    setFishingCast(false);
     setFishingMinigameOpen(false);
     setFishingFishX(50);
   };
@@ -582,26 +600,47 @@ function App() {
     if (!gatheringActivity || gatheringActivity === "fish") return;
     const requiredType = resourceToolType(gatheringActivity);
     const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools[requiredType]);
-    if (!equipped) return;
+    if (!equipped || gatherSwing || gatherStamina < 12) return;
 
-    const nextHits = gatherAction + 1;
-    setGatherAction(nextHits);
-    setGatherReward(nextHits >= gatherRequiredHits ? "🎉 채집 완료!" : "💥 적중! -" + 1 + " HP");
+    setGatherSwing(true);
+    setGatherStamina((prev) => Math.max(0, prev - 12));
 
-    if (nextHits >= gatherRequiredHits) {
-      const amount = equipped.bonus;
-      setSave((prev) => gatheringActivity === "wood"
-        ? { ...prev, wood: prev.wood + amount }
-        : gatheringActivity === "stone"
-          ? { ...prev, stone: prev.stone + amount }
-          : { ...prev, dirt: prev.dirt + amount });
-      setGatherAction(0);
-      const reward = gatheringActivity === "wood" ? "🌲 목재 +" + amount : gatheringActivity === "stone" ? "⛏️ 석재 +" + amount : "🟫 흙 +" + amount;
-      setGatherReward("🎉 " + reward);
-      showMessage("채집 성공! " + reward);
-    } else {
-      showMessage((gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 삽질") + " · " + nextHits + "/" + gatherRequiredHits);
-    }
+    const distance = Math.abs(gatherTimingX - 50);
+    const perfect = distance <= 5;
+    const good = distance <= 13;
+    const damage = perfect ? 2 : good ? 1 : 0;
+
+    window.setTimeout(() => {
+      setGatherSwing(false);
+      if (damage === 0) {
+        setGatherCombo(0);
+        setGatherReward("MISS");
+        showMessage("💨 빗나갔습니다! 노란 구간을 노리세요.");
+        return;
+      }
+
+      const nextHits = gatherAction + 1;
+      const nextCombo = gatherCombo + (perfect ? 1 : 0);
+      setGatherAction(nextHits);
+      setGatherCombo(nextCombo);
+      setGatherReward(perfect ? "🎯 PERFECT!" : "💥 GOOD");
+
+      if (nextHits >= gatherRequiredHits) {
+        const amount = equipped.bonus + Math.floor(nextCombo / 2);
+        setSave((prev) => gatheringActivity === "wood"
+          ? { ...prev, wood: prev.wood + amount }
+          : gatheringActivity === "stone"
+            ? { ...prev, stone: prev.stone + amount }
+            : { ...prev, dirt: prev.dirt + amount });
+        setGatherAction(0);
+        setGatherCombo(0);
+        const reward = gatheringActivity === "wood" ? "🌲 목재 +" + amount : gatheringActivity === "stone" ? "⛏️ 석재 +" + amount : "🟫 흙 +" + amount;
+        setGatherReward("🎉 " + reward);
+        showMessage((perfect ? "🎯 PERFECT COMBO! " : "💪 채집 성공! ") + reward);
+      } else {
+        showMessage((perfect ? "🎯 PERFECT · " : "💥 GOOD · ") + nextHits + "/" + gatherRequiredHits + (nextCombo > 1 ? " · COMBO x" + nextCombo : ""));
+      }
+    }, 170);
   };
 
   const plantCrop = (index: number, crop: CropType) => {
@@ -763,15 +802,20 @@ function App() {
                 <div className="water-grid" />
                 <div className="dock-planks" />
                 <div className="angler-2d"><div className="angler-head" /><div className="angler-body" /><div className="angler-tool">╲</div></div>
+                <div className="fishing-badge">{fishingResult ?? (fishingCast ? "🐟 입질! 물고기를 따라가세요" : "🎣 낚싯대를 던졌습니다")}</div>
                 <div className="fish-shadow" style={{ left: fishingFishX + "%", top: "58%" }} />
                 <div className="fish-2d" style={{ left: fishingFishX + "%", top: "58%" }}><span className="fish-eye" /></div>
                 <div className="fishing-ripple" style={{ left: fishingFishX + "%", top: "64%" }} />
-                <div className="g2d-speech">물고기가 움직인다!</div>
+                <div className="fishing-line-2d" style={{ left: "28%", top: "47%", width: Math.max(8, fishingFishX - 28) + "%" }} />
               </div>
               <div className="g2d-action-panel">
-                <div className="g2d-title-row"><div><span>🎣 낚싯대</span><b>잡아당길 타이밍을 노리세요</b></div><strong>+{saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"])?.bonus ?? 0}</strong></div>
+                <div className="g2d-title-row"><div><span>🎣 낚싯대</span><b>{fishingCast ? "물고기가 걸렸다! 지금 낚아채세요." : "다시 입질을 기다리려면 버튼을 누르세요."}</b></div><strong>+{saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"])?.bonus ?? 0}</strong></div>
                 <div className="fishing-meter-2d"><div className="fishing-target-2d" /><div className="fishing-cursor-2d" style={{ left: fishingFishX + "%" }} /></div>
-                <button className="g2d-main-action fishing-action" onClick={catchFish}>🎣 낚아채기 <small>E / SPACE</small></button>
+                {fishingCast ? (
+                  <button className="g2d-main-action fishing-action" onClick={catchFish}>🎣 낚아채기 <small>E / SPACE</small></button>
+                ) : (
+                  <button className="g2d-main-action fishing-action" onClick={() => { setFishingCast(true); setFishingMinigameOpen(true); setFishingResult(null); setFishingFishX(15); }}>🎣 다시 캐스팅</button>
+                )}
               </div>
             </div>
           ) : (
@@ -804,12 +848,14 @@ function App() {
 
               <div className="g2d-action-panel">
                 <div className="g2d-title-row">
-                  <div><span>{gatheringActivity === "wood" ? "🪓 도끼" : gatheringActivity === "stone" ? "⛏️ 곡괭이" : "🛠️ 삽"}</span><b>{gatheringActivity === "wood" ? "나무를 베어 목재를 얻습니다." : gatheringActivity === "stone" ? "광맥을 부숴 석재를 얻습니다." : "흙을 파서 토지를 정리합니다."}</b></div>
+                  <div><span>{gatheringActivity === "wood" ? "🪓 도끼" : gatheringActivity === "stone" ? "⛏️ 곡괭이" : "🛠️ 삽"} · COMBO x{gatherCombo}</span><b>노란 구간에 맞춰 타격하세요 · MISS는 콤보를 끊습니다.</b></div>
                   <strong>{gatherAction} / {gatherRequiredHits}</strong>
                 </div>
+                <div className="gather-stamina"><span>STAMINA</span><div><i style={{ width: gatherStamina + "%" }} /></div><b>{gatherStamina}</b></div>
+                <div className="gather-timing-game"><div className="gather-timing-zone-wide" /><i style={{ left: gatherTimingX + "%" }} /></div>
                 <div className="g2d-progress"><i style={{ width: (gatherAction / gatherRequiredHits) * 100 + "%" }} /></div>
-                <button className="g2d-main-action" onClick={interactGathering}>
-                  {gatheringActivity === "wood" ? "🪓 도끼질" : gatheringActivity === "stone" ? "⛏️ 채굴" : "🛠️ 삽질"} <small>E / SPACE</small>
+                <button className="g2d-main-action" onClick={interactGathering} disabled={gatherSwing || gatherStamina < 12}>
+                  {gatherSwing ? "💥 타격!" : gatheringActivity === "wood" ? "🪓 약점 타격" : gatheringActivity === "stone" ? "⛏️ 약점 채굴" : "🛠️ 정확히 파기"} <small>E / SPACE</small>
                 </button>
               </div>
             </section>
