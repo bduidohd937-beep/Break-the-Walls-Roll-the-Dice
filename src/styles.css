@@ -374,3 +374,76 @@ button {
     bottom: 12px;
   }
 }
+
+.inventory-button {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 9px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 9px;
+  background: rgba(255,255,255,.06);
+  color: #e8edf0;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inventory-panel {
+  max-height: 260px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+
+.inventory-header {
+  padding: 8px 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.inventory-header b,
+.inventory-header span {
+  display: block;
+}
+
+.inventory-header b { font-size: 11px; }
+.inventory-header span { margin-top: 3px; color: #89959f; font-size: 9px; }
+
+.empty-inventory {
+  padding: 12px 4px;
+  color: #89959f;
+  font-size: 10px;
+  text-align: center;
+}
+
+.equipment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 9px;
+  background: rgba(0,0,0,.14);
+}
+
+.equipment-card.equipped {
+  border-color: rgba(240,189,91,.55);
+  background: rgba(240,189,91,.08);
+}
+
+.equipment-card strong,
+.equipment-card small { display: block; }
+.equipment-card strong { font-size: 10px; color: #f4f0e7; }
+.equipment-card small { margin-top: 3px; color: #9da8b1; font-size: 9px; }
+
+.equipment-card button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 8px;
+  background: #e0a83b;
+  color: #20170a;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
