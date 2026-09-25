@@ -13,17 +13,21 @@ type SaveData = {
   gold: number;
   wood: number;
   stone: number;
+  dirt: number;
+  fish: number;
   toolLevel: number;
   toolName: string;
   inventory: Equipment[];
   equippedToolId: string | null;
+  equippedTools: Record<Equipment["type"], string | null>;
 };
 
-type ResourceType = "wood" | "stone";
+type ResourceType = "wood" | "stone" | "dirt" | "fish";
+function resourceToolType(type: ResourceType): Equipment["type"] { if (type === "wood") return "도끼"; if (type === "stone") return "곡괭이"; if (type === "dirt") return "삽"; return "낚싯대"; }
 
 const SAVE_KEY = "break-the-walls-roll-the-dice-v1";
 const STARTING_SAVE: SaveData = {
-  gold: 0, wood: 0, stone: 0, toolLevel: 1, toolName: "맨손", inventory: [], equippedToolId: null,
+  gold: 0, wood: 0, stone: 0, dirt: 0, fish: 0, toolLevel: 1, toolName: "맨손", inventory: [], equippedToolId: null, equippedTools: { 도끼: null, 곡괭이: null, 삽: null, 칼: null, 낚싯대: null },
 };
 
 const EQUIPMENT_TYPES: Equipment["type"][] = ["도끼", "곡괭이", "삽", "칼", "낚싯대"];
@@ -49,10 +53,13 @@ function loadSave(): SaveData {
       gold: Number(parsed.gold) || 0,
       wood: Number(parsed.wood) || 0,
       stone: Number(parsed.stone) || 0,
+      dirt: Number((parsed as Partial<SaveData>).dirt) || 0,
+      fish: Number((parsed as Partial<SaveData>).fish) || 0,
       toolLevel: Math.max(1, Number(parsed.toolLevel) || 1),
       toolName: typeof parsed.toolName === "string" ? parsed.toolName : "맨손",
       inventory: Array.isArray(parsed.inventory) ? parsed.inventory as Equipment[] : [],
       equippedToolId: typeof parsed.equippedToolId === "string" ? parsed.equippedToolId : null,
+      equippedTools: parsed.equippedTools && typeof parsed.equippedTools === "object" ? { 도끼: parsed.equippedTools.도끼 ?? null, 곡괭이: parsed.equippedTools.곡괭이 ?? null, 삽: parsed.equippedTools.삽 ?? null, 칼: parsed.equippedTools.칼 ?? null, 낚싯대: parsed.equippedTools.낚싯대 ?? null } : { ...STARTING_SAVE.equippedTools },
     };
   } catch {
     return STARTING_SAVE;
@@ -65,6 +72,8 @@ function App() {
   const [message, setMessage] = useState("나무와 바위를 클릭해서 첫 자본을 만들어보세요.");
   const [shopRoll, setShopRoll] = useState("장비를 뽑아보세요.");
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const saveRef = useRef(save);
+  useEffect(() => { saveRef.current = save; }, [save]);
   const messageTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -192,6 +201,18 @@ function App() {
       [10, -1, 0.8],
     ].forEach(([x, z, scale]) => makeRock(x, z, scale));
 
+    const makeDirt = (x: number, z: number, scale = 1) => {
+      const group = new THREE.Group(); group.position.set(x, 0, z); group.scale.setScalar(scale); group.userData.resourceType = "dirt" satisfies ResourceType;
+      const soil = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 2.2), new THREE.MeshStandardMaterial({ color: "#8b5a3c", roughness: 1 }));
+      soil.position.y = 0.3; group.add(soil); scene.add(group); resources.push(group);
+    };
+    const makeFishingSpot = (x: number, z: number, scale = 1) => {
+      const group = new THREE.Group(); group.position.set(x, 0, z); group.scale.setScalar(scale); group.userData.resourceType = "fish" satisfies ResourceType;
+      const pond = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.18, 20), new THREE.MeshStandardMaterial({ color: "#3d8fbd", roughness: 0.7 }));
+      pond.position.y = 0.08; group.add(pond); scene.add(group); resources.push(group);
+    };
+    [[-2, -8, 1], [4, 7, 0.9], [11, -5, 0.85]].forEach(([x, z, scale]) => makeDirt(x, z, scale));
+    [[-8, -1, 1], [6, -8, 0.9]].forEach(([x, z, scale]) => makeFishingSpot(x, z, scale));
     const castle = new THREE.Group();
     castle.position.set(0, 0, 0);
 
@@ -295,16 +316,21 @@ function App() {
         if (!resource || resource.userData.cooldown) continue;
 
         const type = resource.userData.resourceType as ResourceType;
+        const currentSave = saveRef.current;
+        const requiredType = resourceToolType(type);
+        const equipped = currentSave.inventory.find((item) => item.id === currentSave.equippedTools[requiredType]);
+        if (!equipped) { showMessage(`⚠️ ${requiredType}가 필요합니다.`); break; }
+        const amount = equipped.bonus;
         resource.userData.cooldown = true;
         resource.visible = false;
 
         setSave((prev) =>
           type === "wood"
-            ? { ...prev, wood: prev.wood + prev.toolLevel }
-            : { ...prev, stone: prev.stone + prev.toolLevel },
+            ? { ...prev, wood: prev.wood + amount }
+            : type === "stone" ? { ...prev, stone: prev.stone + amount } : type === "dirt" ? { ...prev, dirt: prev.dirt + amount } : { ...prev, fish: prev.fish + amount },
         );
 
-        showMessage(type === "wood" ? `🌲 목재 +${save.toolLevel}` : `🪨 석재 +${save.toolLevel}`);
+        showMessage(type === "wood" ? `🌲 목재 +${amount}` : type === "stone" ? `🪨 석재 +${amount}` : type === "dirt" ? `🟫 흙 +${amount}` : `🐟 물고기 +${amount}`);
 
         const timer = window.setTimeout(() => {
           resource.visible = true;
@@ -430,12 +456,12 @@ function App() {
   const equipTool = (equipmentId: string) => {
     const equipment = save.inventory.find((item) => item.id === equipmentId);
     if (!equipment) return;
-    setSave((prev) => ({ ...prev, toolLevel: equipment.bonus, toolName: equipment.name, equippedToolId: equipment.id }));
+    setSave((prev) => ({ ...prev, toolLevel: equipment.bonus, toolName: equipment.name, equippedToolId: equipment.id, equippedTools: { ...prev.equippedTools, [equipment.type]: equipment.id } }));
     showMessage(`⚒️ ${equipment.name} 장착! 채집량 +${equipment.bonus}`);
   };
 
   const sellAll = () => {
-    const revenue = save.wood * 5 + save.stone * 8;
+    const revenue = save.wood * 5 + save.stone * 8 + save.dirt * 3 + save.fish * 12;
     if (revenue <= 0) {
       showMessage("팔 자원이 없습니다.");
       return;
@@ -446,6 +472,8 @@ function App() {
       gold: prev.gold + revenue,
       wood: 0,
       stone: 0,
+      dirt: 0,
+      fish: 0,
     }));
     showMessage(`💰 자원을 팔아 골드 +${revenue}`);
   };
@@ -473,7 +501,7 @@ function App() {
         <div className="resources">
           <div className="resource-pill gold">💰 <b>{save.gold.toLocaleString()}</b><small>골드</small></div>
           <div className="resource-pill wood">🌲 <b>{save.wood}</b><small>목재</small></div>
-          <div className="resource-pill stone">🪨 <b>{save.stone}</b><small>석재</small></div>
+          <div className="resource-pill stone">🪨 <b>{save.stone}</b><small>석재</small></div><div className="resource-pill wood">🟫 <b>{save.dirt}</b><small>흙</small></div><div className="resource-pill stone">🐟 <b>{save.fish}</b><small>물고기</small></div>
         </div>
       </header>
 
@@ -516,7 +544,7 @@ function App() {
           <small>판매</small>
         </div>
         <div className="sale-row"><span>🌲 목재</span><b>{save.wood} × 5G</b></div>
-        <div className="sale-row"><span>🪨 석재</span><b>{save.stone} × 8G</b></div>
+        <div className="sale-row"><span>🪨 석재</span><b>{save.stone} × 8G</b></div><div className="sale-row"><span>🟫 흙</span><b>{save.dirt} × 3G</b></div><div className="sale-row"><span>🐟 물고기</span><b>{save.fish} × 12G</b></div>
         <button className="sell-button" onClick={sellAll}>전부 판매하기</button>
         <button className="reset-button" onClick={resetGame}>저장 초기화</button>
       </section>
@@ -531,6 +559,13 @@ function App() {
             </div>
             <button className="close-equipment" onClick={() => setInventoryOpen(false)}>← 영지로 돌아가기</button>
           </div>
+          <div className="equipment-slots">
+            {EQUIPMENT_TYPES.map((type) => {
+              const equipped = save.inventory.find((item) => item.id === save.equippedTools[type]);
+              const icon = type === "도끼" ? "🪓" : type === "곡괭이" ? "⛏️" : type === "삽" ? "🛠️" : type === "칼" ? "⚔️" : "🎣";
+              return <div className="equipment-slot" key={type}><div className="slot-icon">{icon}</div><span>{type} 슬롯</span><b>{equipped?.name ?? "비어 있음"}</b><small>{equipped ? "채집량 +" + equipped.bonus : "장비를 장착하세요"}</small></div>;
+            })}
+          </div>
           <div className="equipment-summary">
             <div><span>현재 장착</span><b>{save.toolName}</b><small>채집량 +{save.toolLevel}</small></div>
             <div><span>보유 장비</span><b>{save.inventory.length}</b><small>개</small></div>
@@ -541,7 +576,7 @@ function App() {
             ) : save.inventory.map((item) => (
               <article className={`equipment-card-large ${save.equippedToolId === item.id ? "equipped" : ""}`} key={item.id}>
                 <div className="equipment-icon">{item.type === "도끼" ? "🪓" : item.type === "곡괭이" ? "⛏️" : item.type === "삽" ? "🛠️" : item.type === "칼" ? "⚔️" : "🎣"}</div>
-                <div className="equipment-grade">{item.grade}</div>
+                <div className={`equipment-grade grade-${item.grade}`}>{item.grade}</div>
                 <h3>{item.name}</h3>
                 <div className="equipment-bonus">채집량 +{item.bonus}</div>
                 <div className="equipment-type">{item.type}</div>
