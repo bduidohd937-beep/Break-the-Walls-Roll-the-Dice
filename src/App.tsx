@@ -442,6 +442,7 @@ function App() {
     }
 
     setSave((prev) => ({
+      ...prev,
       gold: prev.gold + revenue,
       wood: 0,
       stone: 0,
@@ -503,20 +504,10 @@ function App() {
           <b>{save.toolName}</b>
           <span>채집량 +{save.toolLevel}</span>
         </div>
-        <button className="inventory-button" onClick={() => setInventoryOpen((prev) => !prev)}>🎒 장비 탭 {save.inventory.length > 0 ? `(${save.inventory.length})` : ""}</button>
+        <button className="inventory-button" onClick={() => setInventoryOpen(true)}>🎒 장비 보관함 {save.inventory.length > 0 ? `(${save.inventory.length})` : ""}</button>
         <p className="roll-result">{shopRoll}</p>
         <button className="roll-button" onClick={rollTool}>장비 뽑기 · {50 + save.inventory.length * 25}G</button>
-        {inventoryOpen && (
-          <div className="inventory-panel">
-            <div className="inventory-header"><b>보유 장비</b><span>장착한 장비만 채집량에 적용</span></div>
-            {save.inventory.length === 0 ? <div className="empty-inventory">아직 보유 장비가 없습니다.</div> : save.inventory.map((item) => (
-              <div className={`equipment-card ${save.equippedToolId === item.id ? "equipped" : ""}`} key={item.id}>
-                <div><strong>{item.name}</strong><small>{item.type} · 채집량 +{item.bonus}</small></div>
-                <button onClick={() => equipTool(item.id)}>{save.equippedToolId === item.id ? "장착 중" : "장착"}</button>
-              </div>
-            ))}
-          </div>
-        )}
+        {inventoryOpen && null}
       </section>
 
       <section className="side-panel shop-panel">
@@ -529,6 +520,37 @@ function App() {
         <button className="sell-button" onClick={sellAll}>전부 판매하기</button>
         <button className="reset-button" onClick={resetGame}>저장 초기화</button>
       </section>
+
+      {inventoryOpen && (
+        <section className="equipment-screen">
+          <div className="equipment-screen-header">
+            <div>
+              <div className="eyebrow">EQUIPMENT · ARMORY</div>
+              <h2>🎒 장비 보관함</h2>
+              <p>뽑은 장비를 확인하고 원하는 장비를 장착하세요.</p>
+            </div>
+            <button className="close-equipment" onClick={() => setInventoryOpen(false)}>← 영지로 돌아가기</button>
+          </div>
+          <div className="equipment-summary">
+            <div><span>현재 장착</span><b>{save.toolName}</b><small>채집량 +{save.toolLevel}</small></div>
+            <div><span>보유 장비</span><b>{save.inventory.length}</b><small>개</small></div>
+          </div>
+          <div className="equipment-grid">
+            {save.inventory.length === 0 ? (
+              <div className="empty-inventory large">아직 보유 장비가 없습니다.<br />영지에서 장비를 뽑아보세요.</div>
+            ) : save.inventory.map((item) => (
+              <article className={`equipment-card-large ${save.equippedToolId === item.id ? "equipped" : ""}`} key={item.id}>
+                <div className="equipment-icon">{item.type === "도끼" ? "🪓" : item.type === "곡괭이" ? "⛏️" : item.type === "삽" ? "🛠️" : item.type === "칼" ? "⚔️" : "🎣"}</div>
+                <div className="equipment-grade">{item.grade}</div>
+                <h3>{item.name}</h3>
+                <div className="equipment-bonus">채집량 +{item.bonus}</div>
+                <div className="equipment-type">{item.type}</div>
+                <button onClick={() => equipTool(item.id)}>{save.equippedToolId === item.id ? "✓ 장착 중" : "장착하기"}</button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="toast">{message}</div>
 
