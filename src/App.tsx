@@ -116,6 +116,8 @@ function App() {
   const [fishingFishX, setFishingFishX] = useState(50);
   const [fishingFishDir, setFishingFishDir] = useState(1);
   const [gatherReward, setGatherReward] = useState<string | null>(null);
+  const [gatherTimingX, setGatherTimingX] = useState(50);
+  const [gatherTimingDir, setGatherTimingDir] = useState(1);
   const [equipmentFilter, setEquipmentFilter] = useState<Equipment["type"]>("도끼");
   const [farmTick, setFarmTick] = useState(Date.now());
   const gatherRequiredHits = gatheringActivity === "wood" ? 3 : gatheringActivity === "stone" ? 4 : 2;
@@ -157,6 +159,21 @@ function App() {
   }, [gatheringActivity, fishingMinigameOpen]);
 
   useEffect(() => {
+    if (!gatheringActivity || gatheringActivity === "fish" || fishingMinigameOpen) return;
+    const timer = window.setInterval(() => {
+      setGatherTimingX((prev) => {
+        const next = prev + gatherTimingDir * 3;
+        if (next >= 94 || next <= 6) {
+          setGatherTimingDir((dir) => -dir);
+          return Math.max(6, Math.min(94, next));
+        }
+        return next;
+      });
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [gatheringActivity, fishingMinigameOpen, gatherTimingDir]);
+
+  useEffect(() => {
     if (!fishingMinigameOpen) return;
     const timer = window.setInterval(() => {
       setFishingFishX((prev) => {
@@ -184,8 +201,10 @@ function App() {
     setGatherPlayer({ x: 50, y: 72 });
     setGatherAction(0);
     setFishingState("idle");
-    setFishingMinigameOpen(false);
+    setGatherTimingX(50);
+    setGatherTimingDir(1);
     setGatherReward(null);
+    setFishingMinigameOpen(type === "fish");
   };
 
   const leaveGatheringActivity = () => {
@@ -560,25 +579,21 @@ function App() {
   };
 
   const interactGathering = () => {
-    if (!gatheringActivity) return;
+    if (!gatheringActivity || gatheringActivity === "fish") return;
     const requiredType = resourceToolType(gatheringActivity);
     const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools[requiredType]);
     if (!equipped) return;
-    const target = { x: 72, y: 40 };
-    const distance = Math.hypot(gatherPlayer.x - target.x, gatherPlayer.y - target.y);
-    if (distance > 18) {
-      showMessage("📍 자원 가까이 이동한 뒤 상호작용하세요. (화면을 클릭해 이동 가능)");
+
+    const distanceFromSweetSpot = Math.abs(gatherTimingX - 50);
+    if (distanceFromSweetSpot > 13) {
+      setGatherReward("💨 빗나감! 중앙에 맞춰보세요.");
+      showMessage("🎯 타이밍을 중앙에 맞춰 E!");
       return;
     }
-    if (gatheringActivity === "fish") {
-      setFishingMinigameOpen(true);
-      setFishingFishX(50);
-      setGatherReward(null);
-      showMessage("🎣 낚시 미니게임 시작! 물고기가 중앙 구간에 올 때 E!");
-      return;
-    }
+
     const nextHits = gatherAction + 1;
     setGatherAction(nextHits);
+    setGatherReward("✨ 정확!");
     if (nextHits >= gatherRequiredHits) {
       const amount = equipped.bonus;
       setSave((prev) => gatheringActivity === "wood"
@@ -588,11 +603,27 @@ function App() {
           : { ...prev, dirt: prev.dirt + amount });
       setGatherAction(0);
       const reward = gatheringActivity === "wood" ? "🌲 목재 +" + amount : gatheringActivity === "stone" ? "⛏️ 석재 +" + amount : "🟫 흙 +" + amount;
-      setGatherReward(reward);
-      showMessage("🎉 채집 완료! " + reward);
+      setGatherReward("🎉 " + reward);
+      showMessage("채집 성공! " + reward);
     } else {
-      showMessage(gatheringActivity === "wood" ? "🪓 탁! " + nextHits + "/" + gatherRequiredHits : gatheringActivity === "stone" ? "⛏️ 쾅! " + nextHits + "/" + gatherRequiredHits : "🛠️ 푹! " + nextHits + "/" + gatherRequiredHits);
+      showMessage((gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 삽질") + " 성공 · " + nextHits + "/" + gatherRequiredHits);
     }
+  };
+
+  const catchFish = () => {
+    const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"]);
+    if (!equipped || !fishingMinigameOpen) return;
+    const distanceFromSweetSpot = Math.abs(fishingFishX - 50);
+    if (distanceFromSweetSpot <= 9) {
+      const amount = equipped.bonus;
+      setSave((prev) => ({ ...prev, fish: prev.fish + amount }));
+      setGatherReward("🐟 물고기 +" + amount);
+      showMessage("🎣 낚시 성공! 물고기 +" + amount);
+    } else {
+      setGatherReward("💨 놓쳤다! 다시 시도");
+      showMessage("🐟 물고기를 놓쳤습니다.");
+    }
+    setFishingFishX(50);
   };
 
   const plantCrop = (index: number, crop: CropType) => {
@@ -744,69 +775,43 @@ function App() {
 
       {!inventoryOpen && gatheringActivity && (
         <section className="gathering-game">
-          <div className="gathering-game-top">
-            <div>
-              <span className="eyebrow">FIELD ACTIVITY · 2.5D</span>
-              <h2>{gatheringActivity === "wood" ? "🌲 벌목장" : gatheringActivity === "stone" ? "⛏️ 광산" : gatheringActivity === "dirt" ? "🟫 토지 작업장" : "🎣 낚시터"}</h2>
-              <p>WASD로 이동하고 자원 가까이에서 E 또는 SPACE로 직접 작업하세요.</p>
-            </div>
-            <button onClick={leaveGatheringActivity}>← 채집 목록</button>
-          </div>
-          <div className={"gathering-stage " + gatheringActivity} onClick={(event) => {
-            if (fishingMinigameOpen) return;
-            const rect = event.currentTarget.getBoundingClientRect();
-            setGatherPlayer({
-              x: Math.max(10, Math.min(90, ((event.clientX - rect.left) / rect.width) * 100)),
-              y: Math.max(18, Math.min(84, ((event.clientY - rect.top) / rect.height) * 100)),
-            });
-          }}>
-            <div className="stage-path" />
-            <div className="stage-resource" style={{ left: "72%", top: "40%" }}>
-              {gatheringActivity === "wood" && <><div className="mini-tree-trunk" /><div className="mini-tree-crown">🌲</div></>}
-              {gatheringActivity === "stone" && <div className="mini-rock">🪨</div>}
-              {gatheringActivity === "dirt" && <div className="mini-soil">🟫</div>}
-              {gatheringActivity === "fish" && <div className="mini-pond">🌊</div>}
-              <span className="resource-label">{gatheringActivity === "wood" ? "나무" : gatheringActivity === "stone" ? "광맥" : gatheringActivity === "dirt" ? "흙더미" : "낚시 포인트"}</span>
-            </div>
-            {!fishingMinigameOpen && <div className="gather-progress-panel">
-              <span>이번 작업</span>
-              <b>{gatheringActivity === "fish" ? "낚시" : gatherAction + " / " + gatherRequiredHits}</b>
-              <small>{gatherReward ?? "화면을 클릭해 이동 · E로 작업"}</small>
-            </div>}
-            {fishingMinigameOpen && (
-              <div className="fishing-pixel-game" onClick={(event) => event.stopPropagation()}>
-                <div className="pixel-sky">☁️　　☁️　　　☁️</div>
-                <div className="pixel-water">
-                  <div className="pixel-sun">☀️</div>
-                  <div className="fishing-boat">🛶</div>
-                  <div className="pixel-fish" style={{ left: fishingFishX + "%" }}>🐟</div>
-                  <div className="catch-zone" />
-                  <div className="pixel-ripples">〰〰〰〰〰〰〰〰〰</div>
-                </div>
-                <div className="fishing-pixel-ui">
-                  <b>🎣 낚시</b>
-                  <span>물고기가 중앙 금색 구간에 올 때 E</span>
-                  <div className="fishing-timing-bar"><div className="fishing-timing-zone" /><div className="fishing-marker" style={{ left: fishingFishX + "%" }} /></div>
-                  <button onClick={catchFish}>E · 낚아채기</button>
-                </div>
+          {fishingMinigameOpen ? (
+            <div className="fishing-pixel-game fishing-fullscreen">
+              <div className="pixel-sky">☁️　　　☁️　　　　☁️</div>
+              <div className="pixel-water">
+                <div className="pixel-sun">☀️</div>
+                <div className="fishing-boat">🛶</div>
+                <div className="pixel-fish" style={{ left: fishingFishX + "%" }}>🐟</div>
+                <div className="catch-zone" />
+                <div className="pixel-ripples">〰〰〰〰〰〰〰〰〰〰</div>
               </div>
-            )}
-            <div className="gather-player" style={{ left: gatherPlayer.x + "%", top: gatherPlayer.y + "%" }}>
-              <div className="player-shadow" />
-              <div className="player-head">🙂</div>
-              <div className="player-body">🧑</div>
-              <div className="player-tool">{resourceToolType(gatheringActivity) === "도끼" ? "🪓" : resourceToolType(gatheringActivity) === "곡괭이" ? "⛏️" : resourceToolType(gatheringActivity) === "삽" ? "🛠️" : "🎣"}</div>
+              <div className="fishing-pixel-ui">
+                <b>🎣 낚시</b>
+                <span>물고기가 중앙 금색 구간에 들어왔을 때 E를 누르세요.</span>
+                <div className="fishing-timing-bar"><div className="fishing-timing-zone" /><div className="fishing-marker" style={{ left: fishingFishX + "%" }} /></div>
+                <button onClick={catchFish}>🎣 낚아채기</button>
+                <button className="fishing-leave" onClick={leaveGatheringActivity}>← 낚시터 나가기</button>
+              </div>
             </div>
-            {!fishingMinigameOpen && <div className="gather-interact-hint">
-              {gatheringActivity === "fish" ? "E로 2D 낚시 게임 시작" : "E로 " + (gatheringActivity === "wood" ? "나무를 베세요" : gatheringActivity === "stone" ? "돌을 캐세요" : "흙을 파세요")}
-            </div>}
-          </div>
-          <div className="gathering-game-bottom">
-            <span>🧭 WASD / 방향키 이동</span>
-            <span>⚒️ E / SPACE 작업 · 화면 클릭 이동</span>
-            <b>{gatheringActivity === "wood" ? "벌목" : gatheringActivity === "stone" ? "채광" : gatheringActivity === "dirt" ? "토지" : "낚시"} · {save.inventory.find((item) => item.id === save.equippedTools[resourceToolType(gatheringActivity)])?.name}</b>
-          </div>
-          <button className="gather-mobile-action" onClick={fishingMinigameOpen ? catchFish : interactGathering}>{fishingMinigameOpen ? "🎣 낚아채기" : "E · 작업하기"}</button>
+          ) : (
+            <section className={"gathering-rework " + gatheringActivity}>
+              <header className="gather-rework-header">
+                <div><span className="eyebrow">FIELD MINIGAME</span><h2>{gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 토지 작업"}</h2><p>이동 없이 타이밍에 맞춰 작업하세요.</p></div>
+                <button onClick={leaveGatheringActivity}>← 채집 목록</button>
+              </header>
+              <div className="gather-rework-scene">
+                <div className="rework-backdrop" />
+                <div className="rework-object">{gatheringActivity === "wood" ? "🌲" : gatheringActivity === "stone" ? "🪨" : "🟫"}</div>
+                <div className="rework-character">🧑‍🌾</div>
+                <div className="rework-label">{gatheringActivity === "wood" ? "나무를 찍어 장작을 얻는다" : gatheringActivity === "stone" ? "광맥의 약점을 노려 캔다" : "좋은 흙을 골라낸다"}</div>
+              </div>
+              <div className="gather-rework-panel">
+                <div className="gather-rework-status"><span>작업 진행</span><b>{gatherAction} / {gatherRequiredHits}</b><strong>{gatherReward ?? "중앙에 들어왔을 때 작업 버튼!"}</strong></div>
+                <div className="gather-timing-bar"><div className="gather-timing-zone" /><div className="gather-timing-marker" style={{ left: gatherTimingX + "%" }} /></div>
+                <button className="gather-hit-button" onClick={interactGathering}>⚒️ 작업하기 · E</button>
+              </div>
+            </section>
+          )}
         </section>
       )}
 
@@ -842,7 +847,7 @@ function App() {
                       <span>{equipped ? "+" + equipped.bonus + " /회" : "장비 없음"}</span>
                     </div>
                     <button onClick={() => openGatheringActivity(type)}>
-                      {equipped ? "▶ 현장으로 들어가기" : "🎒 " + tool + " 장착 필요"}
+                      {type === "fish" ? (equipped ? "🎣 바로 낚시하러 가기" : "🎒 낚싯대 장착 필요") : (equipped ? "▶ 미니게임 시작" : "🎒 " + tool + " 장착 필요")}
                     </button>
                   </article>
                 );
