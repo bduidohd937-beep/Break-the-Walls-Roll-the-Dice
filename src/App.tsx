@@ -140,6 +140,14 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!gatheringActivity || gatheringActivity === "fish") return;
+    const timer = window.setInterval(() => {
+      setGatherStamina((prev) => Math.min(100, prev + 4));
+    }, 350);
+    return () => window.clearInterval(timer);
+  }, [gatheringActivity]);
+
+  useEffect(() => {
     if (!gatheringActivity) return;
     const onKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
@@ -148,7 +156,7 @@ function App() {
         return;
       }
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e", " "].includes(key)) event.preventDefault();
-      if (fishingMinigameOpen && (key === "e" || key === " ")) {
+      if (gatheringActivity === "fish" && fishingMinigameOpen && fishingCast && (key === "e" || key === " ")) {
         catchFish();
         return;
       }
@@ -792,7 +800,7 @@ function App() {
 
       {!inventoryOpen && gatheringActivity && (
         <section className="gathering-game">
-          {fishingMinigameOpen ? (
+          {gatheringActivity === "fish" ? (
             <div className="gather-2d-screen fishing-2d-screen">
               <div className="g2d-topbar">
                 <div><span>FISHING DOCK</span><h2>낚시터</h2></div>
