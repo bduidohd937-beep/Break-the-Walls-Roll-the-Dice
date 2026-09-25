@@ -108,6 +108,11 @@ function App() {
   const [shopRoll, setShopRoll] = useState("장비를 뽑아보세요.");
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"estate" | "gather" | "farm">("estate");
+  const [gatheringActivity, setGatheringActivity] = useState<ResourceType | null>(null);
+  const [gatherPlayer, setGatherPlayer] = useState({ x: 50, y: 72 });
+  const [gatherAction, setGatherAction] = useState(0);
+  const [fishingState, setFishingState] = useState<"idle" | "waiting" | "bite">("idle");
+  const [equipmentFilter, setEquipmentFilter] = useState<Equipment["type"]>("도끼");
   const [farmTick, setFarmTick] = useState(Date.now());
   const saveRef = useRef(save);
   useEffect(() => { saveRef.current = save; }, [save]);
@@ -121,6 +126,58 @@ function App() {
     const timer = window.setInterval(() => setFarmTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!gatheringActivity) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (key === "escape") {
+        leaveGatheringActivity();
+        return;
+      }
+      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e", " "].includes(key)) event.preventDefault();
+      const step = 4;
+      setGatherPlayer((prev) => ({
+        x: Math.max(12, Math.min(88, prev.x + (key === "a" || key === "arrowleft" ? -step : key === "d" || key === "arrowright" ? step : 0))),
+        y: Math.max(20, Math.min(82, prev.y + (key === "w" || key === "arrowup" ? -step : key === "s" || key === "arrowdown" ? step : 0))),
+      }));
+      if (key === "e" || key === " ") setGatherAction((value) => value + 1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [gatheringActivity]);
+
+  useEffect(() => {
+    if (gatheringActivity !== "fish" || fishingState !== "waiting") return;
+    const timer = window.setTimeout(() => setFishingState("bite"), 1200 + Math.random() * 1800);
+    return () => window.clearTimeout(timer);
+  }, [gatheringActivity, fishingState]);
+
+  useEffect(() => {
+    if (gatheringActivity !== "fish" || fishingState !== "bite") return;
+    const timer = window.setTimeout(() => setFishingState("idle"), 1200);
+    return () => window.clearTimeout(timer);
+  }, [gatheringActivity, fishingState]);
+
+  const openGatheringActivity = (type: ResourceType) => {
+    const requiredType = resourceToolType(type);
+    const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools[requiredType]);
+    if (!equipped) {
+      showMessage("⚠️ " + requiredType + "를 먼저 장착하세요.");
+      setInventoryOpen(true);
+      setEquipmentFilter(requiredType);
+      return;
+    }
+    setGatheringActivity(type);
+    setGatherPlayer({ x: 50, y: 72 });
+    setGatherAction(0);
+    setFishingState("idle");
+  };
+
+  const leaveGatheringActivity = () => {
+    setGatheringActivity(null);
+    setFishingState("idle");
+  };
 
   const showMessage = (text: string) => {
     setMessage(text);
@@ -345,43 +402,8 @@ function App() {
       return null;
     };
 
-    const collectAtPointer = (event: PointerEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(scene.children, true);
-
-      for (const hit of hits) {
-        const resource = findResource(hit.object);
-        if (!resource || resource.userData.cooldown) continue;
-
-        const type = resource.userData.resourceType as ResourceType;
-        const currentSave = saveRef.current;
-        const requiredType = resourceToolType(type);
-        const equipped = currentSave.inventory.find((item) => item.id === currentSave.equippedTools[requiredType]);
-        if (!equipped) { showMessage(`⚠️ ${requiredType}가 필요합니다.`); break; }
-        const amount = equipped.bonus;
-        resource.userData.cooldown = true;
-        resource.visible = false;
-
-        setSave((prev) =>
-          type === "wood"
-            ? { ...prev, wood: prev.wood + amount }
-            : type === "stone" ? { ...prev, stone: prev.stone + amount } : type === "dirt" ? { ...prev, dirt: prev.dirt + amount } : { ...prev, fish: prev.fish + amount },
-        );
-
-        showMessage(type === "wood" ? `🌲 목재 +${amount}` : type === "stone" ? `🪨 석재 +${amount}` : type === "dirt" ? `🟫 흙 +${amount}` : `🐟 물고기 +${amount}`);
-
-        const timer = window.setTimeout(() => {
-          resource.visible = true;
-          resource.userData.cooldown = false;
-          timers.delete(timer);
-        }, 850);
-        timers.add(timer);
-        break;
-      }
+    const collectAtPointer = () => {
+      setActiveTab("gather");
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -413,7 +435,7 @@ function App() {
       dragging = false;
 
       if (!moved) {
-        collectAtPointer(event);
+        collectAtPointer();
       }
 
       renderer.domElement.releasePointerCapture?.(event.pointerId);
@@ -499,27 +521,52 @@ function App() {
     const equipment = save.inventory.find((item) => item.id === equipmentId);
     if (!equipment) return;
     setSave((prev) => ({ ...prev, toolLevel: equipment.bonus, toolName: equipment.name, equippedToolId: equipment.id, equippedTools: { ...prev.equippedTools, [equipment.type]: equipment.id } }));
-    showMessage(`⚒️ ${equipment.name} 장착! 채집량 +${equipment.bonus}`);
+    setEquipmentFilter(equipment.type);
+    showMessage(`⚒️ ${equipment.name} 장착! ${equipment.type === "도끼" ? "목재" : equipment.type === "곡괭이" ? "석재" : equipment.type === "삽" ? "흙" : equipment.type === "낚싯대" ? "물고기" : "전투"} 채집량 +${equipment.bonus}`);
   };
 
-  const collectFromGatherTab = (type: ResourceType) => {
-    const requiredType = resourceToolType(type);
-    const currentSave = saveRef.current;
-    const equipped = currentSave.inventory.find((item) => item.id === currentSave.equippedTools[requiredType]);
-    if (!equipped) {
-      showMessage("⚠️ " + requiredType + "가 필요합니다.");
+  const interactGathering = () => {
+    if (!gatheringActivity) return;
+    const requiredType = resourceToolType(gatheringActivity);
+    const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools[requiredType]);
+    if (!equipped) return;
+    const target = { x: 72, y: 40 };
+    const distance = Math.hypot(gatherPlayer.x - target.x, gatherPlayer.y - target.y);
+    if (distance > 18) {
+      showMessage("📍 자원 가까이 이동한 뒤 상호작용하세요.");
       return;
     }
-    const amount = equipped.bonus;
-    setSave((prev) => type === "wood"
-      ? { ...prev, wood: prev.wood + amount }
-      : type === "stone"
-        ? { ...prev, stone: prev.stone + amount }
-        : type === "dirt"
-          ? { ...prev, dirt: prev.dirt + amount }
-          : { ...prev, fish: prev.fish + amount });
-    const label = type === "wood" ? "목재" : type === "stone" ? "석재" : type === "dirt" ? "흙" : "물고기";
-    showMessage("⛏️ " + label + " +" + amount);
+    if (gatheringActivity === "fish") {
+      if (fishingState === "idle") {
+        setFishingState("waiting");
+        showMessage("🎣 찌를 던졌습니다. 입질을 기다리세요...");
+        return;
+      }
+      if (fishingState === "waiting") {
+        showMessage("🐟 아직 입질이 없습니다.");
+        return;
+      }
+      const amount = equipped.bonus;
+      setSave((prev) => ({ ...prev, fish: prev.fish + amount }));
+      setFishingState("idle");
+      showMessage("🐟 물고기 +" + amount + " · 완벽한 타이밍!");
+      return;
+    }
+    const requiredHits = gatheringActivity === "wood" ? 3 : gatheringActivity === "stone" ? 4 : 2;
+    const nextHits = gatherAction + 1;
+    setGatherAction(nextHits);
+    if (nextHits >= requiredHits) {
+      const amount = equipped.bonus;
+      setSave((prev) => gatheringActivity === "wood"
+        ? { ...prev, wood: prev.wood + amount }
+        : gatheringActivity === "stone"
+          ? { ...prev, stone: prev.stone + amount }
+          : { ...prev, dirt: prev.dirt + amount });
+      setGatherAction(0);
+      showMessage(gatheringActivity === "wood" ? "🌲 나무를 쓰러뜨렸습니다! 목재 +" + amount : gatheringActivity === "stone" ? "⛏️ 광석을 캤습니다! 석재 +" + amount : "🟫 흙을 퍼냈습니다! 흙 +" + amount);
+    } else {
+      showMessage(gatheringActivity === "wood" ? "🪓 탁! 나무를 찍었습니다." : gatheringActivity === "stone" ? "⛏️ 쾅! 바위를 캤습니다." : "🛠️ 푹! 흙을 팠습니다.");
+    }
   };
 
   const plantCrop = (index: number, crop: CropType) => {
@@ -600,37 +647,15 @@ function App() {
       </header>
 
       <section className="side-panel mission-panel">
-        <div className="eyebrow">PHASE 1 · 생존 노동</div>
-        <h1>첫 자본을 만들어라</h1>
-        <p>영지의 자원을 직접 캐서 상점에 팔아 골드를 확보하세요.</p>
-        <div className="objective">
-          <span>🌲 나무</span>
-          <b>+1 목재</b>
-        </div>
-        <div className="objective">
-          <span>🪨 바위</span>
-          <b>+1 석재</b>
-        </div>
-        <div className="objective">
-          <span>🛒 상점</span>
-          <b>목재 5G · 석재 8G</b>
-        </div>
+        <div className="eyebrow">PHASE 1 · 영지 운영</div>
+        <h1>영지를 키워라</h1>
+        <p>채집은 현장에 들어가 직접 플레이하고, 영지에서는 판매·농장·장비·자동화를 관리합니다.</p>
+        <div className="objective"><span>⛏️ 채집</span><b>현장 플레이</b></div>
+        <div className="objective"><span>🌾 농장</span><b>재배 · 수확</b></div>
+        <div className="objective"><span>🛒 상점</span><b>판매 · 골드 확보</b></div>
       </section>
 
-      <section className="side-panel tool-panel">
-        <div className="shop-title">
-          <span>🎰 장비 뽑기</span>
-          <small>채집 강화</small>
-        </div>
-        <div className="tool-status">
-          <b>{save.toolName}</b>
-          <span>채집량 +{save.toolLevel}</span>
-        </div>
-        <button className="inventory-button" onClick={() => setInventoryOpen(true)}>🎒 장비 보관함 {save.inventory.length > 0 ? `(${save.inventory.length})` : ""}</button>
-        <p className="roll-result">{shopRoll}</p>
-        <button className="roll-button" onClick={rollTool}>장비 뽑기 · {50 + save.inventory.length * 25}G</button>
-        {inventoryOpen && null}
-      </section>
+      
 
       <section className="side-panel shop-panel">
         <div className="shop-title">
@@ -660,24 +685,85 @@ function App() {
               return <div className="equipment-slot" key={type}><div className="slot-icon">{icon}</div><span>{type} 슬롯</span><b>{equipped?.name ?? "비어 있음"}</b><small>{equipped ? "채집량 +" + equipped.bonus : "장비를 장착하세요"}</small></div>;
             })}
           </div>
-          <div className="equipment-summary">
-            <div><span>현재 장착</span><b>{save.toolName}</b><small>채집량 +{save.toolLevel}</small></div>
-            <div><span>보유 장비</span><b>{save.inventory.length}</b><small>개</small></div>
+          <div className="equipment-workbench">
+            <div className="equipment-summary">
+              <div><span>장착 슬롯</span><b>{save.inventory.find((item) => item.id === save.equippedTools[equipmentFilter])?.name ?? "비어 있음"}</b><small>{equipmentFilter === "도끼" ? "목재" : equipmentFilter === "곡괭이" ? "석재" : equipmentFilter === "삽" ? "흙" : equipmentFilter === "낚싯대" ? "물고기" : "전투"} 채집량 증가</small></div>
+              <div><span>보유 장비</span><b>{save.inventory.length}</b><small>개</small></div>
+              <div><span>미장착</span><b>{save.inventory.filter((item) => !Object.values(save.equippedTools).includes(item.id)).length}</b><small>개</small></div>
+            </div>
+            <div className="equipment-category-tabs">
+              {EQUIPMENT_TYPES.map((type) => (
+                <button key={type} className={equipmentFilter === type ? "active" : ""} onClick={() => setEquipmentFilter(type)}>
+                  {type === "도끼" ? "🪓" : type === "곡괭이" ? "⛏️" : type === "삽" ? "🛠️" : type === "칼" ? "⚔️" : "🎣"} {type}
+                </button>
+              ))}
+            </div>
+            <div className="equipment-group">
+              <div className="equipment-group-title">
+                <div><span>{equipmentFilter}</span><b>{equipmentFilter === "도끼" ? "목재" : equipmentFilter === "곡괭이" ? "석재" : equipmentFilter === "삽" ? "흙" : equipmentFilter === "낚싯대" ? "물고기" : "전투"} 생산 보너스</b></div>
+                <small>장착 1개 · 보관 {save.inventory.filter((item) => item.type === equipmentFilter).length}개</small>
+              </div>
+              <div className="equipment-grid grouped">
+                {save.inventory.filter((item) => item.type === equipmentFilter).length === 0 ? (
+                  <div className="empty-inventory large">이 종류의 장비가 없습니다.<br />아래에서 장비를 뽑아보세요.</div>
+                ) : save.inventory.filter((item) => item.type === equipmentFilter).map((item) => {
+                  const isEquipped = save.equippedTools[item.type] === item.id;
+                  return (
+                    <article className={"equipment-card-large " + (isEquipped ? "equipped" : "unequipped")} key={item.id}>
+                      <div className="equipment-icon">{item.type === "도끼" ? "🪓" : item.type === "곡괭이" ? "⛏️" : item.type === "삽" ? "🛠️" : item.type === "칼" ? "⚔️" : "🎣"}</div>
+                      <div className={"equipment-grade grade-" + item.grade}>{item.grade}</div>
+                      <h3>{item.name}</h3>
+                      <div className="equipment-bonus">+{item.bonus} {equipmentFilter === "도끼" ? "목재" : equipmentFilter === "곡괭이" ? "석재" : equipmentFilter === "삽" ? "흙" : equipmentFilter === "낚싯대" ? "물고기" : "전투력"}</div>
+                      <div className="equipment-type">{isEquipped ? "✓ 장착 중" : "미장착"}</div>
+                      <button onClick={() => equipTool(item.id)}>{isEquipped ? "✓ 장착 중" : "장착하기"}</button>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="equipment-gacha">
+              <div><span>🎰 장비 뽑기</span><small>{shopRoll}</small></div>
+              <button onClick={rollTool}>장비 뽑기 · {50 + save.inventory.length * 25}G</button>
+            </div>
           </div>
-          <div className="equipment-grid">
-            {save.inventory.length === 0 ? (
-              <div className="empty-inventory large">아직 보유 장비가 없습니다.<br />영지에서 장비를 뽑아보세요.</div>
-            ) : save.inventory.map((item) => (
-              <article className={`equipment-card-large ${save.equippedToolId === item.id ? "equipped" : ""}`} key={item.id}>
-                <div className="equipment-icon">{item.type === "도끼" ? "🪓" : item.type === "곡괭이" ? "⛏️" : item.type === "삽" ? "🛠️" : item.type === "칼" ? "⚔️" : "🎣"}</div>
-                <div className={`equipment-grade grade-${item.grade}`}>{item.grade}</div>
-                <h3>{item.name}</h3>
-                <div className="equipment-bonus">채집량 +{item.bonus}</div>
-                <div className="equipment-type">{item.type}</div>
-                <button onClick={() => equipTool(item.id)}>{save.equippedToolId === item.id ? "✓ 장착 중" : "장착하기"}</button>
-              </article>
-            ))}
+        </section>
+      )}
+
+      {!inventoryOpen && gatheringActivity && (
+        <section className="gathering-game">
+          <div className="gathering-game-top">
+            <div>
+              <span className="eyebrow">FIELD ACTIVITY · 2.5D</span>
+              <h2>{gatheringActivity === "wood" ? "🌲 벌목장" : gatheringActivity === "stone" ? "⛏️ 광산" : gatheringActivity === "dirt" ? "🟫 토지 작업장" : "🎣 낚시터"}</h2>
+              <p>WASD로 이동하고 자원 가까이에서 E 또는 SPACE로 직접 작업하세요.</p>
+            </div>
+            <button onClick={leaveGatheringActivity}>← 채집 목록</button>
           </div>
+          <div className={"gathering-stage " + gatheringActivity}>
+            <div className="stage-path" />
+            <div className="stage-resource" style={{ left: "72%", top: "40%" }}>
+              {gatheringActivity === "wood" && <><div className="mini-tree-trunk" /><div className="mini-tree-crown">🌲</div></>}
+              {gatheringActivity === "stone" && <div className="mini-rock">🪨</div>}
+              {gatheringActivity === "dirt" && <div className="mini-soil">🟫</div>}
+              {gatheringActivity === "fish" && <div className="mini-pond">🌊</div>}
+              <span className="resource-label">{gatheringActivity === "wood" ? "나무" : gatheringActivity === "stone" ? "광맥" : gatheringActivity === "dirt" ? "흙더미" : "낚시 포인트"}</span>
+            </div>
+            <div className="gather-player" style={{ left: gatherPlayer.x + "%", top: gatherPlayer.y + "%" }}>
+              <div className="player-shadow" />
+              <div className="player-head">🙂</div>
+              <div className="player-body">🧑</div>
+              <div className="player-tool">{resourceToolType(gatheringActivity) === "도끼" ? "🪓" : resourceToolType(gatheringActivity) === "곡괭이" ? "⛏️" : resourceToolType(gatheringActivity) === "삽" ? "🛠️" : "🎣"}</div>
+            </div>
+            <div className="gather-interact-hint">
+              {gatheringActivity === "fish" ? (fishingState === "bite" ? "🎯 입질! 지금 E!" : fishingState === "waiting" ? "🐟 입질 기다리는 중..." : "E로 찌를 던지세요") : "E로 " + (gatheringActivity === "wood" ? "나무를 베세요" : gatheringActivity === "stone" ? "돌을 캐세요" : "흙을 파세요")}
+            </div>
+          </div>
+          <div className="gathering-game-bottom">
+            <span>🧭 WASD / 방향키 이동</span>
+            <span>⚒️ E / SPACE 작업</span>
+            <b>{gatheringActivity === "wood" ? "벌목" : gatheringActivity === "stone" ? "채광" : gatheringActivity === "dirt" ? "토지" : "낚시"} · {save.inventory.find((item) => item.id === save.equippedTools[resourceToolType(gatheringActivity)])?.name}</b>
+          </div>
+          <button className="gather-mobile-action" onClick={interactGathering}>E · 작업하기</button>
         </section>
       )}
 
@@ -712,8 +798,8 @@ function App() {
                       <b>보유 {count}</b>
                       <span>{equipped ? "+" + equipped.bonus + " /회" : "장비 없음"}</span>
                     </div>
-                    <button disabled={!equipped} onClick={() => collectFromGatherTab(type)}>
-                      {equipped ? "⛏️ " + label + " 채집" : "🎒 " + tool + " 장착 필요"}
+                    <button onClick={() => openGatheringActivity(type)}>
+                      {equipped ? "▶ 현장으로 들어가기" : "🎒 " + tool + " 장착 필요"}
                     </button>
                   </article>
                 );
@@ -774,7 +860,7 @@ function App() {
         </section>
       )}
 
-      {!inventoryOpen && (
+      {!inventoryOpen && !gatheringActivity && (
         <nav className="bottom-nav">
           <button className={activeTab === "estate" ? "active" : ""} onClick={() => setActiveTab("estate")}><span>🏰</span>영지</button>
           <button className={activeTab === "gather" ? "active" : ""} onClick={() => setActiveTab("gather")}><span>⛏️</span>채집</button>
@@ -785,10 +871,6 @@ function App() {
 
       <div className="toast">{message}</div>
 
-      <div className="control-hint">
-        <b>🖱 클릭 / 👆 터치</b>
-        <span>나무와 바위를 직접 눌러 채집하세요.</span>
-      </div>
     </main>
   );
 }
