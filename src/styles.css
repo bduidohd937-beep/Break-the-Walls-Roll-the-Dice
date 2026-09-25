@@ -185,6 +185,43 @@ button {
   font-size: 11px;
 }
 
+.tool-panel {
+  right: 18px;
+  top: 92px;
+  padding: 15px;
+}
+
+.tool-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.tool-status b { color: #f0bd5b; }
+.tool-status span { color: #d5dde3; font-size: 11px; }
+
+.roll-result {
+  margin: 8px 0;
+  color: #9faab4;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.roll-button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 11px;
+  background: #9b6de0;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.roll-button:hover { filter: brightness(1.08); }
+
 .shop-panel {
   right: 18px;
   bottom: 76px;
@@ -313,6 +350,13 @@ button {
   .mission-panel p,
   .objective {
     font-size: 10px;
+  }
+
+  .tool-panel {
+    top: 145px;
+    right: 10px;
+    width: 220px;
+    padding: 12px;
   }
 
   .shop-panel {
