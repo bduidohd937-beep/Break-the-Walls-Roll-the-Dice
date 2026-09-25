@@ -220,6 +220,24 @@ function App() {
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
+    let cameraAzimuth = Math.PI / 4;
+    let cameraRadius = 23;
+    const cameraHeight = 18;
+    const cameraTarget = new THREE.Vector3(0, 0, 0);
+    let dragging = false;
+    let moved = false;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+
+    const updateCamera = () => {
+      camera.position.set(
+        Math.cos(cameraAzimuth) * cameraRadius,
+        cameraHeight,
+        Math.sin(cameraAzimuth) * cameraRadius,
+      );
+      camera.lookAt(cameraTarget);
+    };
+
     const findResource = (object: THREE.Object3D | null) => {
       let current = object;
       while (current) {
@@ -229,7 +247,7 @@ function App() {
       return null;
     };
 
-    const onPointerDown = (event: PointerEvent) => {
+    const collectAtPointer = (event: PointerEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -263,7 +281,44 @@ function App() {
       }
     };
 
+    const onPointerDown = (event: PointerEvent) => {
+      dragging = true;
+      moved = false;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging) return;
+
+      const dx = event.clientX - lastPointerX;
+      const dy = event.clientY - lastPointerY;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      if (!moved) return;
+
+      cameraAzimuth -= dx * 0.008;
+      updateCamera();
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+
+      if (!moved) {
+        collectAtPointer(event);
+      }
+
+      renderer.domElement.releasePointerCapture?.(event.pointerId);
+    };
+
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+    renderer.domElement.addEventListener("pointercancel", onPointerUp);
 
     let frame = 0;
     const animate = () => {
@@ -276,6 +331,7 @@ function App() {
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };
+    updateCamera();
     animate();
 
     const onResize = () => {
@@ -298,6 +354,9 @@ function App() {
     return () => {
       cancelAnimationFrame(frame);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
+      renderer.domElement.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("resize", onResize);
       timers.forEach((timer) => window.clearTimeout(timer));
       if (messageTimerRef.current !== null) {
