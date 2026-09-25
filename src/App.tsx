@@ -610,22 +610,6 @@ function App() {
     }
   };
 
-  const catchFish = () => {
-    const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"]);
-    if (!equipped || !fishingMinigameOpen) return;
-    const distanceFromSweetSpot = Math.abs(fishingFishX - 50);
-    if (distanceFromSweetSpot <= 9) {
-      const amount = equipped.bonus;
-      setSave((prev) => ({ ...prev, fish: prev.fish + amount }));
-      setGatherReward("🐟 물고기 +" + amount);
-      showMessage("🎣 낚시 성공! 물고기 +" + amount);
-    } else {
-      setGatherReward("💨 놓쳤다! 다시 시도");
-      showMessage("🐟 물고기를 놓쳤습니다.");
-    }
-    setFishingFishX(50);
-  };
-
   const plantCrop = (index: number, crop: CropType) => {
     const plot = save.farmPlots[index];
     if (!plot || plot.crop) return;
