@@ -141,7 +141,7 @@ function App() {
         x: Math.max(12, Math.min(88, prev.x + (key === "a" || key === "arrowleft" ? -step : key === "d" || key === "arrowright" ? step : 0))),
         y: Math.max(20, Math.min(82, prev.y + (key === "w" || key === "arrowup" ? -step : key === "s" || key === "arrowdown" ? step : 0))),
       }));
-      if (key === "e" || key === " ") setGatherAction((value) => value + 1);
+      if (key === "e" || key === " ") interactGathering();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
