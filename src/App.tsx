@@ -584,16 +584,10 @@ function App() {
     const equipped = saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools[requiredType]);
     if (!equipped) return;
 
-    const distanceFromSweetSpot = Math.abs(gatherTimingX - 50);
-    if (distanceFromSweetSpot > 13) {
-      setGatherReward("💨 빗나감! 중앙에 맞춰보세요.");
-      showMessage("🎯 타이밍을 중앙에 맞춰 E!");
-      return;
-    }
-
     const nextHits = gatherAction + 1;
     setGatherAction(nextHits);
-    setGatherReward("✨ 정확!");
+    setGatherReward(nextHits >= gatherRequiredHits ? "🎉 채집 완료!" : "💥 적중! -" + 1 + " HP");
+
     if (nextHits >= gatherRequiredHits) {
       const amount = equipped.bonus;
       setSave((prev) => gatheringActivity === "wood"
@@ -606,7 +600,7 @@ function App() {
       setGatherReward("🎉 " + reward);
       showMessage("채집 성공! " + reward);
     } else {
-      showMessage((gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 삽질") + " 성공 · " + nextHits + "/" + gatherRequiredHits);
+      showMessage((gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 삽질") + " · " + nextHits + "/" + gatherRequiredHits);
     }
   };
 
@@ -760,39 +754,63 @@ function App() {
       {!inventoryOpen && gatheringActivity && (
         <section className="gathering-game">
           {fishingMinigameOpen ? (
-            <div className="fishing-pixel-game fishing-fullscreen">
-              <div className="pixel-sky">☁️　　　☁️　　　　☁️</div>
-              <div className="pixel-water">
-                <div className="pixel-sun">☀️</div>
-                <div className="fishing-boat">🛶</div>
-                <div className="pixel-fish" style={{ left: fishingFishX + "%" }}>🐟</div>
-                <div className="catch-zone" />
-                <div className="pixel-ripples">〰〰〰〰〰〰〰〰〰〰</div>
+            <div className="gather-2d-screen fishing-2d-screen">
+              <div className="g2d-topbar">
+                <div><span>FISHING DOCK</span><h2>낚시터</h2></div>
+                <button onClick={leaveGatheringActivity}>나가기</button>
               </div>
-              <div className="fishing-pixel-ui">
-                <b>🎣 낚시</b>
-                <span>물고기가 중앙 금색 구간에 들어왔을 때 E를 누르세요.</span>
-                <div className="fishing-timing-bar"><div className="fishing-timing-zone" /><div className="fishing-marker" style={{ left: fishingFishX + "%" }} /></div>
-                <button onClick={catchFish}>🎣 낚아채기</button>
-                <button className="fishing-leave" onClick={leaveGatheringActivity}>← 낚시터 나가기</button>
+              <div className="g2d-world fishing-world">
+                <div className="water-grid" />
+                <div className="dock-planks" />
+                <div className="angler-2d"><div className="angler-head" /><div className="angler-body" /><div className="angler-tool">╲</div></div>
+                <div className="fish-shadow" style={{ left: fishingFishX + "%", top: "58%" }} />
+                <div className="fish-2d" style={{ left: fishingFishX + "%", top: "58%" }}><span className="fish-eye" /></div>
+                <div className="fishing-ripple" style={{ left: fishingFishX + "%", top: "64%" }} />
+                <div className="g2d-speech">물고기가 움직인다!</div>
+              </div>
+              <div className="g2d-action-panel">
+                <div className="g2d-title-row"><div><span>🎣 낚싯대</span><b>잡아당길 타이밍을 노리세요</b></div><strong>+{saveRef.current.inventory.find((item) => item.id === saveRef.current.equippedTools["낚싯대"])?.bonus ?? 0}</strong></div>
+                <div className="fishing-meter-2d"><div className="fishing-target-2d" /><div className="fishing-cursor-2d" style={{ left: fishingFishX + "%" }} /></div>
+                <button className="g2d-main-action fishing-action" onClick={catchFish}>🎣 낚아채기 <small>E / SPACE</small></button>
               </div>
             </div>
           ) : (
-            <section className={"gathering-rework " + gatheringActivity}>
-              <header className="gather-rework-header">
-                <div><span className="eyebrow">FIELD MINIGAME</span><h2>{gatheringActivity === "wood" ? "🪓 벌목" : gatheringActivity === "stone" ? "⛏️ 채광" : "🛠️ 토지 작업"}</h2><p>이동 없이 타이밍에 맞춰 작업하세요.</p></div>
-                <button onClick={leaveGatheringActivity}>← 채집 목록</button>
-              </header>
-              <div className="gather-rework-scene">
-                <div className="rework-backdrop" />
-                <div className="rework-object">{gatheringActivity === "wood" ? "🌲" : gatheringActivity === "stone" ? "🪨" : "🟫"}</div>
-                <div className="rework-character">🧑‍🌾</div>
-                <div className="rework-label">{gatheringActivity === "wood" ? "나무를 찍어 장작을 얻는다" : gatheringActivity === "stone" ? "광맥의 약점을 노려 캔다" : "좋은 흙을 골라낸다"}</div>
+            <section className={"gather-2d-screen " + gatheringActivity}>
+              <div className="g2d-topbar">
+                <div>
+                  <span>RESOURCE FIELD · 2D</span>
+                  <h2>{gatheringActivity === "wood" ? "벌목장" : gatheringActivity === "stone" ? "광산" : "토지 작업장"}</h2>
+                </div>
+                <button onClick={leaveGatheringActivity}>나가기</button>
               </div>
-              <div className="gather-rework-panel">
-                <div className="gather-rework-status"><span>작업 진행</span><b>{gatherAction} / {gatherRequiredHits}</b><strong>{gatherReward ?? "중앙에 들어왔을 때 작업 버튼!"}</strong></div>
-                <div className="gather-timing-bar"><div className="gather-timing-zone" /><div className="gather-timing-marker" style={{ left: gatherTimingX + "%" }} /></div>
-                <button className="gather-hit-button" onClick={interactGathering}>⚒️ 작업하기 · E</button>
+
+              <div className="g2d-world resource-world">
+                <div className="ground-grid" />
+                <div className="world-shadow shadow-node" />
+                <div className="resource-node-2d">
+                  {gatheringActivity === "wood" && <><div className="tree-trunk-2d" /><div className="tree-crown-2d one" /><div className="tree-crown-2d two" /><div className="tree-crown-2d three" /></>}
+                  {gatheringActivity === "stone" && <><div className="rock-2d rock-a" /><div className="rock-2d rock-b" /><div className="ore-2d" /></>}
+                  {gatheringActivity === "dirt" && <><div className="soil-bed-2d" /><div className="soil-lines-2d" /><div className="sprout-2d one" /><div className="sprout-2d two" /><div className="sprout-2d three" /></>}
+                </div>
+                <div className={"worker-2d " + (gatherAction % 2 ? "swing" : "")}>
+                  <div className="worker-shadow" /><div className="worker-head" /><div className="worker-hair" /><div className="worker-body" /><div className="worker-arm" /><div className="worker-tool-2d">{gatheringActivity === "wood" ? "╱" : gatheringActivity === "stone" ? "⛏" : "╱"}</div>
+                </div>
+                <div className="node-hud-2d">
+                  <div><span>{gatheringActivity === "wood" ? "TREE" : gatheringActivity === "stone" ? "ORE VEIN" : "SOIL"}</span><b>{Math.max(0, gatherRequiredHits - gatherAction)} HP</b></div>
+                  <div className="node-hp"><i style={{ width: ((Math.max(0, gatherRequiredHits - gatherAction) / gatherRequiredHits) * 100) + "%" }} /></div>
+                </div>
+                {gatherReward && <div className="g2d-floating-reward">{gatherReward}</div>}
+              </div>
+
+              <div className="g2d-action-panel">
+                <div className="g2d-title-row">
+                  <div><span>{gatheringActivity === "wood" ? "🪓 도끼" : gatheringActivity === "stone" ? "⛏️ 곡괭이" : "🛠️ 삽"}</span><b>{gatheringActivity === "wood" ? "나무를 베어 목재를 얻습니다." : gatheringActivity === "stone" ? "광맥을 부숴 석재를 얻습니다." : "흙을 파서 토지를 정리합니다."}</b></div>
+                  <strong>{gatherAction} / {gatherRequiredHits}</strong>
+                </div>
+                <div className="g2d-progress"><i style={{ width: (gatherAction / gatherRequiredHits) * 100 + "%" }} /></div>
+                <button className="g2d-main-action" onClick={interactGathering}>
+                  {gatheringActivity === "wood" ? "🪓 도끼질" : gatheringActivity === "stone" ? "⛏️ 채굴" : "🛠️ 삽질"} <small>E / SPACE</small>
+                </button>
               </div>
             </section>
           )}
