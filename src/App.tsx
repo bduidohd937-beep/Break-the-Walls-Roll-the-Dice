@@ -221,8 +221,8 @@ function App() {
     const pointer = new THREE.Vector2();
 
     let cameraAzimuth = Math.PI / 4;
+    let cameraElevation = 0.78;
     let cameraRadius = 23;
-    const cameraHeight = 18;
     const cameraTarget = new THREE.Vector3(0, 0, 0);
     let dragging = false;
     let moved = false;
@@ -230,10 +230,11 @@ function App() {
     let lastPointerY = 0;
 
     const updateCamera = () => {
+      const horizontalRadius = cameraRadius * Math.cos(cameraElevation);
       camera.position.set(
-        Math.cos(cameraAzimuth) * cameraRadius,
-        cameraHeight,
-        Math.sin(cameraAzimuth) * cameraRadius,
+        Math.cos(cameraAzimuth) * horizontalRadius,
+        cameraRadius * Math.sin(cameraElevation),
+        Math.sin(cameraAzimuth) * horizontalRadius,
       );
       camera.lookAt(cameraTarget);
     };
@@ -301,6 +302,7 @@ function App() {
       if (!moved) return;
 
       cameraAzimuth -= dx * 0.008;
+      cameraElevation = THREE.MathUtils.clamp(cameraElevation + dy * 0.006, 0.32, 1.28);
       updateCamera();
     };
 
