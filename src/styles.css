@@ -40,6 +40,11 @@ button {
   inset: 0;
   z-index: 0;
   touch-action: none;
+  cursor: grab;
+}
+
+.world:active {
+  cursor: grabbing;
 }
 
 .world canvas {
