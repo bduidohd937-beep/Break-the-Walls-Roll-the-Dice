@@ -1,18 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
+type Equipment = {
+  id: string;
+  name: string;
+  type: "도끼" | "곡괭이" | "삽" | "칼" | "낚싯대";
+  grade: "일반" | "고급" | "희귀" | "영웅" | "전설" | "신화";
+  bonus: number;
+};
+
 type SaveData = {
   gold: number;
   wood: number;
   stone: number;
   toolLevel: number;
   toolName: string;
+  inventory: Equipment[];
+  equippedToolId: string | null;
 };
 
 type ResourceType = "wood" | "stone";
 
 const SAVE_KEY = "break-the-walls-roll-the-dice-v1";
-const STARTING_SAVE: SaveData = { gold: 0, wood: 0, stone: 0, toolLevel: 1, toolName: "맨손" };
+const STARTING_SAVE: SaveData = {
+  gold: 0, wood: 0, stone: 0, toolLevel: 1, toolName: "맨손", inventory: [], equippedToolId: null,
+};
+
+const EQUIPMENT_TYPES: Equipment["type"][] = ["도끼", "곡괭이", "삽", "칼", "낚싯대"];
+const EQUIPMENT_GRADES: { grade: Equipment["grade"]; chance: number; bonus: number }[] = [
+  { grade: "일반", chance: 0.5, bonus: 1 }, { grade: "고급", chance: 0.25, bonus: 2 },
+  { grade: "희귀", chance: 0.14, bonus: 4 }, { grade: "영웅", chance: 0.07, bonus: 7 },
+  { grade: "전설", chance: 0.035, bonus: 12 }, { grade: "신화", chance: 0.005, bonus: 20 },
+];
+
+function makeEquipment(): Equipment {
+  const roll = Math.random(); let cursor = 0;
+  const picked = EQUIPMENT_GRADES.find((entry) => { cursor += entry.chance; return roll < cursor; }) ?? EQUIPMENT_GRADES[0];
+  const type = EQUIPMENT_TYPES[Math.floor(Math.random() * EQUIPMENT_TYPES.length)];
+  return { id: crypto.randomUUID(), name: `${picked.grade} ${type}`, type, grade: picked.grade, bonus: picked.bonus };
+}
 
 function loadSave(): SaveData {
   try {
@@ -25,6 +51,8 @@ function loadSave(): SaveData {
       stone: Number(parsed.stone) || 0,
       toolLevel: Math.max(1, Number(parsed.toolLevel) || 1),
       toolName: typeof parsed.toolName === "string" ? parsed.toolName : "맨손",
+      inventory: Array.isArray(parsed.inventory) ? parsed.inventory as Equipment[] : [],
+      equippedToolId: typeof parsed.equippedToolId === "string" ? parsed.equippedToolId : null,
     };
   } catch {
     return STARTING_SAVE;
@@ -36,6 +64,7 @@ function App() {
   const [save, setSave] = useState<SaveData>(() => loadSave());
   const [message, setMessage] = useState("나무와 바위를 클릭해서 첫 자본을 만들어보세요.");
   const [shopRoll, setShopRoll] = useState("장비를 뽑아보세요.");
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const messageTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -387,29 +416,22 @@ function App() {
   }, []);
 
   const rollTool = () => {
-    const cost = 50 + (save.toolLevel - 1) * 75;
+    const cost = 50 + save.inventory.length * 25;
     if (save.gold < cost) {
       showMessage(`골드가 부족합니다. 필요 골드: ${cost}G`);
       return;
     }
+    const equipment = makeEquipment();
+    setSave((prev) => ({ ...prev, gold: prev.gold - cost, inventory: [...prev.inventory, equipment] }));
+    setShopRoll(`🎁 ${equipment.name} 획득! 장비 탭에서 장착하세요.`);
+    showMessage(`🎁 ${equipment.name} 획득! 채집 보너스 +${equipment.bonus}`);
+  };
 
-    const roll = Math.random();
-    let bonus = 1;
-    let name = "낡은 도끼";
-    if (roll < 0.55) { bonus = 1; name = "낡은 도끼"; }
-    else if (roll < 0.82) { bonus = 2; name = "강철 도끼"; }
-    else if (roll < 0.96) { bonus = 3; name = "금빛 도끼"; }
-    else { bonus = 5; name = "전설의 도끼"; }
-
-    const nextLevel = save.toolLevel + bonus;
-    setSave((prev) => ({
-      ...prev,
-      gold: prev.gold - cost,
-      toolLevel: nextLevel,
-      toolName: name,
-    }));
-    setShopRoll(`${name} 획득! 채집량 +${bonus}`);
-    showMessage(`🎁 ${name} 획득! 이제 채집량이 +${nextLevel}`);
+  const equipTool = (equipmentId: string) => {
+    const equipment = save.inventory.find((item) => item.id === equipmentId);
+    if (!equipment) return;
+    setSave((prev) => ({ ...prev, toolLevel: equipment.bonus, toolName: equipment.name, equippedToolId: equipment.id }));
+    showMessage(`⚒️ ${equipment.name} 장착! 채집량 +${equipment.bonus}`);
   };
 
   const sellAll = () => {
@@ -481,8 +503,20 @@ function App() {
           <b>{save.toolName}</b>
           <span>채집량 +{save.toolLevel}</span>
         </div>
+        <button className="inventory-button" onClick={() => setInventoryOpen((prev) => !prev)}>🎒 장비 탭 {save.inventory.length > 0 ? `(${save.inventory.length})` : ""}</button>
         <p className="roll-result">{shopRoll}</p>
-        <button className="roll-button" onClick={rollTool}>장비 뽑기 · {50 + (save.toolLevel - 1) * 75}G</button>
+        <button className="roll-button" onClick={rollTool}>장비 뽑기 · {50 + save.inventory.length * 25}G</button>
+        {inventoryOpen && (
+          <div className="inventory-panel">
+            <div className="inventory-header"><b>보유 장비</b><span>장착한 장비만 채집량에 적용</span></div>
+            {save.inventory.length === 0 ? <div className="empty-inventory">아직 보유 장비가 없습니다.</div> : save.inventory.map((item) => (
+              <div className={`equipment-card ${save.equippedToolId === item.id ? "equipped" : ""}`} key={item.id}>
+                <div><strong>{item.name}</strong><small>{item.type} · 채집량 +{item.bonus}</small></div>
+                <button onClick={() => equipTool(item.id)}>{save.equippedToolId === item.id ? "장착 중" : "장착"}</button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="side-panel shop-panel">
