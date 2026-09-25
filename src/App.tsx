@@ -15,6 +15,9 @@ type SaveData = {
   stone: number;
   dirt: number;
   fish: number;
+  food: number;
+  farmSeeds: Record<CropType, number>;
+  farmPlots: FarmPlot[];
   toolLevel: number;
   toolName: string;
   inventory: Equipment[];
@@ -23,11 +26,30 @@ type SaveData = {
 };
 
 type ResourceType = "wood" | "stone" | "dirt" | "fish";
+type CropType = "밀" | "당근" | "감자";
+type FarmPlot = { crop: CropType | null; plantedAt: number | null; readyAt: number | null };
+const CROP_CONFIG: Record<CropType, { icon: string; time: number; yield: number }> = {
+  밀: { icon: "🌾", time: 12000, yield: 3 },
+  당근: { icon: "🥕", time: 18000, yield: 5 },
+  감자: { icon: "🥔", time: 24000, yield: 7 },
+};
 function resourceToolType(type: ResourceType): Equipment["type"] { if (type === "wood") return "도끼"; if (type === "stone") return "곡괭이"; if (type === "dirt") return "삽"; return "낚싯대"; }
 
 const SAVE_KEY = "break-the-walls-roll-the-dice-v1";
 const STARTING_SAVE: SaveData = {
-  gold: 0, wood: 0, stone: 0, dirt: 0, fish: 0, toolLevel: 1, toolName: "맨손", inventory: [], equippedToolId: null, equippedTools: { 도끼: null, 곡괭이: null, 삽: null, 칼: null, 낚싯대: null },
+  gold: 0,
+  wood: 0,
+  stone: 0,
+  dirt: 0,
+  fish: 0,
+  food: 0,
+  farmSeeds: { 밀: 3, 당근: 3, 감자: 3 },
+  farmPlots: Array.from({ length: 6 }, () => ({ crop: null, plantedAt: null, readyAt: null })),
+  toolLevel: 1,
+  toolName: "맨손",
+  inventory: [],
+  equippedToolId: null,
+  equippedTools: { 도끼: null, 곡괭이: null, 삽: null, 칼: null, 낚싯대: null },
 };
 
 const EQUIPMENT_TYPES: Equipment["type"][] = ["도끼", "곡괭이", "삽", "칼", "낚싯대"];
@@ -55,6 +77,19 @@ function loadSave(): SaveData {
       stone: Number(parsed.stone) || 0,
       dirt: Number((parsed as Partial<SaveData>).dirt) || 0,
       fish: Number((parsed as Partial<SaveData>).fish) || 0,
+      food: Number((parsed as Partial<SaveData>).food) || 0,
+      farmSeeds: parsed.farmSeeds && typeof parsed.farmSeeds === "object" ? {
+        밀: Number(parsed.farmSeeds.밀) || 0,
+        당근: Number(parsed.farmSeeds.당근) || 0,
+        감자: Number(parsed.farmSeeds.감자) || 0,
+      } : { ...STARTING_SAVE.farmSeeds },
+      farmPlots: Array.isArray(parsed.farmPlots) && parsed.farmPlots.length === 6
+        ? parsed.farmPlots.map((plot) => ({
+            crop: plot?.crop === "밀" || plot?.crop === "당근" || plot?.crop === "감자" ? plot.crop : null,
+            plantedAt: typeof plot?.plantedAt === "number" ? plot.plantedAt : null,
+            readyAt: typeof plot?.readyAt === "number" ? plot.readyAt : null,
+          }))
+        : STARTING_SAVE.farmPlots,
       toolLevel: Math.max(1, Number(parsed.toolLevel) || 1),
       toolName: typeof parsed.toolName === "string" ? parsed.toolName : "맨손",
       inventory: Array.isArray(parsed.inventory) ? parsed.inventory as Equipment[] : [],
@@ -72,6 +107,8 @@ function App() {
   const [message, setMessage] = useState("나무와 바위를 클릭해서 첫 자본을 만들어보세요.");
   const [shopRoll, setShopRoll] = useState("장비를 뽑아보세요.");
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"estate" | "gather" | "farm">("estate");
+  const [farmTick, setFarmTick] = useState(Date.now());
   const saveRef = useRef(save);
   useEffect(() => { saveRef.current = save; }, [save]);
   const messageTimerRef = useRef<number | null>(null);
@@ -79,6 +116,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem(SAVE_KEY, JSON.stringify(save));
   }, [save]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setFarmTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const showMessage = (text: string) => {
     setMessage(text);
@@ -460,8 +502,59 @@ function App() {
     showMessage(`⚒️ ${equipment.name} 장착! 채집량 +${equipment.bonus}`);
   };
 
+  const collectFromGatherTab = (type: ResourceType) => {
+    const requiredType = resourceToolType(type);
+    const currentSave = saveRef.current;
+    const equipped = currentSave.inventory.find((item) => item.id === currentSave.equippedTools[requiredType]);
+    if (!equipped) {
+      showMessage("⚠️ " + requiredType + "가 필요합니다.");
+      return;
+    }
+    const amount = equipped.bonus;
+    setSave((prev) => type === "wood"
+      ? { ...prev, wood: prev.wood + amount }
+      : type === "stone"
+        ? { ...prev, stone: prev.stone + amount }
+        : type === "dirt"
+          ? { ...prev, dirt: prev.dirt + amount }
+          : { ...prev, fish: prev.fish + amount });
+    const label = type === "wood" ? "목재" : type === "stone" ? "석재" : type === "dirt" ? "흙" : "물고기";
+    showMessage("⛏️ " + label + " +" + amount);
+  };
+
+  const plantCrop = (index: number, crop: CropType) => {
+    const plot = save.farmPlots[index];
+    if (!plot || plot.crop) return;
+    if (save.farmSeeds[crop] <= 0) {
+      showMessage("🌱 " + crop + " 씨앗이 없습니다.");
+      return;
+    }
+    const now = Date.now();
+    const readyAt = now + CROP_CONFIG[crop].time;
+    setSave((prev) => ({
+      ...prev,
+      farmSeeds: { ...prev.farmSeeds, [crop]: prev.farmSeeds[crop] - 1 },
+      farmPlots: prev.farmPlots.map((item, i) => i === index ? { crop, plantedAt: now, readyAt } : item),
+    }));
+    showMessage("🌱 " + crop + "를 심었습니다.");
+  };
+
+  const harvestCrop = (index: number) => {
+    const plot = save.farmPlots[index];
+    if (!plot.crop || !plot.readyAt || farmTick < plot.readyAt) return;
+    const crop = plot.crop;
+    const config = CROP_CONFIG[crop];
+    setSave((prev) => ({
+      ...prev,
+      food: prev.food + config.yield,
+      farmSeeds: { ...prev.farmSeeds, [crop]: prev.farmSeeds[crop] + 1 },
+      farmPlots: prev.farmPlots.map((item, i) => i === index ? { crop: null, plantedAt: null, readyAt: null } : item),
+    }));
+    showMessage("🌾 농산물 +" + config.yield + " · 씨앗 1개를 회수했습니다.");
+  };
+
   const sellAll = () => {
-    const revenue = save.wood * 5 + save.stone * 8 + save.dirt * 3 + save.fish * 12;
+    const revenue = save.wood * 5 + save.stone * 8 + save.dirt * 3 + save.fish * 12 + save.food * 10;
     if (revenue <= 0) {
       showMessage("팔 자원이 없습니다.");
       return;
@@ -474,6 +567,7 @@ function App() {
       stone: 0,
       dirt: 0,
       fish: 0,
+      food: 0,
     }));
     showMessage(`💰 자원을 팔아 골드 +${revenue}`);
   };
@@ -585,6 +679,108 @@ function App() {
             ))}
           </div>
         </section>
+      )}
+
+      {!inventoryOpen && activeTab === "gather" && (
+        <section className="mode-screen gather-screen">
+          <div className="mode-screen-inner">
+            <div className="mode-heading">
+              <div>
+                <div className="eyebrow">GATHERING · RESOURCE ZONE</div>
+                <h2>⛏️ 채집</h2>
+                <p>채집 장소를 한곳에 모아 필요한 장비와 생산량을 확인하세요.</p>
+              </div>
+              <div className="mode-stat">장비 보너스는 실제 채집량에 적용됩니다.</div>
+            </div>
+            <div className="gather-grid">
+              {([
+                ["wood", "🌲", "벌목장", "목재", "도끼", save.wood, "5G"],
+                ["stone", "🪨", "광산", "석재", "곡괭이", save.stone, "8G"],
+                ["dirt", "🟫", "토지", "흙", "삽", save.dirt, "3G"],
+                ["fish", "🐟", "낚시터", "물고기", "낚싯대", save.fish, "12G"],
+              ] as [ResourceType, string, string, string, Equipment["type"], number, string][]).map(([type, icon, place, label, tool, count, price]) => {
+                const equipped = save.inventory.find((item) => item.id === save.equippedTools[tool]);
+                return (
+                  <article className="gather-card" key={type}>
+                    <div className="gather-art">{icon}</div>
+                    <div className="gather-card-copy">
+                      <span>{place}</span>
+                      <h3>{label}</h3>
+                      <small>{tool} 필요 · 판매 {price}</small>
+                    </div>
+                    <div className="gather-card-bottom">
+                      <b>보유 {count}</b>
+                      <span>{equipped ? "+" + equipped.bonus + " /회" : "장비 없음"}</span>
+                    </div>
+                    <button disabled={!equipped} onClick={() => collectFromGatherTab(type)}>
+                      {equipped ? "⛏️ " + label + " 채집" : "🎒 " + tool + " 장착 필요"}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!inventoryOpen && activeTab === "farm" && (
+        <section className="mode-screen farm-screen">
+          <div className="mode-screen-inner">
+            <div className="mode-heading">
+              <div>
+                <div className="eyebrow">FARM · GROW & HARVEST</div>
+                <h2>🌾 농장</h2>
+                <p>씨앗을 심고 기다렸다가 수확하세요. 나중에는 농부와 자동화 시설로 확장합니다.</p>
+              </div>
+              <div className="farm-seeds">
+                <span>🌾 {save.farmSeeds.밀}</span>
+                <span>🥕 {save.farmSeeds.당근}</span>
+                <span>🥔 {save.farmSeeds.감자}</span>
+                <b>창고 농산물 {save.food}</b>
+              </div>
+            </div>
+            <div className="farm-grid">
+              {save.farmPlots.map((plot, index) => {
+                const remaining = plot.readyAt ? Math.max(0, plot.readyAt - farmTick) : 0;
+                const ready = Boolean(plot.crop && remaining <= 0);
+                return (
+                  <article className={"farm-plot " + (plot.crop ? "planted" : "empty")} key={index}>
+                    <div className="plot-number">밭 {index + 1}</div>
+                    <div className="plot-art">{plot.crop ? CROP_CONFIG[plot.crop].icon : "🟫"}</div>
+                    {plot.crop ? (
+                      <>
+                        <h3>{plot.crop}</h3>
+                        <p>{ready ? "수확 가능 · +" + CROP_CONFIG[plot.crop].yield + " 농산물" : Math.ceil(remaining / 1000) + "초 후 수확"}</p>
+                        <button disabled={!ready} onClick={() => harvestCrop(index)}>{ready ? "🌾 수확하기" : "성장 중..."}</button>
+                      </>
+                    ) : (
+                      <>
+                        <h3>빈 밭</h3>
+                        <p>씨앗을 선택해서 심으세요.</p>
+                        <div className="seed-actions">
+                          {(Object.keys(CROP_CONFIG) as CropType[]).map((crop) => (
+                            <button key={crop} disabled={save.farmSeeds[crop] <= 0} onClick={() => plantCrop(index, crop)}>
+                              {CROP_CONFIG[crop].icon} {crop}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!inventoryOpen && (
+        <nav className="bottom-nav">
+          <button className={activeTab === "estate" ? "active" : ""} onClick={() => setActiveTab("estate")}><span>🏰</span>영지</button>
+          <button className={activeTab === "gather" ? "active" : ""} onClick={() => setActiveTab("gather")}><span>⛏️</span>채집</button>
+          <button className={activeTab === "farm" ? "active" : ""} onClick={() => setActiveTab("farm")}><span>🌾</span>농장</button>
+          <button onClick={() => setInventoryOpen(true)}><span>🎒</span>장비</button>
+        </nav>
       )}
 
       <div className="toast">{message}</div>
