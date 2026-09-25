@@ -5,12 +5,14 @@ type SaveData = {
   gold: number;
   wood: number;
   stone: number;
+  toolLevel: number;
+  toolName: string;
 };
 
 type ResourceType = "wood" | "stone";
 
 const SAVE_KEY = "break-the-walls-roll-the-dice-v1";
-const STARTING_SAVE: SaveData = { gold: 0, wood: 0, stone: 0 };
+const STARTING_SAVE: SaveData = { gold: 0, wood: 0, stone: 0, toolLevel: 1, toolName: "맨손" };
 
 function loadSave(): SaveData {
   try {
@@ -21,6 +23,8 @@ function loadSave(): SaveData {
       gold: Number(parsed.gold) || 0,
       wood: Number(parsed.wood) || 0,
       stone: Number(parsed.stone) || 0,
+      toolLevel: Math.max(1, Number(parsed.toolLevel) || 1),
+      toolName: typeof parsed.toolName === "string" ? parsed.toolName : "맨손",
     };
   } catch {
     return STARTING_SAVE;
@@ -31,6 +35,7 @@ function App() {
   const mountRef = useRef<HTMLDivElement>(null);
   const [save, setSave] = useState<SaveData>(() => loadSave());
   const [message, setMessage] = useState("나무와 바위를 클릭해서 첫 자본을 만들어보세요.");
+  const [shopRoll, setShopRoll] = useState("장비를 뽑아보세요.");
   const messageTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -266,11 +271,11 @@ function App() {
 
         setSave((prev) =>
           type === "wood"
-            ? { ...prev, wood: prev.wood + 1 }
-            : { ...prev, stone: prev.stone + 1 },
+            ? { ...prev, wood: prev.wood + prev.toolLevel }
+            : { ...prev, stone: prev.stone + prev.toolLevel },
         );
 
-        showMessage(type === "wood" ? "🌲 목재 +1" : "🪨 석재 +1");
+        showMessage(type === "wood" ? `🌲 목재 +${save.toolLevel}` : `🪨 석재 +${save.toolLevel}`);
 
         const timer = window.setTimeout(() => {
           resource.visible = true;
@@ -381,6 +386,32 @@ function App() {
     };
   }, []);
 
+  const rollTool = () => {
+    const cost = 50 + (save.toolLevel - 1) * 75;
+    if (save.gold < cost) {
+      showMessage(`골드가 부족합니다. 필요 골드: ${cost}G`);
+      return;
+    }
+
+    const roll = Math.random();
+    let bonus = 1;
+    let name = "낡은 도끼";
+    if (roll < 0.55) { bonus = 1; name = "낡은 도끼"; }
+    else if (roll < 0.82) { bonus = 2; name = "강철 도끼"; }
+    else if (roll < 0.96) { bonus = 3; name = "금빛 도끼"; }
+    else { bonus = 5; name = "전설의 도끼"; }
+
+    const nextLevel = save.toolLevel + bonus;
+    setSave((prev) => ({
+      ...prev,
+      gold: prev.gold - cost,
+      toolLevel: nextLevel,
+      toolName: name,
+    }));
+    setShopRoll(`${name} 획득! 채집량 +${bonus}`);
+    showMessage(`🎁 ${name} 획득! 이제 채집량이 +${nextLevel}`);
+  };
+
   const sellAll = () => {
     const revenue = save.wood * 5 + save.stone * 8;
     if (revenue <= 0) {
@@ -439,6 +470,19 @@ function App() {
           <span>🛒 상점</span>
           <b>목재 5G · 석재 8G</b>
         </div>
+      </section>
+
+      <section className="side-panel tool-panel">
+        <div className="shop-title">
+          <span>🎰 장비 뽑기</span>
+          <small>채집 강화</small>
+        </div>
+        <div className="tool-status">
+          <b>{save.toolName}</b>
+          <span>채집량 +{save.toolLevel}</span>
+        </div>
+        <p className="roll-result">{shopRoll}</p>
+        <button className="roll-button" onClick={rollTool}>장비 뽑기 · {50 + (save.toolLevel - 1) * 75}G</button>
       </section>
 
       <section className="side-panel shop-panel">
