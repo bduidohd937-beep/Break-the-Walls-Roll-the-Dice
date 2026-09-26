@@ -12,6 +12,9 @@ export function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit
     hitFlash: 0,
     attackFlash: 0,
     knockbackCount: 0,
+    knockbackTimer: 0,
+    knockbackFromX: x,
+    knockbackTargetX: x,
     alive: true,
   };
 }
