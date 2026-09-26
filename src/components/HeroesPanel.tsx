@@ -8,7 +8,7 @@ type SoulBonus={hp:number;atk:number;speed:number};
 type Props={
  heroes:UnitDef[]; ownedHeroes:string[]; deckIds:string[]; deckSlotCount:number;
  heroMode:"formation"|"upgrade"; setHeroMode:(v:"formation"|"upgrade")=>void;
- formationPage:number; setFormationPage:(v:number)=>void; dragHeroId:string|null;
+ formationPage:0|1; setFormationPage:(v:0|1)=>void; dragHeroId:string|null;
  setDragHeroId:(v:string|null)=>void; touchY:{current:number|null};
  setDeckSlot:(index:number,id:string)=>void; removeDeckSlot:(index:number)=>void;
  selectedHeroId:string; setSelectedHeroId:(id:string)=>void; kingdomGold:number;soulShards:number;
