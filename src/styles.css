@@ -503,3 +503,24 @@ button { font: inherit; }
   .gather-grid{grid-template-columns:1fr}
   .resource-storage{gap:8px;flex-wrap:wrap}
 }
+
+
+/* Resource combat */
+.resource-battle{overflow:hidden}
+.resource-arena{position:relative;height:150px;margin:8px 0 6px;border:1px solid #294151;background:linear-gradient(#163148 0 58%,#263521 58% 100%);overflow:hidden}
+.resource-target{position:absolute;right:22%;bottom:19px;width:92px;height:105px;border:0;background:transparent;cursor:pointer;font-size:66px;transform-origin:50% 100%}
+.resource-object{display:block;filter:drop-shadow(0 7px 0 rgba(0,0,0,.25))}
+.resource-impact{position:absolute;right:-8px;top:25px;font-size:23px;opacity:0;pointer-events:none}
+.resource-hit .resource-target{animation:resourceShake .14s steps(2)}
+.resource-hit .resource-impact{animation:resourceBurst .28s ease-out}
+.resource-hp{height:10px;border:2px solid #081016;background:#03080b;overflow:hidden}
+.resource-hp span{display:block;height:100%;background:linear-gradient(90deg,#d9a53a,#f2d46f);transition:width .1s linear}
+.resource-hp-label{margin:4px 0 8px;color:#8ba6b5;font-size:8px;font-weight:800}
+.worker-fighter{position:absolute;left:18%;bottom:16px;display:flex;flex-direction:column;align-items:center;z-index:2;animation:workerApproach 1.5s ease-in-out infinite}
+.worker-fighter>span{font-size:42px;filter:drop-shadow(0 5px 0 rgba(0,0,0,.25))}
+.worker-fighter small{max-width:85px;color:#eaf7ff;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.worker-fighter i{position:absolute;right:-21px;top:20px;font-size:24px;font-style:normal;transform-origin:10% 80%;animation:workerSwing 1.5s ease-in-out infinite}
+@keyframes resourceShake{0%{transform:translateX(0) rotate(0)}33%{transform:translateX(5px) rotate(3deg)}66%{transform:translateX(-4px) rotate(-2deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes resourceBurst{0%{opacity:1;transform:scale(.5) translate(0,0)}100%{opacity:0;transform:scale(1.5) translate(16px,-16px)}}
+@keyframes workerApproach{0%,25%,100%{transform:translateX(0)}45%,70%{transform:translateX(34px)}}
+@keyframes workerSwing{0%,42%,100%{transform:rotate(-45deg)}55%{transform:rotate(42deg)}65%{transform:rotate(-18deg)}}
