@@ -12,12 +12,13 @@ type Ref<T> = MutableRefObject<T>;
 type DamagePopup = { id:number; x:number; value:number; critical:boolean };
 type DeathEffect = { id:number; x:number; team:"hero"|"enemy"; life:number };
 type BattleState = "stageSelect"|"playing"|"victory"|"defeat";
+export type BattleReward = { gold: number; gems: number; firstClear: boolean };
 type BattleLoopContext = {
   battleState: BattleState; gameSpeed:number; battleGoldMax:number; goldPerSecond:number; clearedStages:number[];
   setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<DeathEffect[]>; setBattleGold:Setter<number>;
   setDeployCooldowns:Setter<Record<string,number>>; setNotice:Setter<string>; setEnemyCastleHp:Setter<number>; setCastleHp:Setter<number>;
   setHeroes:Setter<Unit[]>; setEnemies:Setter<Unit[]>; setWaveIndex:Setter<number>; setUnlockedStage:Setter<number>;
-  setClearedStages:Setter<number[]>; setGems:Setter<number>; setKingdomGold:Setter<number>; setBattleState:Setter<BattleState>;
+  setClearedStages:Setter<number[]>; setGems:Setter<number>; setKingdomGold:Setter<number>; setBattleState:Setter<BattleState>; setBattleReward:Setter<BattleReward|null>;
   goldRef:Ref<number>; spawnTimerRef:Ref<number>; heroesRef:Ref<Unit[]>; enemiesRef:Ref<Unit[]>; stageRef:Ref<number>; waveRef:Ref<number>;
   spawnRef:Ref<number>; uidRef:Ref<number>; bossSpawnAnnouncedRef:Ref<boolean>; bossSummonTimerRef:Ref<number>;
   bossEnrageTriggeredRef:Ref<boolean>; bossFieldTickRef:Ref<number>; bossChargeRef:Ref<number>; bossPhaseRef:Ref<number>;
@@ -25,7 +26,7 @@ type BattleLoopContext = {
 };
 
 export function useBattleLoop(ctx: BattleLoopContext) {
-  const { battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState } = ctx;
+  const { battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward } = ctx;
   useEffect(() => {
     if (battleState !== "playing") return;
 
@@ -385,11 +386,13 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const clearedStage = stageRef.current + 1;
         setUnlockedStage((current) => Math.max(current, Math.min(STAGES.length, clearedStage + 1)));
         const firstClear = !clearedStages.includes(clearedStage);
+        const reward = { gold: firstClear ? stage.clearReward : stage.repeatReward, gems: firstClear ? stage.firstClearGems : 0, firstClear };
         if (firstClear) {
           setClearedStages((current) => current.includes(clearedStage) ? current : [...current, clearedStage].sort((a, b) => a - b));
           setGems((currentGems) => currentGems + stage.firstClearGems);
         }
-        setKingdomGold((gold) => gold + (firstClear ? stage.clearReward : stage.repeatReward));
+        setKingdomGold((gold) => gold + reward.gold);
+        setBattleReward(reward);
         setBattleState("victory");
       } else if (castleRef.current <= 0) {
         setCastleHp(0);

@@ -22,7 +22,8 @@ import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
 import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
-import { useBattleLoop } from "./game/controllers/useBattleLoop";
+import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
+import { savedClears, savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -34,28 +35,16 @@ function App() {
     const saved = loadNumber(STORAGE_KEYS.unlockedStage, 1);
     return DEV_MODE ? STAGES.length : clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
-  const [kingdomGold, setKingdomGold] = useState(() => loadNumber(STORAGE_KEYS.kingdomGold, DEV_MODE ? 99999999 : 0));
+  const [kingdomGold, setKingdomGold] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.kingdomGold, DEV_MODE ? 99999999 : 0)));
   const [gems, setGems] = useState(() => {
-    return loadNumber(STORAGE_KEYS.gems, DEV_MODE ? 99999999 : INITIAL_GEMS);
+    return Math.max(0, loadNumber(STORAGE_KEYS.gems, DEV_MODE ? 99999999 : INITIAL_GEMS));
   });
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
     const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {});
-    return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 10])) : saved && typeof saved === "object" ? saved : {};
+    return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 10])) : savedCounts(saved, 10);
   });
-  const [clearedStages, setClearedStages] = useState<number[]>(() => {
-    try {
-      const saved = loadJson<unknown[]>(STORAGE_KEYS.clearedStages, []);
-      return Array.isArray(saved) ? saved.filter((value): value is number => typeof value === "number" && Number.isInteger(value)) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [claimedGoals, setClaimedGoals] = useState<string[]>(() => {
-    try {
-      const saved = loadJson<unknown[]>(STORAGE_KEYS.claimedGoals, []);
-      return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : [];
-    } catch { return []; }
-  });
+  const [clearedStages, setClearedStages] = useState<number[]>(() => savedClears(loadJson(STORAGE_KEYS.clearedStages, [])));
+  const [claimedGoals, setClaimedGoals] = useState<string[]>(() => savedIds(loadJson(STORAGE_KEYS.claimedGoals, []), new Set(["first-clear", "gather-start", "kingdom-2", "hero-roster", "hero-growth", "facility-growth", "stage-10", "morgar"])));
   useEffect(() => { saveNumber(STORAGE_KEYS.unlockedStage, unlockedStage); }, [unlockedStage]);
   useEffect(() => { saveNumber(STORAGE_KEYS.kingdomGold, kingdomGold); }, [kingdomGold]);
   useEffect(() => { saveNumber(STORAGE_KEYS.gems, gems); }, [gems]);
@@ -73,47 +62,43 @@ function App() {
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
+  const [battleReward, setBattleReward] = useState<BattleReward | null>(null);
   const [deckIds, setDeckIds] = useState<string[]>(() => {
-    try {
-      const saved = loadJson<unknown[]>(STORAGE_KEYS.deckIds, []);
-      const initial = Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
-      return initial;
-    } catch { return DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5); }
+    const saved = savedIds(loadJson(STORAGE_KEYS.deckIds, []), undefined, 10);
+    return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
   });
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
-  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1)));
+  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
     const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {});
     const initial = DEV_MODE ? DEV_FACILITY_LEVEL : 1;
-    return { lumber: Math.max(1, Number(saved?.lumber) || initial), quarry: Math.max(1, Number(saved?.quarry) || initial), vault: Math.max(1, Number(saved?.vault) || initial), training: Math.max(1, Number(saved?.training) || initial) };
+    return { lumber: Math.max(1, Math.floor(savedNonnegative(saved?.lumber, initial))), quarry: Math.max(1, Math.floor(savedNonnegative(saved?.quarry, initial))), vault: Math.max(1, Math.floor(savedNonnegative(saved?.vault, initial))), training: Math.max(1, Math.floor(savedNonnegative(saved?.training, initial))) };
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
-    try {
-      const saved = loadJson<unknown[]>(STORAGE_KEYS.ownedHeroes, []);
-      return DEV_MODE ? DECK_IDS : Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
-    } catch { return DEV_MODE ? DECK_IDS : DECK_IDS.slice(0, 5); }
+    const saved = savedIds(loadJson(STORAGE_KEYS.ownedHeroes, []));
+    return DEV_MODE ? DECK_IDS : saved.length ? saved : DECK_IDS.slice(0, 5);
   });
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: savedNonnegative(saved?.wood), stone: savedNonnegative(saved?.stone) }; } catch { return { wood: 0, stone: 0 }; }
   });
   const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
-    try { const saved = loadJson<Record<string, string>>(STORAGE_KEYS.workers, {}); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    try { const saved = loadJson<Record<string, string>>(STORAGE_KEYS.workers, {}); return { wood: typeof saved?.wood === "string" && ownedHeroes.includes(saved.wood) ? saved.wood : undefined, stone: typeof saved?.stone === "string" && ownedHeroes.includes(saved.stone) && saved.stone !== saved?.wood ? saved.stone : undefined }; } catch { return {}; }
   });
   const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
   const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
   const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
-    try { const saved = loadJson<SummonStorageItem[]>(STORAGE_KEYS.summonStorage, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
+    try { const saved = loadJson<SummonStorageItem[]>(STORAGE_KEYS.summonStorage, []); return savedSummons(saved); } catch { return []; }
   });
   const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 30])) : saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 30])) : savedCounts(saved, 30); } catch { return {}; }
   });
   const [soulShards, setSoulShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.soulShards, DEV_MODE ? 999999 : 0)));
   const [transcendShards, setTranscendShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, DEV_MODE ? 999999 : 0)));
   const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
-    try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
+    try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return savedIds(saved, new Set(["unknown-01", "unknown-02", "devWukong"])); } catch { return []; }
   });
-  const summonUidRef = useRef(Date.now());
+  const summonUidRef = useRef(Math.max(Date.now(), ...summonStorage.map(item => item.uid + 1)));
   const [legendPity, setLegendPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.legendPity, 0)));
   const [mythPity, setMythPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.mythPity, 0)));
   const [summonSequence, setSummonSequence] = useState<SummonStorageItem[]>([]);
@@ -309,7 +294,7 @@ function App() {
   });
 
 
-  useBattleLoop({ battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState });
+  useBattleLoop({ battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
@@ -347,6 +332,7 @@ function App() {
     setCastleHit(null);
     setDamagePopups([]);
     popupUidRef.current = 1;
+    setBattleReward(null);
     setBattleState("playing");
     setDeployCooldowns({});
     deployCooldownsRef.current = {};
@@ -556,7 +542,7 @@ function App() {
   }
 
   return <BattleScreen
-    stage={currentStage} stageIndex={stageIndex} unlockedStage={unlockedStage} battleState={battleState}
+    stage={currentStage} stageIndex={stageIndex} unlockedStage={unlockedStage} battleState={battleState} battleReward={battleReward}
     castleHp={castleHp} enemyCastleHp={enemyCastleHp} battleGold={battleGold} battleGoldMax={battleGoldMax}
     economyLevel={economyLevel} economyMaxLevel={economyMaxLevel} goldPerSecond={goldPerSecond} economyUpgradeCost={economyUpgradeCost}
     waveIndex={waveIndex} gameSpeed={gameSpeed} autoCom={autoCom} heroes={heroes} enemies={enemies}

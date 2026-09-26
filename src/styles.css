@@ -84,6 +84,9 @@ button { font: inherit; }
 .result-box.victory { border-color:#ffc94f; }.result-box.defeat { border-color:#ff6572; }
 .result-kicker { font-size:12px; font-weight:1000; letter-spacing:3px; color:#ffd55e; }
 .result-box h1 { margin:10px 0; }.result-box p { color:#93aebb; }
+.result-rewards { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin:18px 0; }
+.result-rewards span { padding:12px 16px; border:1px solid #8eacb6; border-radius:10px; background:#203747; color:#e6f1f7; }
+.result-rewards b { display:block; margin-top:4px; color:#ffd55e; font-size:22px; }
 .result-box button { margin-top:15px; padding:12px 30px; border:0; border-radius:10px; background:#ffd45b; color:#1b1608; font-weight:1000; cursor:pointer; }
 
 @media (max-width: 800px) {
