@@ -26,21 +26,35 @@ export function resolveFrontlineCollision(
 ): { heroes: Unit[]; enemies: Unit[] } {
   const nextHeroes = heroes.map((unit) => ({ ...unit }));
   const nextEnemies = enemies.map((unit) => ({ ...unit }));
-  const FRONT_GAP = 2.6;
+  const FRONT_GAP = 2.8;
 
   for (const hero of nextHeroes) {
     if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
 
-    for (const enemy of nextEnemies) {
-      if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
-      if (hero.x <= enemy.x - FRONT_GAP) continue;
+    const frontEnemy = nextEnemies
+      .filter((enemy) => enemy.currentHp > 0 && enemy.x >= hero.x)
+      .sort((a, b) => a.x - b.x)[0];
 
-      const overlap = hero.x - (enemy.x - FRONT_GAP);
-      const heroPush = overlap * 0.55;
-      const enemyPush = overlap * 0.45;
+    if (!frontEnemy) continue;
 
-      hero.x = clamp(hero.x - heroPush, 9, 87);
-      enemy.x = clamp(enemy.x + enemyPush, 9, 87);
+    const maxHeroX = frontEnemy.x - FRONT_GAP;
+    if (hero.x > maxHeroX) {
+      hero.x = clamp(maxHeroX, 9, 87);
+    }
+  }
+
+  for (const enemy of nextEnemies) {
+    if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
+
+    const frontHero = nextHeroes
+      .filter((hero) => hero.currentHp > 0 && hero.x <= enemy.x)
+      .sort((a, b) => b.x - a.x)[0];
+
+    if (!frontHero) continue;
+
+    const minEnemyX = frontHero.x + FRONT_GAP;
+    if (enemy.x < minEnemyX) {
+      enemy.x = clamp(minEnemyX, 9, 87);
     }
   }
 
