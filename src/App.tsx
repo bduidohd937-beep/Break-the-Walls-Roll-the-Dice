@@ -562,6 +562,7 @@ function App() {
         </div>
 
         <div className="deck-panel">
+          <div className="battle-deck-header"><b>⚔️ 출전 영웅</b><span>카드를 눌러 전장에 배치 · {deckIds.length}/{deckSlotCount}</span></div>
           <div className="deck-slots">
             {visibleDeck.map((hero) => {
               const cooldownLeft = deployCooldowns[hero.id] ?? 0;
@@ -576,7 +577,6 @@ function App() {
                     <div className="hero-ability">{hero.ability === "guard" && "🛡️ 피해 감소 22%"}{hero.ability === "regen" && "✚ 초당 HP 회복"}{hero.ability === "crit" && "⚡ 28% 치명타"}{hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}{!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}{!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}</div>
                     <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
                   </button>
-                  <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={() => upgradeUnit(hero.id)}>{getUpgradeCost(hero.id) === 0 ? "MAX" : `강화 🪙${getUpgradeCost(hero.id)}`}</button>
                 </div>
               );
             })}
