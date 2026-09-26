@@ -50,6 +50,7 @@ function App() {
   const spawnRef = useRef(0);
   const spawnTimerRef = useRef(1.2);
   const uidRef = useRef(1);
+  const finalClearNotifiedRef = useRef(false);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
@@ -270,7 +271,8 @@ function App() {
         spawnTimerRef.current = 1.4;
         setWaveIndex(waveRef.current);
         setNotice(`WAVE ${waveRef.current + 1} · ${WAVE_META[waveRef.current]?.name ?? "다음 전투"}`);
-      } else if (waveCleared && waveRef.current === WAVES.length - 1) {
+      } else if (waveCleared && waveRef.current === WAVES.length - 1 && !finalClearNotifiedRef.current) {
+        finalClearNotifiedRef.current = true;
         setNotice("FINAL WAVE CLEAR · 적 성을 파괴하면 스테이지 클리어!");
       }
 
@@ -294,6 +296,7 @@ function App() {
     spawnRef.current = 0;
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
+    finalClearNotifiedRef.current = false;
     setBattleGold(500);
     setWaveIndex(0);
     setHeroes([]);
