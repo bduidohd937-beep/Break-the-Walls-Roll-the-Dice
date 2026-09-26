@@ -40,6 +40,8 @@ function App() {
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
   const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
   const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
+  const [killCombo, setKillCombo] = useState(0);
+  const [bossEnraged, setBossEnraged] = useState(false);
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
@@ -108,6 +110,7 @@ function App() {
   const spawnTimerRef = useRef(1.2);
   const uidRef = useRef(1);
   const finalClearNotifiedRef = useRef(false);
+  const comboTimerRef = useRef(0);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
@@ -459,6 +462,7 @@ function App() {
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
   const bossUnit = currentStage.waveMeta[waveIndex]?.boss ? enemies.find((unit) => unit.id === "fireOgreE") : undefined;
   const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
+  const bossPhaseTwo = Boolean(bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5);
 
   if (battleState === "stageSelect") {
     return (
