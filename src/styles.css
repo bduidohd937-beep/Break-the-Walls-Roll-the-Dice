@@ -611,3 +611,8 @@ button { font: inherit; }
   .stage-select-card.main-hub-card{height:calc(100dvh - 12px);padding-bottom:80px}
   .main-nav{bottom:-80px;margin-bottom:-80px;min-height:58px}
 }
+
+.gather-region-progress button{padding:7px;border:1px solid #263d4c;background:#0b1821;color:#8aa1ad;font-size:7px;font-weight:900;cursor:pointer}
+.gather-region-progress button small{font-size:6px;color:#6f8794}
+.gather-region-progress button.active{border-color:#d6a94c;background:#392d10;color:#ffe49a}
+.gather-region-progress button:disabled{opacity:.35;cursor:not-allowed}
