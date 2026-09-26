@@ -562,3 +562,28 @@ button { font: inherit; }
 .facility-card button{grid-column:1/-1;padding:7px;border:1px solid #806526;background:#392b0d;color:#ffe49a;font-size:8px;font-weight:900;cursor:pointer}
 .facility-card button:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:700px){.facility-grid{grid-template-columns:1fr}}
+
+
+/* Split hero formation / upgrade */
+.hero-center{margin-top:14px}
+.hero-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.hero-mode-tabs button{padding:11px;border:1px solid #294151;background:#09151e;color:#7894a5;font-weight:900;cursor:pointer}
+.hero-mode-tabs button.active{border-color:#d6a94c;background:#3a2b0c;color:#ffe49a}
+.formation-help{padding:8px 10px;border:1px solid #294151;background:#071119;color:#8ba6b5;font-size:8px}
+.formation-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.formation-hero{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border:1px solid #314657;background:#102330;color:#eaf7ff;cursor:grab;user-select:none}
+.formation-hero:active{cursor:grabbing}
+.formation-hero.in-deck{border-color:#9c7a32;background:#2b250f}
+.formation-hero span{font-size:30px}
+.formation-hero b{font-size:8px}
+.formation-hero small{font-size:6px;color:#7894a5}
+.formation-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+.formation-slot{position:relative;min-height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:2px dashed #314657;background:#071119;color:#587182;cursor:pointer}
+.formation-slot.filled{border-style:solid;border-color:#d6a94c;background:#30250e;color:#ffe49a}
+.formation-slot em{position:absolute;left:5px;top:4px;font-size:7px;font-style:normal;color:#587182}
+.formation-slot span{font-size:28px}
+.formation-slot b{font-size:7px}
+.formation-slot small{font-size:7px}
+.hero-management.upgrade-only{margin-top:0}
+.hero-detail-actions.single{grid-template-columns:1fr}
+@media(max-width:700px){.formation-roster,.formation-slots{grid-template-columns:repeat(2,1fr)}}
