@@ -363,6 +363,7 @@ function App() {
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()}</b></div>
           <div className="stat-pill">👑 Kingdom <b>{Math.floor(kingdomGold).toLocaleString()}</b></div>
+          <div className="stat-pill">🏆 CLEAR <b>{clearedStages.length}/{STAGES.length}</b></div>
           <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
           <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
         </div>
