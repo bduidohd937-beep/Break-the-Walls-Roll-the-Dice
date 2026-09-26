@@ -76,6 +76,8 @@ function App() {
   const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-workers") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
+  const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
+  const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
   const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-summon-storage") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
@@ -200,6 +202,9 @@ function App() {
     if (workers[type] === heroId) delete next[type]; else next[type] = heroId;
     setWorkers(next);
     window.localStorage.setItem("btw-workers", JSON.stringify(next));
+    const now = Date.now();
+    gatherLastSeenRef.current = now;
+    window.localStorage.setItem("btw-gather-last-seen", String(now));
   };
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
@@ -309,7 +314,28 @@ function App() {
   useEffect(() => { enemyCastleRef.current = enemyCastleHp; }, [enemyCastleHp]);
   useEffect(() => {
     if (battleState !== "stageSelect") return;
+    const now = Date.now();
+    const savedLastSeen = Math.max(0, Number(window.localStorage.getItem("btw-gather-last-seen") ?? now));
+    const offlineSeconds = Math.min(8 * 60 * 60, Math.max(0, Math.floor((now - savedLastSeen) / 1000)));
+    const offlineTicks = Math.floor(offlineSeconds / 3);
+    if (offlineTicks > 0 && (workers.wood || workers.stone)) {
+      const woodGain = workers.wood ? offlineTicks * Math.max(1, Math.floor(facilityLevels.lumber * kingdomProductionBonus)) : 0;
+      const stoneGain = workers.stone ? offlineTicks * Math.max(1, Math.floor(facilityLevels.quarry * kingdomProductionBonus)) : 0;
+      if (woodGain || stoneGain) {
+        setResources((current) => {
+          const next = { wood: current.wood + woodGain, stone: current.stone + stoneGain };
+          window.localStorage.setItem("btw-resources", JSON.stringify(next));
+          return next;
+        });
+        setOfflineGather({ wood: woodGain, stone: stoneGain, seconds: offlineSeconds });
+      }
+    }
+    gatherLastSeenRef.current = now;
+    window.localStorage.setItem("btw-gather-last-seen", String(now));
     const timer = window.setInterval(() => {
+      const tickNow = Date.now();
+      gatherLastSeenRef.current = tickNow;
+      window.localStorage.setItem("btw-gather-last-seen", String(tickNow));
       setResources((current) => {
         const next = { ...current };
         if (workers.wood) next.wood += Math.max(1, Math.floor(facilityLevels.lumber * kingdomProductionBonus));
@@ -318,8 +344,11 @@ function App() {
         return next;
       });
     }, 3000);
-    return () => window.clearInterval(timer);
-  }, [battleState, workers, facilityLevels, kingdomProductionBonus]);
+    return () => {
+      window.clearInterval(timer);
+      window.localStorage.setItem("btw-gather-last-seen", String(Date.now()));
+    };
+  }, [battleState, workers, facilityLevels.lumber, facilityLevels.quarry, kingdomProductionBonus]);
 
 
 
@@ -916,6 +945,7 @@ function App() {
           {mainTab === "gather" && (
             <div className="gather-hub">
               <div className="resource-storage"><span>📦 보관함</span><b>🌲 {resources.wood} 나무</b><b>🪨 {resources.stone} 돌</b></div>
+              {offlineGather && <div className="offline-gather-result"><div><b>🌙 오프라인 채집 정산</b><span>최대 8시간까지 자동 생산이 누적됩니다.</span></div><strong>{offlineGather.wood > 0 ? `🌲 +${offlineGather.wood}` : ""} {offlineGather.stone > 0 ? `🪨 +${offlineGather.stone}` : ""}</strong><small>{Math.floor(offlineGather.seconds / 60)}분 생산</small><button onClick={() => setOfflineGather(null)}>확인</button></div>}
               <div className="gather-region-progress">
                 <b>🗺️ 채집 지역</b>
                 <button className={gatherRegion === "basic" ? "active" : ""} onClick={() => { setGatherRegion("basic"); setGatherHp({ wood: 10, stone: 14 }); }}>왕국 외곽<br/><small>HP ×1 · 보상 ×1</small></button>
