@@ -315,11 +315,35 @@ function App() {
         }
       }
 
-      const deadEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
-      if (deadEnemies > 0) goldRef.current += deadEnemies * 20;
-
+      // Keep units from stacking into the same pixel. Same-team units slide apart,
+      // while enemy units are allowed to meet so attack range still controls the frontline.
       nextHeroes = nextHeroes.filter((h) => h.currentHp > 0);
       nextEnemies = nextEnemies.filter((e) => e.currentHp > 0);
+
+      const resolveSameTeamSpacing = (units: Unit[]) => {
+        const MIN_GAP = 3.2;
+        const sorted = [...units].sort((a, b) => a.x - b.x);
+
+        for (let i = 1; i < sorted.length; i++) {
+          const left = sorted[i - 1];
+          const right = sorted[i];
+          const gap = right.x - left.x;
+
+          if (gap >= MIN_GAP) continue;
+
+          const push = (MIN_GAP - gap) / 2;
+          left.x = clamp(left.x - push, 9, 87);
+          right.x = clamp(right.x + push, 9, 87);
+        }
+
+        return units.map((unit) => sorted.find((candidate) => candidate.uid === unit.uid) ?? unit);
+      };
+
+      nextHeroes = resolveSameTeamSpacing(nextHeroes);
+      nextEnemies = resolveSameTeamSpacing(nextEnemies);
+
+      const deadEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
+      if (deadEnemies > 0) goldRef.current += deadEnemies * 20;
 
       heroesRef.current = nextHeroes;
       enemiesRef.current = nextEnemies;
@@ -450,7 +474,7 @@ function BattleUnit({ unit }: { unit: Unit }) {
       <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>
       <div className="unit-sprite">
         {unit.sprite}<span className="unit-aura" />
-        {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}</span>}
+        {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}/3</span>}
       </div>
       <div className="unit-name">{unit.name}</div>
       {unit.effect === "burn" && unit.attackFlash > 0 && <div className="attack-effect">✦</div>}
