@@ -95,6 +95,9 @@ function App() {
   const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
 
   const kingdomUpgradeCost = 400 * kingdomLevel;
+  const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
+  const kingdomSellBonus = 1 + Math.floor((kingdomLevel - 1) / 3) * 0.1;
+  const kingdomMilestone = kingdomLevel < 2 ? "Lv.2 · 자동채집 생산 +25%" : kingdomLevel < 3 ? "Lv.3 · 자원 판매가 +10%" : kingdomLevel < 4 ? "Lv.4 · 자동채집 생산 +25%" : kingdomLevel < 6 ? "Lv.6 · 생산/판매 보너스 강화" : "왕국 성장 보너스 적용 중";
   const facilityUpgradeCost = (type: "lumber" | "quarry") => 180 * facilityLevels[type];
   const upgradeKingdom = () => {
     if (kingdomGold < kingdomUpgradeCost) return;
@@ -141,7 +144,7 @@ function App() {
   const sellResource = (type: "wood" | "stone") => {
     const amount = resources[type];
     if (amount <= 0) return;
-    const unitPrice = type === "wood" ? 5 : 8;
+    const unitPrice = (type === "wood" ? 5 : 8) * kingdomSellBonus;
     const next = { ...resources, [type]: 0 };
     saveResources(next);
     setKingdomGold((gold) => {
@@ -228,14 +231,14 @@ function App() {
     const timer = window.setInterval(() => {
       setResources((current) => {
         const next = { ...current };
-        if (workers.wood) next.wood += facilityLevels.lumber;
-        if (workers.stone) next.stone += facilityLevels.quarry;
+        if (workers.wood) next.wood += Math.max(1, Math.floor(facilityLevels.lumber * kingdomProductionBonus));
+        if (workers.stone) next.stone += Math.max(1, Math.floor(facilityLevels.quarry * kingdomProductionBonus));
         window.localStorage.setItem("btw-resources", JSON.stringify(next));
         return next;
       });
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [battleState, workers, facilityLevels]);
+  }, [battleState, workers, facilityLevels, kingdomProductionBonus]);
 
 
 
@@ -663,7 +666,7 @@ function App() {
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
               <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small></div>
               <div className="facility-grid">
-                <div className="facility-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>왕국의 장기 성장 단계</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
+                <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
                 <div className="facility-card"><span>🪚</span><div><b>벌목장 Lv.{facilityLevels.lumber}</b><small>배치 영웅 자동채집 +{facilityLevels.lumber} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("lumber")} onClick={() => upgradeFacility("lumber")}>강화 · {facilityUpgradeCost("lumber")} 🪙</button></div>
                 <div className="facility-card"><span>⛏️</span><div><b>채석장 Lv.{facilityLevels.quarry}</b><small>배치 영웅 자동채집 +{facilityLevels.quarry} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("quarry")} onClick={() => upgradeFacility("quarry")}>강화 · {facilityUpgradeCost("quarry")} 🪙</button></div>
               </div>
