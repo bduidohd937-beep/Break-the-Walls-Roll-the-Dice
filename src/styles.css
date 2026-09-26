@@ -242,3 +242,12 @@ button { font: inherit; }
 .battle-unit{image-rendering:pixelated}
 .battle-unit .unit-sprite{filter:drop-shadow(0 4px 0 rgba(0,0,0,.42))}
 .castle .tower{filter:drop-shadow(0 5px 0 rgba(0,0,0,.4));image-rendering:pixelated}
+
+
+/* pixel UI treatment */
+.game-title,.stage-select-kicker,.wave-title,.boss-title,.hero-name,.deck-indicator{letter-spacing:.6px}
+.stat-pill,.hero-card,.upgrade-btn,.result-box,.stage-select-card,.stage-card,.deck-builder,.summon-panel{border-radius:4px!important;box-shadow:0 4px 0 rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.04) inset}
+.hero-card{transition:transform .08s steps(2),filter .08s linear}
+.hero-card:not(.disabled):active{transform:translateY(2px);filter:brightness(1.15)}
+.upgrade-btn:not(:disabled):active{transform:translateY(2px)}
+.wave-banner{box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 0 2px rgba(255,214,120,.08)}
