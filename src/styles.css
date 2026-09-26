@@ -644,3 +644,33 @@ button { font: inherit; }
 .storage-actions button:last-child{border-color:#5a405c;background:#251728;color:#e8c7eb}
 .storage-empty{grid-column:1/-1;padding:24px;text-align:center;border:1px dashed #29404e;color:#78909d;font-size:8px}
 @media(max-width:700px){.summon-actions,.summon-storage{grid-template-columns:1fr}.summon-storage{max-height:300px}}
+
+
+/* Summon cinematic phase 2 */
+.summon-cinematic{position:fixed;z-index:120;inset:0;background:radial-gradient(circle at 50% 35%,#18273a 0,#07101c 45%,#020508 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;overflow:hidden}
+.summon-skip{position:absolute;z-index:10;right:20px;top:20px;padding:8px 14px;border:1px solid #71808e;background:#07111acc;color:#dce7ed;font-size:9px;font-weight:1000;letter-spacing:.15em}
+.summon-scene{position:relative;width:min(820px,94vw);height:min(520px,72vh);overflow:hidden}
+.summon-moon{position:absolute;left:50%;top:8%;transform:translateX(-50%);font-size:54px;color:#c8dcff;filter:drop-shadow(0 0 24px #91b8ff);opacity:.7}
+.summon-wall{position:absolute;left:50%;bottom:11%;transform:translateX(-50%);width:310px;text-align:center;color:#a7a095;text-shadow:0 5px 0 #393631;font-weight:1000;transition:.35s}
+.wall-top{font-size:44px;letter-spacing:-12px}.wall-body{position:relative;font-size:76px;line-height:.8;letter-spacing:-16px}.wall-body i{position:absolute;left:48%;top:5%;font-size:42px;color:#fff0a2;opacity:0;font-style:normal;text-shadow:0 0 20px #fff}
+.summon-die{position:absolute;left:10%;top:38%;font-size:62px;filter:drop-shadow(0 0 10px #fff);z-index:3}
+.phase-throw .summon-die{animation:summonDieThrow .65s cubic-bezier(.15,.8,.2,1) forwards}
+.phase-impact .summon-die,.phase-crack .summon-die{left:45%;top:55%;transform:rotate(380deg) scale(.8)}
+.phase-impact .summon-wall{animation:wallImpact .28s linear 2}.phase-impact .summon-impact-ring{position:absolute;left:50%;top:64%;width:30px;height:30px;border:5px solid #fff3b0;border-radius:50%;transform:translate(-50%,-50%);animation:impactRing .55s ease-out forwards}
+.phase-crack .wall-body i{opacity:1;animation:crackPulse .45s ease-in-out infinite alternate}.phase-crack .summon-wall{filter:brightness(1.35)}
+.phase-reveal .summon-wall{animation:wallBreak .6s ease-in forwards}.phase-reveal .summon-die{opacity:0}
+.summon-cinematic-text{position:absolute;bottom:8%;font-size:11px;font-weight:1000;letter-spacing:.12em;color:#e6edf2;text-shadow:0 2px 12px #000}
+.hero-reveal{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;animation:heroRevealIn .6s ease-out both}
+.reveal-rays{position:absolute;width:540px;height:540px;border-radius:50%;background:repeating-conic-gradient(from 0deg,#ffffff18 0 8deg,transparent 8deg 18deg);animation:revealSpin 8s linear infinite}
+.hero-reveal small,.hero-reveal .reveal-grade,.hero-reveal .reveal-sprite,.hero-reveal h2,.hero-reveal p,.hero-reveal>b{position:relative;z-index:2}
+.hero-reveal small{font-size:9px;color:#9eb0bc}.reveal-grade{margin-top:8px;font-size:13px;font-weight:1000;letter-spacing:.22em;color:#d7dce0}.reveal-sprite{font-size:110px;margin:10px 0;filter:drop-shadow(0 12px 18px #000)}.hero-reveal h2{font-size:24px;margin:0;color:#fff}.hero-reveal p{font-size:9px;color:#aebbc4}.hero-reveal>b{margin-top:12px;font-size:8px;color:#d8e6ef}
+.grade-희귀 .reveal-grade{color:#77bfff}.grade-영웅 .reveal-grade{color:#c88cff}.grade-전설 .reveal-grade{color:#ffd35e;text-shadow:0 0 18px #ff9d00}.grade-신화 .reveal-grade{color:#ff77b9;text-shadow:0 0 20px #ff297e}.grade-초월 .reveal-grade{color:#fff;text-shadow:0 0 8px #fff,0 0 24px #78eaff}
+.high-grade .summon-scene{filter:drop-shadow(0 0 35px #d6a94c)}.high-grade .summon-moon{font-size:78px;opacity:1}
+@keyframes summonDieThrow{0%{left:5%;top:60%;transform:rotate(0) scale(.6)}70%{left:43%;top:49%;transform:rotate(620deg) scale(1.25)}100%{left:45%;top:55%;transform:rotate(760deg) scale(.8)}}
+@keyframes wallImpact{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 10px))}75%{transform:translateX(calc(-50% + 10px))}}
+@keyframes impactRing{0%{opacity:1;transform:translate(-50%,-50%) scale(.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(9)}}
+@keyframes crackPulse{from{transform:scale(.8);filter:brightness(1)}to{transform:scale(1.4);filter:brightness(2)}}
+@keyframes wallBreak{0%{transform:translateX(-50%) scale(1);opacity:1}45%{transform:translateX(-50%) scale(1.08);filter:brightness(3)}100%{transform:translateX(-50%) scale(1.7);opacity:0}}
+@keyframes heroRevealIn{0%{opacity:0;transform:scale(.72)}60%{opacity:1;transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes revealSpin{to{transform:rotate(360deg)}}
+@media(max-width:700px){.summon-scene{height:70vh}.summon-wall{width:230px}.wall-top{font-size:32px}.wall-body{font-size:58px}.reveal-sprite{font-size:86px}.hero-reveal h2{font-size:18px}}
