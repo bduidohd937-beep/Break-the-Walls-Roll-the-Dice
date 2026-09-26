@@ -43,3 +43,8 @@ export type Unit = UnitDef & {
 
 export type WaveGroup = { enemy: "goblin" | "orc" | "darkKnight" | "fireOgre"; count: number; gap?: number };
 export type Wave = WaveGroup[];
+export type WaveMeta = {
+  name: string;
+  reward: number;
+  boss?: boolean;
+};
