@@ -1,4 +1,5 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import type { Unit } from "../types";
 import { STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
@@ -7,18 +8,21 @@ import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/col
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
 import { STORAGE_KEYS, saveNumber } from "../storage";
 
-type Setter = Dispatch<SetStateAction<any>>;
-type Ref = MutableRefObject<any>;
+type Setter<T> = Dispatch<SetStateAction<T>>;
+type Ref<T> = MutableRefObject<T>;
+type DamagePopup = { id:number; x:number; value:number; critical:boolean };
+type DeathEffect = { id:number; x:number; team:"hero"|"enemy"; life:number };
+type BattleState = "stageSelect"|"playing"|"victory"|"defeat";
 type BattleLoopContext = {
-  battleState: string; gameSpeed: number; battleGoldMax: number; goldPerSecond: number;
-  setCastleHit: Setter; setDamagePopups: Setter; setDeathEffects: Setter; setBattleGold: Setter;
-  setDeployCooldowns: Setter; setNotice: Setter; setEnemyCastleHp: Setter; setCastleHp: Setter;
-  setHeroes: Setter; setEnemies: Setter; setWaveIndex: Setter; setUnlockedStage: Setter;
-  setClearedStages: Setter; setGems: Setter; setKingdomGold: Setter; setBattleState: Setter;
-  goldRef: Ref; spawnTimerRef: Ref; heroesRef: Ref; enemiesRef: Ref; stageRef: Ref; waveRef: Ref;
-  spawnRef: Ref; uidRef: Ref; bossSpawnAnnouncedRef: Ref; bossSummonTimerRef: Ref;
-  bossEnrageTriggeredRef: Ref; bossFieldTickRef: Ref; bossChargeRef: Ref; bossPhaseRef: Ref;
-  enemyCastleRef: Ref; popupUidRef: Ref; castleRef: Ref; deathUidRef: Ref; finalClearNotifiedRef: Ref;
+  battleState: BattleState; gameSpeed:number; battleGoldMax:number; goldPerSecond:number;
+  setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<DeathEffect[]>; setBattleGold:Setter<number>;
+  setDeployCooldowns:Setter<Record<string,number>>; setNotice:Setter<string>; setEnemyCastleHp:Setter<number>; setCastleHp:Setter<number>;
+  setHeroes:Setter<Unit[]>; setEnemies:Setter<Unit[]>; setWaveIndex:Setter<number>; setUnlockedStage:Setter<number>;
+  setClearedStages:Setter<number[]>; setGems:Setter<number>; setKingdomGold:Setter<number>; setBattleState:Setter<BattleState>;
+  goldRef:Ref<number>; spawnTimerRef:Ref<number>; heroesRef:Ref<Unit[]>; enemiesRef:Ref<Unit[]>; stageRef:Ref<number>; waveRef:Ref<number>;
+  spawnRef:Ref<number>; uidRef:Ref<number>; bossSpawnAnnouncedRef:Ref<boolean>; bossSummonTimerRef:Ref<number>;
+  bossEnrageTriggeredRef:Ref<boolean>; bossFieldTickRef:Ref<number>; bossChargeRef:Ref<number>; bossPhaseRef:Ref<number>;
+  enemyCastleRef:Ref<number>; popupUidRef:Ref<number>; castleRef:Ref<number>; deathUidRef:Ref<number>; finalClearNotifiedRef:Ref<boolean>;
 };
 
 export function useBattleLoop(ctx: BattleLoopContext) {
