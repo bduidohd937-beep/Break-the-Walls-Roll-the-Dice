@@ -700,3 +700,9 @@ button { font: inherit; }
 .storage-help{margin:0 0 10px;padding:9px 10px;border-left:3px solid #947b3e;background:#15170f;color:#aebcc3;font-size:8px;line-height:1.7}.storage-help b{color:#f0d486}
 .storage-bulk{grid-template-columns:repeat(4,1fr)}.storage-actions button:disabled{opacity:.42;cursor:not-allowed}
 @media(max-width:900px){.storage-bulk{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.storage-bulk{grid-template-columns:1fr}}
+
+
+/* Hero soul growth */
+.hero-soul-panel{margin:12px 0;padding:11px;border:1px solid #4b3f66;background:linear-gradient(180deg,#171225,#0b1018)}.hero-soul-head{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#c9b7e7}.hero-soul-head b{color:#f1d98a;font-size:12px}.hero-soul-track{height:7px;margin:8px 0 10px;background:#202631;border:1px solid #37424e;overflow:hidden}.hero-soul-track i{display:block;height:100%;background:linear-gradient(90deg,#7256a8,#e4bd63);transition:width .25s}
+.hero-soul-milestones{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.hero-soul-milestones div{padding:6px 2px;border:1px solid #343d48;background:#101821;text-align:center;opacity:.45}.hero-soul-milestones div.reached{border-color:#9c7d3e;background:#29200e;opacity:1;box-shadow:inset 0 0 12px #d9ad3b24}.hero-soul-milestones b{display:block;font-size:8px;color:#e6c873}.hero-soul-milestones small{display:block;margin-top:3px;font-size:6px;color:#aeb9c0}.hero-soul-next{margin-top:8px;font-size:7px;color:#8fa2ad;text-align:center}
+@media(max-width:700px){.hero-soul-milestones{grid-template-columns:repeat(3,1fr)}}
