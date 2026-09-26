@@ -9,10 +9,10 @@ const chapter1KeyStages: Record<number, Partial<StageDef>> = {
   12: { name: "샌드위치 협공", type: "elite", mechanic: "양방향 동시 진격으로 전방 덱을 압박하는 포위 웨이브" },
   15: { name: "폭풍 전야", type: "elite", mechanic: "평온한 초반 이후 화염의 거인 오거가 등장하는 지연 웨이브" },
   18: { name: "완벽한 호위", type: "elite", mechanic: "엘리트를 보호하는 선행 잡몹을 신속히 제거해야 하는 호위 파훼전" },
-  20: { name: "흑기사단장 모르가르", type: "boss", bossName: "흑기사단장 모르가르", mechanic: "주변 적 공격력 증가 · 흑기사 소환 · 사망 시 군세 광폭화" },
-  30: { name: "화염의 군주 이그니스", type: "boss", bossName: "화염의 군주 이그니스", mechanic: "화염 낙인 · 불타는 군세 증원 · 전장 전체 지속 화염 피해 · 물속성 조합 대응" },
-  40: { name: "번개의 포식자 볼트라스", type: "boss", bossName: "번개의 포식자 볼트라스", mechanic: "단일 전격 · 연쇄 전류 · 전하 축적에 따른 전체 공속 증가 · 영웅 배치 퍼즐" },
-  50: { name: "균열의 포식자 아르카논", type: "boss", bossName: "균열의 포식자 아르카논", mechanic: "순수 → 불꽃 → 빙결 → 폭풍 → 종말 페이즈 변화와 주기적 증원" }
+  20: { name: "흑기사단장 모르가르", type: "boss", bossName: "흑기사단장 모르가르", mechanic: "주변 적 공격력 증가 · 흑기사 소환 · 사망 시 군세 광폭화", bossMechanic: { auraAtk: 0.2, summonEnemy: "darkKnight", summonInterval: 8, deathEnrage: 0.25 } },
+  30: { name: "화염의 군주 이그니스", type: "boss", bossName: "화염의 군주 이그니스", mechanic: "화염 낙인 · 불타는 군세 증원 · 전장 전체 지속 화염 피해 · 물속성 조합 대응", bossMechanic: { summonEnemy: "fireMage", summonInterval: 7, fieldDamagePerSecond: 2 } },
+  40: { name: "번개의 포식자 볼트라스", type: "boss", bossName: "번개의 포식자 볼트라스", mechanic: "단일 전격 · 연쇄 전류 · 전하 축적에 따른 전체 공속 증가 · 영웅 배치 퍼즐", bossMechanic: { enemyAttackSpeedPerStack: 0.04 } },
+  50: { name: "균열의 포식자 아르카논", type: "boss", bossName: "균열의 포식자 아르카논", mechanic: "순수 → 불꽃 → 빙결 → 폭풍 → 종말 페이즈 변화와 주기적 증원", bossMechanic: { summonEnemy: "darkKnight", summonInterval: 6, phaseElements: ["순수", "불꽃", "빙결", "폭풍", "종말"] } }
 };
 
 const chapter1RangeMechanics = (id: number) => {
