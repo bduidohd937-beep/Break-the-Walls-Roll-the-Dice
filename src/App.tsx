@@ -58,6 +58,9 @@ function App() {
   const [deckEditMode, setDeckEditMode] = useState(false);
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
+  const [facilityLevels, setFacilityLevels] = useState<{ lumber: number; quarry: number }>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-facility-levels") ?? "{}"); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1) }; } catch { return { lumber: 1, quarry: 1 }; }
+  });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem("btw-owned-heroes") ?? "[]");
@@ -87,6 +90,28 @@ function App() {
   const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
   const goldPerSecond = 18 + (economyLevel - 1) * 9;
   const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
+
+  const kingdomUpgradeCost = 400 * kingdomLevel;
+  const facilityUpgradeCost = (type: "lumber" | "quarry") => 180 * facilityLevels[type];
+  const upgradeKingdom = () => {
+    if (kingdomGold < kingdomUpgradeCost) return;
+    const nextLevel = kingdomLevel + 1;
+    const nextGold = kingdomGold - kingdomUpgradeCost;
+    setKingdomLevel(nextLevel);
+    setKingdomGold(nextGold);
+    window.localStorage.setItem("btw-kingdom-level", String(nextLevel));
+    window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+  };
+  const upgradeFacility = (type: "lumber" | "quarry") => {
+    const cost = facilityUpgradeCost(type);
+    if (kingdomGold < cost) return;
+    const next = { ...facilityLevels, [type]: facilityLevels[type] + 1 };
+    const nextGold = kingdomGold - cost;
+    setFacilityLevels(next);
+    setKingdomGold(nextGold);
+    window.localStorage.setItem("btw-facility-levels", JSON.stringify(next));
+    window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+  };
 
   const saveResources = (next: { wood: number; stone: number }) => {
     setResources(next);
@@ -190,14 +215,14 @@ function App() {
     const timer = window.setInterval(() => {
       setResources((current) => {
         const next = { ...current };
-        if (workers.wood) next.wood += 1;
-        if (workers.stone) next.stone += 1;
+        if (workers.wood) next.wood += facilityLevels.lumber;
+        if (workers.stone) next.stone += facilityLevels.quarry;
         window.localStorage.setItem("btw-resources", JSON.stringify(next));
         return next;
       });
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [battleState, workers]);
+  }, [battleState, workers, facilityLevels]);
 
 
 
@@ -607,6 +632,11 @@ function App() {
             <div className="kingdom-home">
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
               <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small></div>
+              <div className="facility-grid">
+                <div className="facility-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>왕국의 장기 성장 단계</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
+                <div className="facility-card"><span>🪚</span><div><b>벌목장 Lv.{facilityLevels.lumber}</b><small>배치 영웅 자동채집 +{facilityLevels.lumber} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("lumber")} onClick={() => upgradeFacility("lumber")}>강화 · {facilityUpgradeCost("lumber")} 🪙</button></div>
+                <div className="facility-card"><span>⛏️</span><div><b>채석장 Lv.{facilityLevels.quarry}</b><small>배치 영웅 자동채집 +{facilityLevels.quarry} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("quarry")} onClick={() => upgradeFacility("quarry")}>강화 · {facilityUpgradeCost("quarry")} 🪙</button></div>
+              </div>
               <button className="home-battle-cta" onClick={() => setMainTab("battle")}>⚔️ 전투 출격</button>
             </div>
           )}
@@ -633,7 +663,7 @@ function App() {
                     <div className="resource-hp-label">{gatherHp[type]} / {gatherMaxHp[type]} HP · 파괴 보상 +{gatherReward[type]}</div>
                     <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
                     <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{resources[type] * (isWood ? 5 : 8)} 🪙</button>
-                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 공격 중` : "영웅을 배치하면 자동 공격"}</span></div>
+                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 공격 +${isWood ? facilityLevels.lumber : facilityLevels.quarry}/3초` : "영웅을 배치하면 자동 공격"}</span></div>
                     <div className="worker-list">{ownedHeroes.map((id) => { const hero = HEROES.find((unit) => unit.id === id); if (!hero) return null; const busyElsewhere = Object.entries(workers).some(([key, value]) => key !== type && value === id); return <button key={id} disabled={busyElsewhere} className={workers[type] === id ? "assigned" : ""} onClick={() => assignWorker(type, id)}>{hero.sprite}<small>{hero.name}</small></button>; })}</div>
                   </div>;
                 })}
