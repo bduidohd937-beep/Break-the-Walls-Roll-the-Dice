@@ -52,11 +52,17 @@ export type WaveMeta = {
   boss?: boolean;
 };
 
+export type StageType = "normal" | "elite" | "boss";
+
 export type StageDef = {
   id: number;
   name: string;
+  region: string;
+  type: StageType;
   waves: Wave[];
   waveMeta: WaveMeta[];
   enemyCastleHp: number;
   clearReward: number;
+  repeatReward: number;
+  firstClearGems: number;
 };
