@@ -670,6 +670,13 @@ function App() {
           {mainTab === "gather" && (
             <div className="gather-hub">
               <div className="resource-storage"><span>📦 보관함</span><b>🌲 {resources.wood} 나무</b><b>🪨 {resources.stone} 돌</b></div>
+              <div className="gather-region-progress">
+                <b>🗺️ 채집 지역</b>
+                <span className="unlocked">왕국 외곽 · 기본 지역</span>
+                <span className={clearedStages.includes(2) ? "unlocked" : "locked"}>{clearedStages.includes(2) ? "✓" : "🔒"} 고대 숲 · STAGE 2 클리어</span>
+                <span className={clearedStages.includes(4) ? "unlocked" : "locked"}>{clearedStages.includes(4) ? "✓" : "🔒"} 수정 광산 · STAGE 4 클리어</span>
+              </div>
+              {(clearedStages.includes(2) || clearedStages.includes(4)) && <div className="region-bonus">{clearedStages.includes(4) ? "💎 수정 광산 발견 · 향후 고급 광석 채집 가능" : "🌲 고대 숲 발견 · 향후 고급 목재 채집 가능"}</div>}
               <div className="gather-grid">
                 {(["wood", "stone"] as const).map((type) => {
                   const isWood = type === "wood";
