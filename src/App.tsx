@@ -255,11 +255,19 @@ function App() {
         const enemy = nextEnemies[i];
         if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
 
-        const target = nextHeroes
-          .filter((h) => h.currentHp > 0 && h.x <= enemy.x)
-          .sort((a, b) => b.x - a.x)[0] ?? nextHeroes
-          .filter((h) => h.currentHp > 0)
+        const livingHeroes = nextHeroes.filter((h) => h.currentHp > 0);
+        const frontTarget = livingHeroes
+          .filter((h) => h.x <= enemy.x)
+          .sort((a, b) => b.x - a.x)[0] ?? livingHeroes
           .sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
+
+        // Enemy roles matter: assassins dive toward fragile backliners while other enemies hold the frontline.
+        const assassinTarget = enemy.id === "assassinE"
+          ? livingHeroes
+              .filter((h) => h.rangeType === "ranged")
+              .sort((a, b) => a.currentHp - b.currentHp || b.x - a.x)[0]
+          : undefined;
+        const target = assassinTarget ?? frontTarget;
 
         if (!target) {
           if (enemy.x <= 13) {
@@ -277,7 +285,8 @@ function App() {
           nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
-          const attackDamage = enragedBoss ? enemy.atk * 1.2 : enemy.atk;
+          const backlinePressure = enemy.id === "assassinE" && target.rangeType === "ranged";
+          const attackDamage = (enragedBoss ? enemy.atk * 1.2 : enemy.atk) * (backlinePressure ? 1.2 : 1);
           const splashRadius = enemy.splashRadius ?? 0;
           const hitTargets = enemy.attackType === "splash"
             ? nextHeroes
