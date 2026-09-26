@@ -81,6 +81,7 @@ function App() {
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
     try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: savedNonnegative(saved?.wood), stone: savedNonnegative(saved?.stone) }; } catch { return { wood: 0, stone: 0 }; }
   });
+  useEffect(() => { saveJson(STORAGE_KEYS.resources, resources); }, [resources]);
   const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
     try { const saved = loadJson<Record<string, string>>(STORAGE_KEYS.workers, {}); return { wood: typeof saved?.wood === "string" && ownedHeroes.includes(saved.wood) ? saved.wood : undefined, stone: typeof saved?.stone === "string" && ownedHeroes.includes(saved.stone) && saved.stone !== saved?.wood ? saved.stone : undefined }; } catch { return {}; }
   });
