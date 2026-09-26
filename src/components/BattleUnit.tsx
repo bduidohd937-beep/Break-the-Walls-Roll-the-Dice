@@ -15,6 +15,10 @@ export function BattleUnit({ unit }: { unit: Unit }) {
       </div>
       <div className="unit-name">{unit.name}</div>
       {unit.effect === "burn" && unit.attackFlash > 0 && <div className="attack-effect">✦</div>}
+      {unit.ability === "guard" && <div className="ability-badge">🛡️</div>}
+      {unit.ability === "crit" && unit.attackFlash > 0 && <div className="ability-burst">✦✦</div>}
+      {unit.ability === "execute" && unit.currentHp / unit.hp <= (unit.abilityValue ?? 0.25) && <div className="execute-badge">EXECUTE</div>}
+      {unit.ability === "regen" && <div className="regen-badge">✚</div>}
     </div>
   );
 }
