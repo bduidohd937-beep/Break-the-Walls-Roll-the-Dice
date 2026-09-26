@@ -187,6 +187,20 @@ function App() {
         }
       }
 
+      // Remove defeated units before collision and wave checks.
+      const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
+      if (defeatedEnemies > 0) {
+        goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
+        setBattleGold(Math.floor(goldRef.current));
+      }
+
+      nextHeroes = nextHeroes
+        .filter((unit) => unit.currentHp > 0)
+        .map((unit) => ({ ...unit, alive: true }));
+      nextEnemies = nextEnemies
+        .filter((unit) => unit.currentHp > 0)
+        .map((unit) => ({ ...unit, alive: true }));
+
       // Keep same-team units from stacking into the same position.
       nextHeroes = resolveSameTeamSpacing(nextHeroes);
       nextEnemies = resolveSameTeamSpacing(nextEnemies);
@@ -194,9 +208,6 @@ function App() {
       const frontline = resolveFrontlineCollision(nextHeroes, nextEnemies);
       nextHeroes = frontline.heroes;
       nextEnemies = frontline.enemies;
-
-      const deadEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
-      if (deadEnemies > 0) goldRef.current += deadEnemies * 20;
 
       heroesRef.current = nextHeroes;
       enemiesRef.current = nextEnemies;
