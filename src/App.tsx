@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, DEV_TEST_HERO, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
@@ -76,7 +76,8 @@ function App() {
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.deckIds, []);
-      return Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+      const initial = Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+      return DEV_MODE ? ["devWukong", ...initial.filter(id => id !== "devWukong")].slice(0, 10) : initial;
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
@@ -139,7 +140,7 @@ function App() {
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => {
     const equipped = deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[];
-    return DEV_MODE ? [DEV_TEST_HERO, ...equipped.slice(0, 9)] : equipped;
+    return equipped;
   }, [deckIds]);
   const economyMaxLevel = ECONOMY_MAX_LEVEL;
   const { battleGoldMax, goldPerSecond, trainingBonus, battleStartGold, economyUpgradeCost } =
@@ -153,7 +154,7 @@ function App() {
   });
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
-  const getHeroGrade = (id: string) => getHeroGradeByIndex(DECK_IDS.indexOf(id));
+  const getHeroGrade = (id: string) => id === "devWukong" ? { name: "???" as const, multiplier: 9 } : getHeroGradeByIndex(DECK_IDS.indexOf(id));
   const getGradeGrowth = (id: string) => {
     const grade = getHeroGrade(id).name;
     return GRADE_GROWTH[grade] ?? 0.08;
@@ -240,11 +241,6 @@ function App() {
   autoTickRef.current = () => {
       const activeCount = heroesRef.current.filter((hero) => hero.currentHp > 0).length;
       const currentGold = goldRef.current;
-      const reserveForUpgrade = economyLevel < economyMaxLevel ? economyUpgradeCost : 0;
-      if (economyLevel < economyMaxLevel && currentGold >= economyUpgradeCost && (economyLevel < 3 || currentGold >= economyUpgradeCost + 350)) {
-        upgradeEconomy();
-        return;
-      }
       if (activeCount >= 50) return;
       const ready = visibleDeck
         .filter((hero) => (deployCooldownsRef.current[hero.id] ?? 0) <= 0 && currentGold >= hero.cost)
@@ -253,8 +249,8 @@ function App() {
           if (activeCount < 4) return roleScore(b) - roleScore(a) || a.cost - b.cost;
           return b.atk / Math.max(1, b.cost) - a.atk / Math.max(1, a.cost);
         });
-      const affordable = ready.find((hero) => economyLevel >= economyMaxLevel || currentGold - hero.cost >= Math.min(reserveForUpgrade, 250));
-      if (affordable) deploy(affordable);
+      if (ready[0]) { deploy(ready[0]); return; }
+      if (economyLevel < economyMaxLevel && currentGold >= economyUpgradeCost && !visibleDeck.some(hero => (deployCooldownsRef.current[hero.id] ?? 0) <= 0 && hero.cost <= battleGoldMax)) upgradeEconomy();
   };
   useEffect(() => {
     if (!autoCom || battleState !== "playing") return;
@@ -368,7 +364,7 @@ function App() {
     sequence: summonSequence, setSequence: setSummonSequence, revealIndex: summonRevealIndex,
     setRevealIndex: setSummonRevealIndex, setSummaryOpen: setSummonSummaryOpen,
     setResults: setLastSummonResults, setMessage: setSummonMessage, uidRef: summonUidRef,
-    getGrade: getHeroGrade
+    getGrade: (id) => getHeroGradeByIndex(DECK_IDS.indexOf(id))
   });
 
   const toggleDeckHero = (id: string) => {

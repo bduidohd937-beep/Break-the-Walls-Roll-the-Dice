@@ -1,7 +1,6 @@
 import type { ElementType, UnitDef, Wave } from "./types";
 
-// Temporary combat-only test unit. Never add this to HEROES or the summon pool.
-export const DEV_TEST_HERO: UnitDef = {
+export const WUKONG: UnitDef = {
   id: "devWukong", name: "제천대성 손오공", sprite: "🐵", element: "fire",
   hp: 500000, atk: 12000, speed: 65, range: 180, rangeType: "melee",
   attackType: "splash", splashRadius: 25, attackInterval: 0.65,
@@ -30,6 +29,7 @@ export const HEROES: UnitDef[] = [
   { id: "sharon", name: "샤론 — 바람꼬리 궁수", sprite: "🦊", element: "neutral", hp: 175, atk: 68, speed: 43, range: 205, rangeType: "ranged", attackType: "single", attackInterval: 1.05, cost: 560, cooldown: 14, role: "희귀 · 원거리" },
   { id: "vulcan", name: "불칸 — 용암 골렘", sprite: "🌋", element: "fire", hp: 850, atk: 92, speed: 20, range: 45, rangeType: "melee", attackType: "splash", splashRadius: 9, attackInterval: 1.9, cost: 760, cooldown: 18, role: "희귀 · 마법 탱커", effect: "burn" },
   { id: "venom", name: "베놈 — 늪지 독거미", sprite: "🕷️", element: "neutral", hp: 260, atk: 88, speed: 35, range: 145, rangeType: "ranged", attackType: "single", attackInterval: 1.4, cost: 680, cooldown: 16, role: "희귀 · 지속 딜러" },
+  WUKONG,
 ];
 
 export const ENEMIES: UnitDef[] = [

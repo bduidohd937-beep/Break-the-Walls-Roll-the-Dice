@@ -7,7 +7,7 @@ import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
 type Resources=Record<ResourceType,number>;
 type Workers=Partial<Record<ResourceType,string>>;
 type Hp=Record<ResourceType,number>;
-type Grade={name:HeroGradeName;multiplier:number};
+type Grade={name:HeroGradeName|"???";multiplier:number};
 type Args={
  heroes:UnitDef[]; clearedStages:number[]; devMode:boolean; gatherRegion:GatherRegionKey; resources:Resources; setResources:Dispatch<SetStateAction<Resources>>;
  workers:Workers; setWorkers:Dispatch<SetStateAction<Workers>>; gatherHp:Hp; setGatherHp:Dispatch<SetStateAction<Hp>>;

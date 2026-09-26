@@ -11,12 +11,12 @@ export const getHeroGradeByIndex = (index: number): { name: HeroGradeName; multi
   return { name: "초월", multiplier: 9 };
 };
 
-export const GRADE_GROWTH: Record<HeroGradeName, number> = {
-  일반: 0.07, 희귀: 0.075, 영웅: 0.08, 전설: 0.085, 신화: 0.09, 초월: 0.10
+export const GRADE_GROWTH: Record<HeroGradeName | "???", number> = {
+  일반: 0.07, 희귀: 0.075, 영웅: 0.08, 전설: 0.085, 신화: 0.09, 초월: 0.10, "???": 0.10
 };
 
-export const GATHER_GRADE_BONUS: Record<HeroGradeName, number> = {
-  일반: 1, 희귀: 1.08, 영웅: 1.16, 전설: 1.25, 신화: 1.35, 초월: 1.5
+export const GATHER_GRADE_BONUS: Record<HeroGradeName | "???", number> = {
+  일반: 1, 희귀: 1.08, 영웅: 1.16, 전설: 1.25, 신화: 1.35, 초월: 1.5, "???": 1.5
 };
 
 export const getSoulBonuses = (soul: number) => ({

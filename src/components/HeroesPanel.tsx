@@ -2,7 +2,7 @@ import type { UnitDef } from "../game/types";
 import { ELEMENT_LABEL } from "../game/constants";
 import type { HeroGradeName } from "../game/systems/heroGrowth";
 
-type Grade={name:HeroGradeName;multiplier:number};
+type Grade={name:HeroGradeName|"???";multiplier:number};
 type Trait={name:string;text:string};
 type SoulBonus={hp:number;atk:number;speed:number};
 type Props={
