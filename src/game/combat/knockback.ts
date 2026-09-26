@@ -8,6 +8,13 @@ export function applyKnockback(
   attackerAtk: number,
 ): Unit {
   const previousHp = target.currentHp;
+
+  // 넉백 중에는 추가 넉백을 예약하지 않는다.
+  // 피해 자체는 정상적으로 적용되며, 회복 후 다음 HP 임계치를 넘으면 다시 넉백된다.
+  if (target.knockbackTimer > 0) {
+    return { ...target, currentHp: nextHp, hitFlash: 0.14 };
+  }
+
   const threshold = target.hp / (KNOCKBACK_MAX_COUNT + 1);
   const previousStep = Math.floor((target.hp - previousHp) / threshold);
   const nextStep = Math.floor((target.hp - Math.max(0, nextHp)) / threshold);
