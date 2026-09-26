@@ -89,3 +89,24 @@ button { font: inherit; }
   .zoom-controls { right:7px; bottom:7px; gap:3px; padding:4px; }.zoom-controls button { width:30px; height:30px; }.zoom-controls span { min-width:42px; }.zoom-controls .zoom-reset { padding:0 5px; }
   .deck-panel { grid-template-columns:40px 1fr 40px; gap:5px; padding:8px; }.deck-slots { gap:5px; }.hero-card { padding:5px; }.hero-sprite { height:55px; font-size:32px; }.hero-name { font-size:9px; }.hero-meta,.cooldown { font-size:7px; }
 }
+
+
+.knockback-badge {
+  position: absolute;
+  right: -12px;
+  top: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 900;
+  background: #fff;
+  color: #8b1e1e;
+  border: 2px solid #8b1e1e;
+  box-shadow: 0 2px 0 rgba(0,0,0,.18);
+  z-index: 5;
+  pointer-events: none;
+}
