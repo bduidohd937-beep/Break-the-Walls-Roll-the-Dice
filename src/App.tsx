@@ -76,6 +76,8 @@ function App() {
   });
   const [summonMessage, setSummonMessage] = useState("");
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
+  const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
+  const [dragHeroId, setDragHeroId] = useState<string | null>(null);
   const [gatherHp, setGatherHp] = useState({ wood: 10, stone: 14 });
   const [gatherHit, setGatherHit] = useState<"wood" | "stone" | null>(null);
   const gatherMaxHp = { wood: 10, stone: 14 };
@@ -153,7 +155,14 @@ function App() {
   };
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
-  const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : 150 * getUnitLevel(id);
+  const getHeroGrade = (id: string) => {
+    const index = DECK_IDS.indexOf(id);
+    if (index <= 2) return { name: "일반", multiplier: 1 };
+    if (index <= 5) return { name: "희귀", multiplier: 1.6 };
+    if (index <= 7) return { name: "영웅", multiplier: 2.5 };
+    return { name: "전설", multiplier: 4 };
+  };
+  const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : Math.round(150 * getUnitLevel(id) * getHeroGrade(id).multiplier);
 
   const upgradeUnit = (id: string) => {
     const level = getUnitLevel(id);
@@ -589,6 +598,23 @@ function App() {
     setDeckIds(next);
     window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
   };
+  const setDeckSlot = (slotIndex: number, heroId: string) => {
+    if (!ownedHeroes.includes(heroId)) return;
+    const next = deckIds.filter((id) => id !== heroId);
+    const displaced = deckIds[slotIndex];
+    next.splice(Math.min(slotIndex, next.length), 0, heroId);
+    if (displaced && displaced !== heroId && !next.includes(displaced) && next.length < deckSlotCount) next.push(displaced);
+    const trimmed = next.slice(0, deckSlotCount);
+    setDeckIds(trimmed);
+    window.localStorage.setItem("btw-deck-ids", JSON.stringify(trimmed));
+  };
+  const removeDeckSlot = (slotIndex: number) => {
+    const next = deckIds.filter((_, index) => index !== slotIndex);
+    if (next.length === 0) return;
+    setDeckIds(next);
+    window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+  };
+
   useEffect(() => {
     const ownedSet = new Set(ownedHeroes);
     const valid = deckIds.filter((id) => HEROES.some((hero) => hero.id === id) && ownedSet.has(id));
@@ -694,24 +720,18 @@ function App() {
             const level = getUnitLevel(selectedHero.id);
             const multiplier = 1 + (level - 1) * 0.08;
             const upgradeCost = getUpgradeCost(selectedHero.id);
+            const grade = getHeroGrade(selectedHero.id);
             return (
-              <div className="hero-management">
-                <div className="hero-roster">
-                  <div className="deck-builder-title">보유 영웅 · 편성 {deckIds.length}/{deckSlotCount}</div>
-                  <div className="deck-builder-grid">{HEROES.map((hero) => { const selected = deckIds.includes(hero.id); const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${selected ? "selected" : ""} ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `Lv.${getUnitLevel(hero.id)} ${selected ? "· 출전" : ""}` : "🔒 미보유"}</small></button>; })}</div>
-                </div>
-                <div className={`hero-detail ${!owned ? "locked" : ""}`}>
-                  <div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{selectedHero.role} · {selectedHero.rangeType === "ranged" ? "원거리" : "근거리"}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>
-                  {owned ? <>
-                    <div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier)}</b></div><div><span>공격속도</span><b>{selectedHero.attackInterval}s</b></div><div><span>배치비용</span><b>{selectedHero.cost} 🪙</b></div></div>
-                    <div className="hero-detail-actions">
-                      <button className={deckIds.includes(selectedHero.id) ? "remove-deck" : ""} onClick={() => toggleDeckHero(selectedHero.id)}>{deckIds.includes(selectedHero.id) ? "편성 해제" : "⚔️ 전투 편성"}</button>
-                      <button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button>
-                    </div>
-                    <div className="upgrade-preview">강화 시 HP / ATK +8% · 보유 골드 {kingdomGold.toLocaleString()} 🪙</div>
-                  </> : <div className="hero-locked-message">🎲 소환에서 이 영웅을 획득해야 사용할 수 있습니다.</div>}
-                </div>
-                <div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div>
+              <div className="hero-center">
+                <div className="hero-mode-tabs"><button className={heroMode === "formation" ? "active" : ""} onClick={() => setHeroMode("formation")}>⚔️ 영웅 편성</button><button className={heroMode === "upgrade" ? "active" : ""} onClick={() => setHeroMode("upgrade")}>⬆️ 영웅 강화</button></div>
+                {heroMode === "formation" ? <>
+                  <div className="formation-help">보유 영웅을 아래 출전 슬롯으로 드래그하세요. 슬롯의 영웅을 누르면 편성에서 빠집니다.</div>
+                  <div className="formation-roster">{HEROES.filter((hero) => ownedHeroes.includes(hero.id)).map((hero) => <div key={hero.id} className={`formation-hero ${deckIds.includes(hero.id) ? "in-deck" : ""}`} draggable onDragStart={() => setDragHeroId(hero.id)} onDragEnd={() => setDragHeroId(null)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{getHeroGrade(hero.id).name} · Lv.{getUnitLevel(hero.id)}</small></div>)}</div>
+                  <div className="formation-slots">{Array.from({ length: deckSlotCount }, (_, index) => { const id = deckIds[index]; const hero = HEROES.find((unit) => unit.id === id); return <div key={index} className={`formation-slot ${hero ? "filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragHeroId) setDeckSlot(index, dragHeroId); setDragHeroId(null); }} onClick={() => hero && removeDeckSlot(index)}><em>{index + 1}</em>{hero ? <><span>{hero.sprite}</span><b>{hero.name}</b></> : <small>DROP</small>}</div>; })}</div>
+                </> : <div className="hero-management upgrade-only">
+                  <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{HEROES.map((hero) => { const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `${getHeroGrade(hero.id).name} · Lv.${getUnitLevel(hero.id)}` : "🔒 미보유"}</small></button>; })}</div></div>
+                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier)}</b></div><div><span>공격속도</span><b>{selectedHero.attackInterval}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
+                </div>}
               </div>
             );
           })()}
