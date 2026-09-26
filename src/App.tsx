@@ -22,6 +22,7 @@ import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses a
 import { getProgressionGoals } from "./game/systems/progression";
 import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
+import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -30,22 +31,22 @@ const DEV_MODE = true;
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
   const [unlockedStage, setUnlockedStage] = useState(() => {
-    const saved = Number(window.localStorage.getItem("btw-unlocked-stage") ?? "1");
+    const saved = loadNumber(STORAGE_KEYS.unlockedStage, 1);
     return clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
-  const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));
+  const [kingdomGold, setKingdomGold] = useState(() => loadNumber(STORAGE_KEYS.kingdomGold, 0));
   const [gems, setGems] = useState(() => {
-    const saved = Number(window.localStorage.getItem("btw-gems") ?? String(INITIAL_GEMS));
+    const saved = loadNumber(STORAGE_KEYS.gems, INITIAL_GEMS);
     const devGems = Math.max(saved, 999999);
-    window.localStorage.setItem("btw-gems", String(devGems));
+    saveNumber(STORAGE_KEYS.gems, devGems);
     return devGems;
   });
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-unit-levels") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {}); return saved && typeof saved === "object" ? saved : {};
   });
   const [clearedStages, setClearedStages] = useState<number[]>(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem("btw-cleared-stages") ?? "[]");
+      const saved = loadJson<unknown[]>(STORAGE_KEYS.clearedStages, []);
       return Array.isArray(saved) ? saved.filter((value) => Number.isInteger(value)) : [];
     } catch {
       return [];
@@ -53,7 +54,7 @@ function App() {
   });
   const [claimedGoals, setClaimedGoals] = useState<string[]>(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem("btw-claimed-goals") ?? "[]");
+      const saved = loadJson<unknown[]>(STORAGE_KEYS.claimedGoals, []);
       return Array.isArray(saved) ? saved.filter((id) => typeof id === "string") : [];
     } catch { return []; }
   });
@@ -72,46 +73,46 @@ function App() {
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem("btw-deck-ids") ?? "[]");
+      const saved = loadJson<unknown[]>(STORAGE_KEYS.deckIds, []);
       return Array.isArray(saved) && saved.every((id) => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [deckEditMode, setDeckEditMode] = useState(false);
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
-  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
+  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, 1)));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-facility-levels") ?? "{}"); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1), vault: Math.max(1, Number(saved.vault) || 1), training: Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {}); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1), vault: Math.max(1, Number(saved.vault) || 1), training: Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem("btw-owned-heroes") ?? "[]");
+      const saved = loadJson<unknown[]>(STORAGE_KEYS.ownedHeroes, []);
       return Array.isArray(saved) && saved.every((id) => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [summonOpen, setSummonOpen] = useState(false);
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-resources") ?? "{}"); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
   });
   const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-workers") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    try { const saved = loadJson<Record<string, string>>(STORAGE_KEYS.workers, {}); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
   const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
   const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
   const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-summon-storage") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
+    try { const saved = loadJson<SummonStorageItem[]>(STORAGE_KEYS.summonStorage, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
   const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-hero-souls") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
-  const [soulShards, setSoulShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-soul-shards") ?? "0")));
-  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-transcend-shards") ?? "0")));
+  const [soulShards, setSoulShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.soulShards, 0)));
+  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, 0)));
   const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-fusion-records") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
+    try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
   const summonUidRef = useRef(Date.now());
-  const [legendPity, setLegendPity] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-legend-pity") ?? "0")));
-  const [mythPity, setMythPity] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-myth-pity") ?? "0")));
+  const [legendPity, setLegendPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.legendPity, 0)));
+  const [mythPity, setMythPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.mythPity, 0)));
   const [summonSequence, setSummonSequence] = useState<SummonStorageItem[]>([]);
   const [summonRevealIndex, setSummonRevealIndex] = useState(0);
   const [summonSummaryOpen, setSummonSummaryOpen] = useState(false);
@@ -153,8 +154,8 @@ function App() {
     const nextGold = kingdomGold - kingdomUpgradeCost;
     setKingdomLevel(nextLevel);
     setKingdomGold(nextGold);
-    window.localStorage.setItem("btw-kingdom-level", String(nextLevel));
-    window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+    saveNumber(STORAGE_KEYS.kingdomLevel, nextLevel);
+    saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
   };
   const upgradeFacility = (type: FacilityKey) => {
     const cost = facilityUpgradeCost(type);
@@ -163,13 +164,13 @@ function App() {
     const nextGold = kingdomGold - cost;
     setFacilityLevels(next);
     setKingdomGold(nextGold);
-    window.localStorage.setItem("btw-facility-levels", JSON.stringify(next));
-    window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+    saveJson(STORAGE_KEYS.facilityLevels, next);
+    saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
   };
 
   const saveResources = (next: { wood: number; stone: number }) => {
     setResources(next);
-    window.localStorage.setItem("btw-resources", JSON.stringify(next));
+    saveJson(STORAGE_KEYS.resources, next);
   };
   const gatherRegions = GATHER_REGIONS;
   const activeGatherRegion = gatherRegions[gatherRegion as GatherRegionKey];
@@ -214,10 +215,10 @@ function App() {
     for (const key of ["wood", "stone"] as const) if (next[key] === heroId) delete next[key];
     if (workers[type] === heroId) delete next[type]; else next[type] = heroId;
     setWorkers(next);
-    window.localStorage.setItem("btw-workers", JSON.stringify(next));
+    saveJson(STORAGE_KEYS.workers, next);
     const now = Date.now();
     gatherLastSeenRef.current = now;
-    window.localStorage.setItem("btw-gather-last-seen", String(now));
+    saveNumber(STORAGE_KEYS.gatherLastSeen, now);
   };
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
@@ -259,7 +260,7 @@ function App() {
     setUnitLevels(next);
     setKingdomGold((gold) => {
       const nextGold = gold - cost;
-      window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+      saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
       return nextGold;
     });
     window.localStorage.setItem("btw-unit-levels", JSON.stringify(next));
@@ -355,14 +356,14 @@ function App() {
       if (woodGain || stoneGain) {
         setResources((current) => {
           const next = { wood: current.wood + woodGain, stone: current.stone + stoneGain };
-          window.localStorage.setItem("btw-resources", JSON.stringify(next));
+          saveJson(STORAGE_KEYS.resources, next);
           return next;
         });
         setOfflineGather({ wood: woodGain, stone: stoneGain, seconds: offlineSeconds });
       }
     }
     gatherLastSeenRef.current = now;
-    window.localStorage.setItem("btw-gather-last-seen", String(now));
+    saveNumber(STORAGE_KEYS.gatherLastSeen, now);
     const timer = window.setInterval(() => {
       const tickNow = Date.now();
       gatherLastSeenRef.current = tickNow;
@@ -371,7 +372,7 @@ function App() {
         const next = { ...current };
         if (workers.wood) next.wood += getAutoGatherAmount("wood");
         if (workers.stone) next.stone += getAutoGatherAmount("stone");
-        window.localStorage.setItem("btw-resources", JSON.stringify(next));
+        saveJson(STORAGE_KEYS.resources, next);
         return next;
       });
     }, 3000);
@@ -723,7 +724,7 @@ function App() {
           const reward = firstClear ? stage.clearReward : stage.repeatReward;
           setKingdomGold((gold) => {
             const nextGold = gold + reward;
-            window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+            saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
             return nextGold;
           });
           if (!firstClear) return current;
