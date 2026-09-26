@@ -475,3 +475,31 @@ button { font: inherit; }
   .kingdom-hero span{font-size:9px}
   .main-nav button{padding:8px 4px;font-size:15px}
 }
+
+
+/* Gathering economy */
+.main-nav.five{grid-template-columns:repeat(5,1fr)}
+.gather-hub{display:grid;gap:12px;margin-top:16px}
+.resource-storage{display:flex;align-items:center;gap:18px;padding:12px 14px;border:1px solid #314657;background:#09151e;color:#a9bfcc}
+.resource-storage span{margin-right:auto;font-weight:900;color:#ffe49a}
+.resource-storage b{font-size:11px}
+.gather-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gather-site{padding:16px;border:2px solid #263d4c;background:linear-gradient(#102330,#09151d);text-align:center}
+.gather-site-icon{font-size:54px}
+.gather-site h2{margin:5px 0;color:#eaf7ff;font-size:17px}
+.gather-site p{min-height:30px;margin:0 0 10px;color:#7894a5;font-size:9px}
+.gather-action,.sell-action{width:100%;padding:11px;margin-top:6px;border:1px solid #496276;background:#183044;color:#eaf7ff;font-weight:900;cursor:pointer}
+.gather-action:active{transform:translateY(2px)}
+.sell-action{background:#49370f;border-color:#9c7a32;color:#ffe49a}
+.sell-action:disabled{opacity:.35;cursor:not-allowed}
+.worker-box{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding:8px;border:1px solid #243947;background:#071119;color:#7894a5;font-size:8px}
+.worker-box b{color:#b8d0dd}
+.worker-list{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+.worker-list button{display:flex;min-width:0;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;border:1px solid #243947;background:#0a1720;color:#7894a5;cursor:pointer}
+.worker-list button.assigned{border-color:#d6a94c;background:#3a2b0c;color:#ffe49a}
+.worker-list button:disabled{opacity:.25}
+.worker-list small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:6px}
+@media(max-width:700px){
+  .gather-grid{grid-template-columns:1fr}
+  .resource-storage{gap:8px;flex-wrap:wrap}
+}
