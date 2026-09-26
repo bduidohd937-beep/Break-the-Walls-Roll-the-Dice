@@ -83,6 +83,9 @@ function App() {
   const [souls, setSouls] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-souls") ?? "0")));
   const [transcendShards, setTranscendShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-transcend-shards") ?? "0")));
   const summonUidRef = useRef(Date.now());
+  const [summonSequence, setSummonSequence] = useState<SummonStorageItem[]>([]);
+  const [summonRevealIndex, setSummonRevealIndex] = useState(0);
+  const [summonPhase, setSummonPhase] = useState<"idle" | "throw" | "impact" | "crack" | "reveal">("idle");
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
   const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
   const [dragHeroId, setDragHeroId] = useState<string | null>(null);
@@ -615,6 +618,7 @@ function App() {
     return (pool.length ? pool : fallback)[Math.floor(Math.random() * (pool.length ? pool.length : fallback.length))];
   };
   const performSummon = (count: 1 | 11) => {
+    if (summonPhase !== "idle") return;
     const cost = count === 11 ? 1000 : SUMMON_GEM_COST;
     if (gems < cost) return;
     const items: SummonStorageItem[] = Array.from({ length: count }, (_, index) => {
@@ -628,7 +632,27 @@ function App() {
     const nextGems = gems - cost;
     setGems(nextGems);
     window.localStorage.setItem("btw-gems", String(nextGems));
-    setSummonMessage(count === 11 ? "11연속 소환 완료 · 결과가 저장소로 이동했습니다." : "소환 완료 · 결과가 저장소로 이동했습니다.");
+    setSummonSequence(items);
+    setSummonRevealIndex(0);
+    setSummonMessage("");
+    setSummonPhase("throw");
+    window.setTimeout(() => setSummonPhase("impact"), 650);
+    window.setTimeout(() => setSummonPhase("crack"), 1200);
+    window.setTimeout(() => setSummonPhase("reveal"), 1850);
+  };
+  const nextSummonReveal = () => {
+    if (summonRevealIndex < summonSequence.length - 1) {
+      setSummonRevealIndex((index) => index + 1);
+      return;
+    }
+    setSummonPhase("idle");
+    setSummonSequence([]);
+    setSummonMessage("소환 완료 · 모든 결과가 저장소로 이동했습니다.");
+  };
+  const skipSummonReveal = () => {
+    setSummonPhase("idle");
+    setSummonSequence([]);
+    setSummonMessage("연출 스킵 · 모든 결과가 저장소로 이동했습니다.");
   };
   const useStoredHero = (uid: number) => {
     const item = summonStorage.find((entry) => entry.uid === uid);
@@ -825,6 +849,31 @@ function App() {
           {mainTab === "summon" && (
             <div className="summon-panel hub-summon">
               <div className="deck-builder-title">🎲 성벽 소환</div>
+              {summonPhase !== "idle" && (() => {
+                const item = summonSequence[summonRevealIndex];
+                const hero = item ? HEROES.find((unit) => unit.id === item.heroId) : undefined;
+                const highGrade = item ? ["전설", "신화", "초월"].includes(item.grade) : false;
+                return <div className={`summon-cinematic phase-${summonPhase} ${highGrade ? "high-grade" : ""}`}>
+                  <button className="summon-skip" onClick={skipSummonReveal}>SKIP</button>
+                  <div className="summon-scene">
+                    <div className="summon-moon">✦</div>
+                    <div className="summon-die">🎲</div>
+                    <div className="summon-wall"><div className="wall-top">▥▥▥</div><div className="wall-body">▦▦▦<i>⚡</i>▦▦▦</div></div>
+                    <div className="summon-impact-ring"/>
+                    {summonPhase === "reveal" && hero && item && <div className={`hero-reveal grade-${item.grade}`} onClick={nextSummonReveal}>
+                      <div className="reveal-rays"/>
+                      <small>{summonRevealIndex + 1} / {summonSequence.length}</small>
+                      <div className="reveal-grade">{item.grade}</div>
+                      <div className="reveal-sprite">{hero.sprite}</div>
+                      <h2>{hero.name}</h2>
+                      <p>{hero.role}</p>
+                      <b>{summonRevealIndex < summonSequence.length - 1 ? "클릭하여 다음 영웅 ▶" : "클릭하여 결과 확인"}</b>
+                    </div>}
+                  </div>
+                  {summonPhase !== "reveal" && <div className="summon-cinematic-text">{summonPhase === "throw" ? "운명의 주사위를 던진다" : summonPhase === "impact" ? "성벽과 운명이 충돌한다" : "균열 너머에서 기척이 느껴진다..."}</div>}
+                </div>;
+              })()}
+
               <p>소환 결과는 바로 영웅이 되지 않고 저장소로 이동합니다. 사용할 영웅만 영입하거나 영혼으로 변환하세요.</p>
               <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 👻 영혼 <b>{souls.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
               <div className="summon-actions">
