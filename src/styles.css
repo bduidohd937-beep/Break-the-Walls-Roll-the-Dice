@@ -162,3 +162,6 @@ button { font: inherit; }
   .stage-grid { grid-template-columns:1fr; gap:10px; }
   .stage-card { min-height:145px; }
 }
+
+.hero-combat-type { display:flex; justify-content:space-between; gap:4px; margin-top:5px; color:#d2e7f2; font-size:8px; font-weight:900; }
+.hero-combat-type span { padding:2px 4px; border-radius:4px; background:#0a1822; border:1px solid #294657; }
