@@ -349,3 +349,18 @@ button { font: inherit; }
   from{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(.25)}
   to{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.25)}
 }
+
+
+/* Tactical wave readability */
+.wave-threat{
+  margin-top:5px;
+  padding-top:4px;
+  border-top:1px solid rgba(255,190,110,.2);
+  color:#ffc17a;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.25px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
