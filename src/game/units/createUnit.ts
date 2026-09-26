@@ -16,5 +16,7 @@ export function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit
     knockbackFromX: x,
     knockbackTargetX: x,
     alive: true,
+    burnTimer: 0,
+    burnDamage: 0,
   };
 }
