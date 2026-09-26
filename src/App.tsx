@@ -56,7 +56,7 @@ function App() {
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [deckEditMode, setDeckEditMode] = useState(false);
-  const [mainTab, setMainTab] = useState<"home" | "battle" | "heroes" | "summon">("home");
+  const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
@@ -65,6 +65,12 @@ function App() {
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [summonOpen, setSummonOpen] = useState(false);
+  const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-resources") ?? "{}"); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
+  });
+  const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-workers") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+  });
   const [summonMessage, setSummonMessage] = useState("");
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
@@ -76,6 +82,34 @@ function App() {
   const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
   const goldPerSecond = 18 + (economyLevel - 1) * 9;
   const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
+
+  const saveResources = (next: { wood: number; stone: number }) => {
+    setResources(next);
+    window.localStorage.setItem("btw-resources", JSON.stringify(next));
+  };
+  const gatherResource = (type: "wood" | "stone") => {
+    const next = { ...resources, [type]: resources[type] + 1 };
+    saveResources(next);
+  };
+  const sellResource = (type: "wood" | "stone") => {
+    const amount = resources[type];
+    if (amount <= 0) return;
+    const unitPrice = type === "wood" ? 5 : 8;
+    const next = { ...resources, [type]: 0 };
+    saveResources(next);
+    setKingdomGold((gold) => {
+      const value = gold + amount * unitPrice;
+      window.localStorage.setItem("btw-kingdom-gold", String(value));
+      return value;
+    });
+  };
+  const assignWorker = (type: "wood" | "stone", heroId: string) => {
+    const next = { ...workers };
+    for (const key of ["wood", "stone"] as const) if (next[key] === heroId) delete next[key];
+    if (workers[type] === heroId) delete next[type]; else next[type] = heroId;
+    setWorkers(next);
+    window.localStorage.setItem("btw-workers", JSON.stringify(next));
+  };
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : 150 * getUnitLevel(id);
@@ -135,6 +169,21 @@ function App() {
   useEffect(() => { goldRef.current = battleGold; }, [battleGold]);
   useEffect(() => { castleRef.current = castleHp; }, [castleHp]);
   useEffect(() => { enemyCastleRef.current = enemyCastleHp; }, [enemyCastleHp]);
+  useEffect(() => {
+    if (battleState !== "stageSelect") return;
+    const timer = window.setInterval(() => {
+      setResources((current) => {
+        const next = { ...current };
+        if (workers.wood) next.wood += 1;
+        if (workers.stone) next.stone += 1;
+        window.localStorage.setItem("btw-resources", JSON.stringify(next));
+        return next;
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [battleState, workers]);
+
+
 
   useEffect(() => {
     if (battleState !== "playing") return;
@@ -530,7 +579,7 @@ function App() {
       <main className="stage-select-shell">
         <section className="stage-select-card main-hub-card">
           <div className="stage-select-kicker">BREAK THE WALLS</div>
-          <h1>{mainTab === "home" ? "KINGDOM" : mainTab === "battle" ? "BATTLE" : mainTab === "heroes" ? "HEROES" : "SUMMON"}</h1>
+          <h1>{mainTab === "home" ? "KINGDOM" : mainTab === "gather" ? "GATHER" : mainTab === "battle" ? "BATTLE" : mainTab === "heroes" ? "HEROES" : "SUMMON"}</h1>
           <div className="stage-select-stats">
             <span>🏯 영지 Lv.<b>{kingdomLevel}</b></span>
             <span>💎 <b>{gems.toLocaleString()}</b></span>
@@ -543,6 +592,27 @@ function App() {
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
               <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small></div>
               <button className="home-battle-cta" onClick={() => setMainTab("battle")}>⚔️ 전투 출격</button>
+            </div>
+          )}
+
+          {mainTab === "gather" && (
+            <div className="gather-hub">
+              <div className="resource-storage"><span>📦 보관함</span><b>🌲 {resources.wood} 나무</b><b>🪨 {resources.stone} 돌</b></div>
+              <div className="gather-grid">
+                {(["wood", "stone"] as const).map((type) => {
+                  const isWood = type === "wood";
+                  const assigned = workers[type] ? HEROES.find((hero) => hero.id === workers[type]) : undefined;
+                  return <div className="gather-site" key={type}>
+                    <div className="gather-site-icon">{isWood ? "🌲" : "🪨"}</div>
+                    <h2>{isWood ? "왕국 숲" : "채석장"}</h2>
+                    <p>{isWood ? "목재를 모아 상점에 판매합니다." : "석재를 캐서 더 높은 가격에 판매합니다."}</p>
+                    <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 나무 채집" : "⛏️ 돌 채집"} +1</button>
+                    <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{resources[type] * (isWood ? 5 : 8)} 🪙</button>
+                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 3초마다 +1` : "배치된 영웅 없음"}</span></div>
+                    <div className="worker-list">{ownedHeroes.map((id) => { const hero = HEROES.find((unit) => unit.id === id); if (!hero) return null; const busyElsewhere = Object.entries(workers).some(([key, value]) => key !== type && value === id); return <button key={id} disabled={busyElsewhere} className={workers[type] === id ? "assigned" : ""} onClick={() => assignWorker(type, id)}>{hero.sprite}<small>{hero.name}</small></button>; })}</div>
+                  </div>;
+                })}
+              </div>
             </div>
           )}
 
@@ -582,8 +652,9 @@ function App() {
             </div>
           )}
 
-          <nav className="main-nav">
+          <nav className="main-nav five">
             <button className={mainTab === "home" ? "active" : ""} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
+            <button className={mainTab === "gather" ? "active" : ""} onClick={() => setMainTab("gather")}>🌲<span>채집</span></button>
             <button className={mainTab === "battle" ? "active" : ""} onClick={() => setMainTab("battle")}>⚔️<span>전투</span></button>
             <button className={mainTab === "heroes" ? "active" : ""} onClick={() => setMainTab("heroes")}>🛡️<span>영웅</span></button>
             <button className={mainTab === "summon" ? "active" : ""} onClick={() => { setMainTab("summon"); setSummonMessage(""); }}>🎲<span>소환</span></button>
