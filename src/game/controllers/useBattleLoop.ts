@@ -6,7 +6,7 @@ import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
-import { STORAGE_KEYS, saveNumber } from "../storage";
+import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
@@ -385,7 +385,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const clearedStage = stageRef.current + 1;
         setUnlockedStage((current) => {
           const next = Math.max(current, Math.min(STAGES.length, clearedStage + 1));
-          window.localStorage.setItem("btw-unlocked-stage", String(next));
+          saveNumber(STORAGE_KEYS.unlockedStage, next);
           return next;
         });
         setClearedStages((current) => {
@@ -393,7 +393,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           if (firstClear) {
             setGems((currentGems) => {
               const nextGems = currentGems + stage.firstClearGems;
-              window.localStorage.setItem("btw-gems", String(nextGems));
+              saveNumber(STORAGE_KEYS.gems, nextGems);
               return nextGems;
             });
           }
@@ -405,7 +405,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           });
           if (!firstClear) return current;
           const next = [...current, clearedStage].sort((a, b) => a - b);
-          window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
+          saveJson(STORAGE_KEYS.clearedStages, next);
           return next;
         });
         setBattleState("victory");

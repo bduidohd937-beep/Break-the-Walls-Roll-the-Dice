@@ -17,7 +17,7 @@ import { getHeroGradeByIndex, GRADE_GROWTH, getSoulBonuses as calculateSoulBonus
 import { getProgressionGoals } from "./game/systems/progression";
 import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
-import { STORAGE_KEYS, loadJson, loadNumber, saveNumber } from "./game/storage";
+import { DEV_MODE, STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
@@ -26,9 +26,6 @@ import { useBattleLoop } from "./game/controllers/useBattleLoop";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
-// Local test profile; this URL switch is not account authentication.
-const devParam = new URLSearchParams(window.location.search).get("dev");
-const DEV_MODE = devParam === "1" || (import.meta.env.DEV && devParam !== "0");
 const DEV_FACILITY_LEVEL = 10; // Facilities currently have no level cap.
 
 function App() {
@@ -37,10 +34,9 @@ function App() {
     const saved = loadNumber(STORAGE_KEYS.unlockedStage, 1);
     return DEV_MODE ? STAGES.length : clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
-  const [kingdomGold, setKingdomGold] = useState(() => DEV_MODE ? 99999999 : loadNumber(STORAGE_KEYS.kingdomGold, 0));
+  const [kingdomGold, setKingdomGold] = useState(() => loadNumber(STORAGE_KEYS.kingdomGold, DEV_MODE ? 99999999 : 0));
   const [gems, setGems] = useState(() => {
-    const saved = loadNumber(STORAGE_KEYS.gems, INITIAL_GEMS);
-    return DEV_MODE ? 99999999 : saved;
+    return loadNumber(STORAGE_KEYS.gems, DEV_MODE ? 99999999 : INITIAL_GEMS);
   });
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
     const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {});
@@ -76,20 +72,22 @@ function App() {
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.deckIds, []);
-      const initial = Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
-      return DEV_MODE ? ["devWukong", ...initial.filter(id => id !== "devWukong")].slice(0, 10) : initial;
-    } catch { return DECK_IDS.slice(0, 5); }
+      const initial = Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
+      return initial;
+    } catch { return DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5); }
   });
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
-  const [kingdomLevel, setKingdomLevel] = useState(() => DEV_MODE ? 6 : Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, 1)));
+  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1)));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {}); return { lumber: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.lumber) || 1), quarry: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.quarry) || 1), vault: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.vault) || 1), training: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
+    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {});
+    const initial = DEV_MODE ? DEV_FACILITY_LEVEL : 1;
+    return { lumber: Math.max(1, Number(saved?.lumber) || initial), quarry: Math.max(1, Number(saved?.quarry) || initial), vault: Math.max(1, Number(saved?.vault) || initial), training: Math.max(1, Number(saved?.training) || initial) };
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.ownedHeroes, []);
       return DEV_MODE ? DECK_IDS : Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
-    } catch { return DECK_IDS.slice(0, 5); }
+    } catch { return DEV_MODE ? DECK_IDS : DECK_IDS.slice(0, 5); }
   });
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
     try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
@@ -106,8 +104,8 @@ function App() {
   const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
     try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 30])) : saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
-  const [soulShards, setSoulShards] = useState(() => DEV_MODE ? 999999 : Math.max(0, loadNumber(STORAGE_KEYS.soulShards, 0)));
-  const [transcendShards, setTranscendShards] = useState(() => DEV_MODE ? 999999 : Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, 0)));
+  const [soulShards, setSoulShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.soulShards, DEV_MODE ? 999999 : 0)));
+  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, DEV_MODE ? 999999 : 0)));
   const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
     try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
@@ -193,7 +191,7 @@ function App() {
       saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
       return nextGold;
     });
-    window.localStorage.setItem("btw-unit-levels", JSON.stringify(next));
+    saveJson(STORAGE_KEYS.unitLevels, next);
     setNotice(`${HEROES.find((hero) => hero.id === id)?.name ?? id} 강화 Lv.${level + 1}!`);
   };
 
@@ -373,13 +371,13 @@ function App() {
       if (deckIds.length <= 1) return;
       const next = deckIds.filter((value) => value !== id);
       setDeckIds(next);
-      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+      saveJson(STORAGE_KEYS.deckIds, next);
       return;
     }
     if (deckIds.length >= deckSlotCount) return;
     const next = [...deckIds, id];
     setDeckIds(next);
-    window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+    saveJson(STORAGE_KEYS.deckIds, next);
   };
   const setDeckSlot = (slotIndex: number, heroId: string) => {
     if (!ownedHeroes.includes(heroId)) return;
@@ -387,7 +385,7 @@ function App() {
       const next = [...deckIds];
       next[slotIndex] = heroId;
       setDeckIds(next);
-      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+      saveJson(STORAGE_KEYS.deckIds, next);
       return;
     }
     const next = deckIds.filter((id) => id !== heroId);
@@ -396,13 +394,13 @@ function App() {
     if (displaced && displaced !== heroId && !next.includes(displaced) && next.length < deckSlotCount) next.push(displaced);
     const trimmed = next.slice(0, deckSlotCount);
     setDeckIds(trimmed);
-    window.localStorage.setItem("btw-deck-ids", JSON.stringify(trimmed));
+    saveJson(STORAGE_KEYS.deckIds, trimmed);
   };
   const removeDeckSlot = (slotIndex: number) => {
     const next = deckIds.filter((_, index) => index !== slotIndex);
     if (next.length === 0) return;
     setDeckIds(next);
-    window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+    saveJson(STORAGE_KEYS.deckIds, next);
   };
 
   useEffect(() => {
@@ -411,7 +409,7 @@ function App() {
     const next = valid.slice(0, deckSlotCount);
     if (next.length !== deckIds.length || next.some((id, index) => id !== deckIds[index])) {
       setDeckIds(next);
-      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+      saveJson(STORAGE_KEYS.deckIds, next);
     }
   }, [ownedHeroes, deckSlotCount]);
 
@@ -431,18 +429,18 @@ function App() {
     if (!goal.done || claimedGoals.includes(goal.id)) return;
     const nextClaimed = [...claimedGoals, goal.id];
     setClaimedGoals(nextClaimed);
-    window.localStorage.setItem("btw-claimed-goals", JSON.stringify(nextClaimed));
+    saveJson(STORAGE_KEYS.claimedGoals, nextClaimed);
     if (goal.gold > 0) {
       setKingdomGold((current) => {
         const next = current + goal.gold;
-        window.localStorage.setItem("btw-kingdom-gold", String(next));
+        saveNumber(STORAGE_KEYS.kingdomGold, next);
         return next;
       });
     }
     if (goal.gems > 0) {
       setGems((current) => {
         const next = current + goal.gems;
-        window.localStorage.setItem("btw-gems", String(next));
+        saveNumber(STORAGE_KEYS.gems, next);
         return next;
       });
     }
