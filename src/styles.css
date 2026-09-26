@@ -121,3 +121,44 @@ button { font: inherit; }
 .ability-burst{position:absolute;right:-9px;top:8px;color:#ffe66b;font-size:18px;animation:burst .22s ease-out}
 
 .hero-ability{margin-top:4px;color:#a9c9df;font-size:8px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+.stage-select-shell {
+  min-height:100vh; display:grid; place-items:center; padding:28px;
+  background:radial-gradient(circle at 50% 15%, #19364a 0%, #071019 48%, #02060a 100%);
+}
+.stage-select-card {
+  width:min(900px,94vw); padding:34px; border:1px solid #41657b; border-radius:24px;
+  background:linear-gradient(160deg,#122838e8,#07121be8); box-shadow:0 30px 100px #000b;
+}
+.stage-select-kicker { color:#7fd8ff; font-size:11px; font-weight:1000; letter-spacing:4px; }
+.stage-select-card h1 { margin:6px 0 4px; font-size:34px; letter-spacing:1px; }
+.stage-select-sub { margin:0; color:#89a8ba; }
+.stage-select-stats { display:flex; gap:10px; margin:22px 0; flex-wrap:wrap; }
+.stage-select-stats span {
+  padding:8px 12px; border:1px solid #315166; border-radius:10px; background:#091720;
+  color:#91adbd; font-size:11px; font-weight:800;
+}
+.stage-select-stats b { color:#fff; }
+.stage-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.stage-card {
+  min-height:190px; padding:16px; border:1px solid #38596d; border-radius:16px;
+  background:linear-gradient(155deg,#183246,#0a1822); color:#fff; text-align:left;
+  box-shadow:0 7px 0 #040a0e; transition:.15s; cursor:pointer;
+}
+.stage-card.unlocked:hover { transform:translateY(-4px); border-color:#9bdcff; }
+.stage-card.locked { opacity:.38; cursor:not-allowed; filter:grayscale(.5); }
+.stage-card.cleared { border-color:#d7ad4b; }
+.stage-card-top { display:flex; justify-content:space-between; color:#83b1c8; font-size:10px; font-weight:1000; }
+.stage-card-top b { color:#ffd45b; }
+.stage-card h2 { margin:22px 0 20px; font-size:21px; }
+.stage-card-meta { display:flex; justify-content:space-between; color:#9bb6c5; font-size:10px; font-weight:800; }
+.stage-card-reward { margin-top:22px; color:#ffd76c; font-size:9px; font-weight:900; }
+
+@media (max-width:800px) {
+  .stage-select-shell { padding:12px; }
+  .stage-select-card { padding:20px; border-radius:16px; }
+  .stage-select-card h1 { font-size:25px; }
+  .stage-grid { grid-template-columns:1fr; gap:10px; }
+  .stage-card { min-height:145px; }
+}
