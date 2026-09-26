@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, SUMMON_GEM_COST, INITIAL_GEMS, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
@@ -244,8 +245,6 @@ function App() {
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: hitTarget.x, value: Math.max(1, Math.round(damage)), critical: damage >= hero.atk * 1.9 }]);
           }
-          goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + 20);
-          setBattleGold(Math.floor(goldRef.current));
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
           nextHeroes[i].attackTargetX = target.x;
