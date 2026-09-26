@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { UnitDef } from "../game/types";
 import { ELEMENT_LABEL } from "../game/constants";
-import type { HeroGradeName } from "../game/systems/heroGrowth";
+import { HERO_CONTENT_STATUS, type HeroGradeName } from "../game/systems/heroGrowth";
 
 type Grade={name:HeroGradeName|"???";multiplier:number};
 type Trait={name:string;text:string};
@@ -34,7 +34,7 @@ export function HeroesPanel(p:Props){
     <button className="formation-arrow" disabled={p.formationPage===1} onClick={()=>p.setFormationPage(1)}>↓</button><div className="formation-dots"><i className={p.formationPage===0?"active":""}/><i className={p.formationPage===1?"active":""}/></div>
    </div></>:<div className="hero-management upgrade-only">
     <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{p.heroes.map(h=>{const own=p.ownedHeroes.includes(h.id);return <button key={h.id} className={`deck-builder-card ${!own?"disabled":""} ${selected.id===h.id?"focused":""}`} onClick={()=>p.setSelectedHeroId(h.id)}><span>{h.sprite}</span><b>{h.name}</b><small>{own?`${p.getGrade(h.id).name} · Lv.${p.getLevel(h.id)} · 영혼 +${p.heroSouls[h.id]??0}`:"🔒 미보유"}</small></button>})}</div></div>
-    <div className={`hero-detail ${!owned?"locked":""}`}><div className="hero-detail-head"><span>{selected.sprite}</span><div><small>{grade.name} · {selected.role}</small><h2>{selected.name}</h2><b>Lv.{level}</b></div></div>
+    <div className={`hero-detail ${!owned?"locked":""}`}><div className="hero-detail-head"><span>{selected.sprite}</span><div><small>{grade.name} · {selected.role} · {HERO_CONTENT_STATUS[selected.id]}</small><h2>{selected.name}</h2><b>Lv.{level}</b></div></div>
     {owned&&<div className="hero-profile-strip"><span>{ELEMENT_LABEL[selected.element]}</span><span>{selected.rangeType==="ranged"?"원거리":"근거리"} · 사거리 {selected.range}</span><span>이동 {selected.speed}</span><span>출전 {selected.cost}G</span><span>쿨 {selected.cooldown}s</span></div>}
     {owned?<><div className="hero-power-card"><small>COMBAT POWER</small><b>{power.toLocaleString()}</b>{level<10&&<span>다음 Lv.{level+1} → {nextPower.toLocaleString()}</span>}</div>
     <div className="hero-trait-card"><div><small>COMBAT TRAIT</small><b>{p.getTrait(selected).name}</b></div><p>{p.getTrait(selected).text}</p><span>{selected.attackType==="splash"?"광역":"단일"} · 공격주기 {(selected.attackInterval*soul.speed).toFixed(2)}초</span></div>

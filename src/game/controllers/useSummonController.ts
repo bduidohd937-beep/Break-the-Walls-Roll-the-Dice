@@ -4,19 +4,19 @@ import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type S
 import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
 
 export type SummonPhase="idle"|"throw"|"impact"|"crack"|"reveal";
-export const FUSION_RECIPES=(deckIds:string[])=>[
- {id:"unknown-01",name:"??? · 봉인된 왕",icon:"👑",materials:[deckIds[18],deckIds[17]].filter(Boolean),shardCost:10},
- {id:"unknown-02",name:"??? · 경계의 사신",icon:"☠️",materials:[deckIds[19],deckIds[16]].filter(Boolean),shardCost:10},
- {id:"devWukong",name:"??? · 제천대성 손오공",icon:"🐵",materials:[deckIds[19],deckIds[18]].filter(Boolean),shardCost:10}
+export const FUSION_RECIPES=()=>[
+ {id:"unknown-01",name:"??? · 봉인된 왕",icon:"👑",materials:["vulcan","sharon"],shardCost:10},
+ {id:"unknown-02",name:"??? · 경계의 사신",icon:"☠️",materials:["venom","lance"],shardCost:10},
+ {id:"devWukong",name:"??? · 제천대성 손오공",icon:"🐵",materials:["venom","vulcan"],shardCost:10}
 ];
 type Args={
- heroes:UnitDef[];deckIds:string[];gems:number;setGems:Dispatch<SetStateAction<number>>;legendPity:number;setLegendPity:Dispatch<SetStateAction<number>>;mythPity:number;setMythPity:Dispatch<SetStateAction<number>>;
+ heroes:UnitDef[];gems:number;setGems:Dispatch<SetStateAction<number>>;legendPity:number;setLegendPity:Dispatch<SetStateAction<number>>;mythPity:number;setMythPity:Dispatch<SetStateAction<number>>;
  storage:SummonStorageItem[];setStorage:Dispatch<SetStateAction<SummonStorageItem[]>>;owned:string[];setOwned:Dispatch<SetStateAction<string[]>>;
  heroSouls:Record<string,number>;setHeroSouls:Dispatch<SetStateAction<Record<string,number>>>;soulShards:number;setSoulShards:Dispatch<SetStateAction<number>>;
  transcendShards:number;setTranscendShards:Dispatch<SetStateAction<number>>;fusionRecords:string[];setFusionRecords:Dispatch<SetStateAction<string[]>>;
  phase:SummonPhase;setPhase:Dispatch<SetStateAction<SummonPhase>>;sequence:SummonStorageItem[];setSequence:Dispatch<SetStateAction<SummonStorageItem[]>>;
  revealIndex:number;setRevealIndex:Dispatch<SetStateAction<number>>;setSummaryOpen:Dispatch<SetStateAction<boolean>>;setResults:Dispatch<SetStateAction<SummonStorageItem[]>>;
- setMessage:Dispatch<SetStateAction<string>>;uidRef:MutableRefObject<number>;getGrade:(id:string)=>{name:SummonGrade};
+ setMessage:Dispatch<SetStateAction<string>>;uidRef:MutableRefObject<number>;getGrade:(id:string)=>{name:SummonGrade|"???"};
 };
 export function useSummonController(a:Args){
  const rollHero=(grade:SummonGrade)=>{const available=a.heroes.filter(h=>h.id!=="devWukong");const pool=available.filter(h=>a.getGrade(h.id).name===grade),fallback=available.filter(h=>["일반","희귀","영웅","전설"].includes(a.getGrade(h.id).name));const list=pool.length?pool:fallback;return list[Math.floor(Math.random()*list.length)]};
@@ -30,7 +30,7 @@ export function useSummonController(a:Args){
  const bulkSoul=(max:"일반"|"희귀")=>{const allowed=new Set<SummonGrade>(max==="일반"?["일반"]:["일반","희귀"]),souls={...a.heroSouls},ids=new Set<number>();a.storage.forEach(x=>{if(!allowed.has(x.grade)||!a.owned.includes(x.heroId)||(souls[x.heroId]??0)>=30)return;souls[x.heroId]=(souls[x.heroId]??0)+1;ids.add(x.uid)});if(!ids.size)return;const storage=a.storage.filter(x=>!ids.has(x.uid));a.setHeroSouls(souls);a.setStorage(storage);saveJson(STORAGE_KEYS.heroSouls,souls);saveJson(STORAGE_KEYS.summonStorage,storage)};
  const bulkShard=(max:"일반"|"희귀")=>{const allowed=new Set<SummonGrade>(max==="일반"?["일반"]:["일반","희귀"]),targets=a.storage.filter(x=>allowed.has(x.grade));if(!targets.length)return;const ids=new Set(targets.map(x=>x.uid)),storage=a.storage.filter(x=>!ids.has(x.uid)),shards=a.soulShards+targets.reduce((n,x)=>n+SHARD_VALUE[x.grade],0);a.setSoulShards(shards);a.setStorage(storage);saveNumber(STORAGE_KEYS.soulShards,shards);saveJson(STORAGE_KEYS.summonStorage,storage)};
  const buySoul=(id:string)=>{if(!a.owned.includes(id)||a.soulShards<100||(a.heroSouls[id]??0)>=30)return;const souls={...a.heroSouls,[id]:(a.heroSouls[id]??0)+1},shards=a.soulShards-100;a.setHeroSouls(souls);a.setSoulShards(shards);saveJson(STORAGE_KEYS.heroSouls,souls);saveNumber(STORAGE_KEYS.soulShards,shards)};
- const fusionRecipes=FUSION_RECIPES(a.deckIds);
+ const fusionRecipes=FUSION_RECIPES();
  const performFusion=(id:string)=>{const r=fusionRecipes.find(x=>x.id===id);if(!r||a.fusionRecords.includes(id)||a.transcendShards<r.shardCost||!r.materials.every(x=>a.owned.includes(x)))return;const records=[...a.fusionRecords,id],shards=a.transcendShards-r.shardCost;a.setFusionRecords(records);a.setTranscendShards(shards);saveJson(STORAGE_KEYS.fusionRecords,records);saveNumber(STORAGE_KEYS.transcendShards,shards);if(id==="devWukong"&&!a.owned.includes(id)){const owned=[...a.owned,id];a.setOwned(owned);saveJson(STORAGE_KEYS.ownedHeroes,owned)}};
  return {performSummon,nextSummonReveal:nextReveal,skipSummonReveal:skipReveal,useStoredHero:useStored,soulStoredHero:soulStored,shardStoredHero:shardStored,bulkUseStoredHeroes:bulkUse,bulkSoulStoredHeroes:bulkSoul,bulkShardStoredHeroes:bulkShard,buyHeroSoulWithShards:buySoul,fusionRecipes,performFusion};
 }

@@ -2,13 +2,27 @@ import type { UnitDef } from "../types";
 
 export type HeroGradeName = "일반" | "희귀" | "영웅" | "전설" | "신화" | "초월";
 
-export const getHeroGradeByIndex = (index: number): { name: HeroGradeName; multiplier: number } => {
-  if (index <= 5) return { name: "일반", multiplier: 1 };
-  if (index <= 11) return { name: "희귀", multiplier: 1.6 };
-  if (index <= 15) return { name: "영웅", multiplier: 2.5 };
-  if (index <= 17) return { name: "전설", multiplier: 4 };
-  if (index === 18) return { name: "신화", multiplier: 6 };
-  return { name: "초월", multiplier: 9 };
+// These prototype grades are tied to stable IDs so reordering HEROES cannot alter saves or summon pools.
+export const HERO_GRADES: Record<string, HeroGradeName | "???"> = {
+  goblin: "일반", fireGoblin: "일반", shield: "일반", archer: "일반", knight: "일반", mage: "일반",
+  paladin: "희귀", assassin: "희귀", dragon: "희귀", arthur: "희귀", rustKnight: "희귀", traineeSword: "희귀",
+  woodArcher: "영웅", traineeMage: "영웅", villagePriest: "영웅", forestThief: "영웅",
+  lance: "전설", sharon: "전설", vulcan: "신화", venom: "초월", devWukong: "???",
+};
+
+const GRADE_MULTIPLIER: Record<HeroGradeName | "???", number> = {
+  일반: 1, 희귀: 1.6, 영웅: 2.5, 전설: 4, 신화: 6, 초월: 9, "???": 9,
+};
+
+export const getHeroGrade = (id: string) => {
+  const name = HERO_GRADES[id];
+  if (!name) throw new Error(`Unknown hero grade: ${id}`);
+  return { name, multiplier: GRADE_MULTIPLIER[name] };
+};
+
+export const HERO_CONTENT_STATUS: Record<string, "초기 프로토타입" | "추가 임시 영웅" | "합성 전용"> = {
+  goblin: "초기 프로토타입", fireGoblin: "초기 프로토타입", shield: "초기 프로토타입", archer: "초기 프로토타입", knight: "초기 프로토타입", mage: "초기 프로토타입", paladin: "초기 프로토타입", assassin: "초기 프로토타입", dragon: "초기 프로토타입", arthur: "초기 프로토타입",
+  rustKnight: "추가 임시 영웅", traineeSword: "추가 임시 영웅", woodArcher: "추가 임시 영웅", traineeMage: "추가 임시 영웅", villagePriest: "추가 임시 영웅", forestThief: "추가 임시 영웅", lance: "추가 임시 영웅", sharon: "추가 임시 영웅", vulcan: "추가 임시 영웅", venom: "추가 임시 영웅", devWukong: "합성 전용",
 };
 
 export const GRADE_GROWTH: Record<HeroGradeName | "???", number> = {

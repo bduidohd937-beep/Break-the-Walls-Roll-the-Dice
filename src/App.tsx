@@ -13,7 +13,7 @@ import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
 import { type GatherRegionKey } from "./game/systems/gathering";
-import { getHeroGradeByIndex, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
+import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
 import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
@@ -141,7 +141,6 @@ function App() {
   });
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
-  const getHeroGrade = (id: string) => id === "devWukong" ? { name: "???" as const, multiplier: 9 } : getHeroGradeByIndex(DECK_IDS.indexOf(id));
   const getGradeGrowth = (id: string) => {
     const grade = getHeroGrade(id).name;
     return GRADE_GROWTH[grade] ?? 0.08;
@@ -347,14 +346,14 @@ function App() {
     bulkUseStoredHeroes, bulkSoulStoredHeroes, bulkShardStoredHeroes, buyHeroSoulWithShards,
     fusionRecipes, performFusion
   } = useSummonController({
-    heroes: HEROES, deckIds: DECK_IDS, gems, setGems, legendPity, setLegendPity, mythPity, setMythPity,
+    heroes: HEROES, gems, setGems, legendPity, setLegendPity, mythPity, setMythPity,
     storage: summonStorage, setStorage: setSummonStorage, owned: ownedHeroes, setOwned: setOwnedHeroes,
     heroSouls, setHeroSouls, soulShards, setSoulShards, transcendShards, setTranscendShards,
     fusionRecords, setFusionRecords, phase: summonPhase, setPhase: setSummonPhase,
     sequence: summonSequence, setSequence: setSummonSequence, revealIndex: summonRevealIndex,
     setRevealIndex: setSummonRevealIndex, setSummaryOpen: setSummonSummaryOpen,
     setResults: setLastSummonResults, setMessage: setSummonMessage, uidRef: summonUidRef,
-    getGrade: (id) => getHeroGradeByIndex(DECK_IDS.indexOf(id))
+    getGrade: (id) => getHeroGrade(id)
   });
 
   const toggleDeckHero = (id: string) => {
