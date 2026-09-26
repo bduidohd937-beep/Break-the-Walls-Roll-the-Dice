@@ -15,7 +15,9 @@ export function applyKnockback(
     return { ...target, currentHp: nextHp, hitFlash: 0.14 };
   }
 
-  const threshold = target.hp / (KNOCKBACK_MAX_COUNT + 1);
+  // Guard units are frontline anchors: they need deeper HP loss to trigger each knockback.
+  const guardThresholdScale = target.ability === "guard" ? 1.45 : 1;
+  const threshold = (target.hp / (KNOCKBACK_MAX_COUNT + 1)) * guardThresholdScale;
   const previousStep = Math.floor((target.hp - previousHp) / threshold);
   const nextStep = Math.floor((target.hp - Math.max(0, nextHp)) / threshold);
   const shouldKnockback =
@@ -29,6 +31,7 @@ export function applyKnockback(
 
   const direction = attackerTeam === "hero" ? 1 : -1;
   const powerScale = clamp(attackerAtk / 100, 0.7, 1.6);
+  const guardDistanceScale = target.ability === "guard" ? 0.45 : 1;
 
   return {
     ...target,
@@ -36,7 +39,7 @@ export function applyKnockback(
     x: target.x,
     knockbackTimer: 0.22,
     knockbackFromX: target.x,
-    knockbackTargetX: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale, 9, 87),
+    knockbackTargetX: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale * guardDistanceScale, 9, 87),
     attackTimer: Math.max(target.attackTimer, 0.35),
     hitFlash: 0.28,
     attackFlash: 0,
