@@ -660,21 +660,23 @@ function App() {
           return next;
         });
         setClearedStages((current) => {
-          if (current.includes(clearedStage)) return current;
-          const gemReward = 25 + clearedStage * 10;
-          setGems((currentGems) => {
-            const nextGems = currentGems + gemReward;
-            window.localStorage.setItem("btw-gems", String(nextGems));
-            return nextGems;
-          });
-          const next = [...current, clearedStage].sort((a, b) => a - b);
-          window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
-          const reward = stage.clearReward;
+          const firstClear = !current.includes(clearedStage);
+          if (firstClear) {
+            setGems((currentGems) => {
+              const nextGems = currentGems + stage.firstClearGems;
+              window.localStorage.setItem("btw-gems", String(nextGems));
+              return nextGems;
+            });
+          }
+          const reward = firstClear ? stage.clearReward : stage.repeatReward;
           setKingdomGold((gold) => {
             const nextGold = gold + reward;
             window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
             return nextGold;
           });
+          if (!firstClear) return current;
+          const next = [...current, clearedStage].sort((a, b) => a - b);
+          window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
           return next;
         });
         setBattleState("victory");
@@ -1017,10 +1019,11 @@ function App() {
                 const cleared = clearedStages.includes(stage.id);
                 return (
                   <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
-                    <div className="stage-card-top"><span>STAGE {stage.id}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
+                    <div className="stage-card-top"><span>STAGE {stage.id} · {stage.region}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
+                    <div className={`stage-type stage-type-${stage.type}`}>{stage.type === "boss" ? "BOSS" : stage.type === "elite" ? "ELITE" : "NORMAL"}</div>
                     <h2>{stage.name}</h2>
                     <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
-                    <div className="stage-card-reward">FIRST CLEAR · +{stage.clearReward} 🪙</div>
+                    <div className="stage-card-reward">{cleared ? `REPEAT · +${stage.repeatReward} 🪙` : `FIRST · +${stage.clearReward} 🪙 · +${stage.firstClearGems} 💎`}</div>
                   </button>
                 );
               })}
