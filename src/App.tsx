@@ -19,7 +19,12 @@ function App() {
     return clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
   const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));
-  const [gems, setGems] = useState(() => Number(window.localStorage.getItem("btw-gems") ?? String(INITIAL_GEMS)));
+  const [gems, setGems] = useState(() => {
+    const saved = Number(window.localStorage.getItem("btw-gems") ?? String(INITIAL_GEMS));
+    const devGems = Math.max(saved, 999999);
+    window.localStorage.setItem("btw-gems", String(devGems));
+    return devGems;
+  });
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-unit-levels") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
@@ -355,7 +360,7 @@ function App() {
         .map((unit) => ({ ...unit, alive: true }));
 
       // Keep same-team units from stacking into the same position.
-      nextHeroes = resolveSameTeamSpacing(nextHeroes);
+      // Allied units may overlap; only enemies keep formation spacing.
       nextEnemies = resolveSameTeamSpacing(nextEnemies);
 
       const frontline = resolveFrontlineCollision(nextHeroes, nextEnemies);
