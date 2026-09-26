@@ -12,6 +12,7 @@ import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
+import { HubHeader, type HubTab } from "./components/HubHeader";
 import { type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
@@ -67,7 +68,9 @@ function App() {
     const saved = savedIds(loadJson(STORAGE_KEYS.deckIds, []), undefined, 10);
     return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
   });
-  const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
+  const [mainTab, setMainTab] = useState<HubTab>("home");
+  const hubScrollRef = useRef<HTMLElement>(null);
+  useEffect(() => { hubScrollRef.current?.scrollTo(0, 0); }, [mainTab]);
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
     const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {});
@@ -416,6 +419,7 @@ function App() {
   });
   const completedGoalCount = progressionGoals.filter((goal) => goal.done).length;
   const claimedGoalCount = progressionGoals.filter((goal) => claimedGoals.includes(goal.id)).length;
+  const claimableGoalCount = progressionGoals.filter((goal) => goal.done && !claimedGoals.includes(goal.id)).length;
   const nextProgressionGoal = progressionGoals.find((goal) => !goal.done) ?? progressionGoals.find((goal) => !claimedGoals.includes(goal.id));
   const claimGoalReward = (goal: typeof progressionGoals[number]) => {
     if (!goal.done || claimedGoals.includes(goal.id)) return;
@@ -463,18 +467,15 @@ function App() {
           : "";
 
   if (battleState === "stageSelect") {
+    const nextAvailableStage = STAGES.find((stage) => !clearedStages.includes(stage.id) && (DEV_MODE || stage.id <= unlockedStage));
     return (
       <main className="stage-select-shell">
-        <section className="stage-select-card main-hub-card">
-          <div className="stage-select-kicker">BREAK THE WALLS</div>
-          {DEV_MODE && <div className="stage-select-kicker">🛠 DEV TEST · 전체 영웅 Lv.10 / 영혼 +30 · 모든 스테이지 해금</div>}
-          <h1>{mainTab === "home" ? "KINGDOM" : mainTab === "gather" ? "GATHER" : mainTab === "battle" ? "BATTLE" : mainTab === "heroes" ? "HEROES" : "SUMMON"}</h1>
-          <div className="stage-select-stats">
-            <span>🏯 영지 Lv.<b>{kingdomLevel}</b></span>
-            <span>💎 <b>{gems.toLocaleString()}</b></span>
-            <span>🪙 <b>{kingdomGold.toLocaleString()}</b></span>
-            <span>🏆 <b>{clearedStages.length}/{STAGES.length}</b></span>
-          </div>
+        <section ref={hubScrollRef} className="stage-select-card main-hub-card">
+          <HubHeader tab={mainTab} devMode={DEV_MODE} kingdomLevel={kingdomLevel} gems={gems} gold={kingdomGold}
+            clearedCount={clearedStages.length} totalStages={STAGES.length}
+            nextStageLabel={nextAvailableStage ? `STAGE ${nextAvailableStage.id} · ${nextAvailableStage.name}` : "챕터 1 클리어"}
+            claimableGoals={claimableGoalCount} storageCount={summonStorage.length} canNavigate={summonPhase === "idle"}
+            onBattle={() => setMainTab("battle")} onStorage={() => setMainTab("storage")} />
 
           {mainTab === "home" && <KingdomPanel
             kingdomLevel={kingdomLevel} kingdomGold={kingdomGold} kingdomProductionBonus={kingdomProductionBonus} kingdomSellBonus={kingdomSellBonus}
@@ -530,11 +531,11 @@ function App() {
           />}
 
           <nav className="main-nav five">
-            <button className={mainTab === "home" ? "active" : ""} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
-            <button className={mainTab === "gather" ? "active" : ""} onClick={() => setMainTab("gather")}>🌲<span>채집</span></button>
-            <button className={mainTab === "battle" ? "active" : ""} onClick={() => setMainTab("battle")}>⚔️<span>전투</span></button>
-            <button className={mainTab === "heroes" ? "active" : ""} onClick={() => setMainTab("heroes")}>🛡️<span>영웅</span></button>
-            <button className={mainTab === "summon" ? "active" : ""} onClick={() => { setMainTab("summon"); setSummonMessage(""); }}>🎲<span>소환</span></button>
+            <button className={mainTab === "home" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
+            <button className={mainTab === "gather" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("gather")}>🌲<span>채집</span></button>
+            <button className={mainTab === "battle" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("battle")}>⚔️<span>전투</span></button>
+            <button className={mainTab === "heroes" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("heroes")}>🛡️<span>영웅</span></button>
+            <button className={["summon", "storage", "fusion"].includes(mainTab) ? "active" : ""} onClick={() => { if (summonPhase !== "idle") return; setMainTab("summon"); setSummonMessage(""); }}>🎲<span>소환</span></button>
           </nav>
         </section>
       </main>
