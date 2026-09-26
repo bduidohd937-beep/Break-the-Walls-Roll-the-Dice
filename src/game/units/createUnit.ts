@@ -3,6 +3,7 @@ import type { Team, Unit, UnitDef } from "../types";
 export function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
   return {
     ...def,
+    baseAtk: def.atk,
     uid,
     team,
     x,

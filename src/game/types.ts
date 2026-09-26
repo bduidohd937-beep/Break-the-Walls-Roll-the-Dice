@@ -26,6 +26,8 @@ export type UnitDef = {
 };
 
 export type Unit = UnitDef & {
+  baseAtk: number;
+  deathEnraged?: boolean;
   uid: number;
   team: Team;
   x: number;

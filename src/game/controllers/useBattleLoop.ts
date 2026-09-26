@@ -108,7 +108,10 @@ export function useBattleLoop(ctx: BattleLoopContext) {
 
       const bossMechanic = stage.bossMechanic;
       const bossWaveActive = Boolean(waveMeta?.boss && bossMechanic);
-      if (bossWaveActive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
+      const bossId = ({ 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" } as Record<number, string>)[stage.id];
+      const livingBoss = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);
+      const bossAlive = bossWaveActive && Boolean(livingBoss);
+      if (bossAlive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
         bossSummonTimerRef.current -= dt;
         if (bossSummonTimerRef.current <= 0 && spawnRef.current >= totalInWave) {
           const summonDef = ENEMY_MAP[bossMechanic.summonEnemy];
@@ -119,40 +122,18 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           setNotice(`${stage.bossName ?? "BOSS"} · 증원!`);
         }
       }
-      if (bossWaveActive && bossMechanic?.auraAtk) {
-        nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, atk: enemy.atk * (1 + bossMechanic.auraAtk! * dt * 0.15) }));
-      }
-      if (bossWaveActive && bossMechanic?.deathEnrage && !bossEnrageTriggeredRef.current && spawnRef.current >= totalInWave && nextEnemies.length === 0) {
-        bossEnrageTriggeredRef.current = true;
-        spawnTimerRef.current = Math.min(spawnTimerRef.current, 0.35);
-        setNotice(`${stage.bossName ?? "BOSS"} 격파 · 남은 군세 광폭화!`);
-      }
-
-      if (bossWaveActive && bossMechanic?.fieldDamagePerSecond) {
+      if (bossAlive && bossMechanic?.fieldDamagePerSecond) {
         bossFieldTickRef.current -= dt;
         if (bossFieldTickRef.current <= 0) {
           nextHeroes = nextHeroes.map((hero) => ({ ...hero, currentHp: Math.max(0, hero.currentHp - bossMechanic.fieldDamagePerSecond!) }));
           bossFieldTickRef.current = 1;
         }
       }
-      if (bossWaveActive && bossMechanic?.enemyAttackSpeedPerStack) {
+      if (bossAlive && bossMechanic?.enemyAttackSpeedPerStack) {
         bossChargeRef.current += dt;
         const stacks = Math.min(10, Math.floor(bossChargeRef.current / 4));
         const speedMultiplier = Math.max(0.55, 1 - stacks * bossMechanic.enemyAttackSpeedPerStack);
         nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, attackTimer: Math.min(enemy.attackTimer, enemy.attackInterval * speedMultiplier) }));
-      }
-      if (bossWaveActive && bossMechanic?.phaseElements?.length) {
-        const progress = 1 - enemyCastleRef.current / Math.max(1, stage.enemyCastleHp);
-        const phaseIndex = Math.min(bossMechanic.phaseElements.length - 1, Math.floor(progress * bossMechanic.phaseElements.length));
-        if (phaseIndex !== bossPhaseRef.current) {
-          bossPhaseRef.current = phaseIndex;
-          const phase = bossMechanic.phaseElements[phaseIndex];
-          setNotice(`${stage.bossName ?? "BOSS"} · ${phase} 페이즈`);
-          if (phaseIndex > 0 && bossMechanic.summonEnemy) {
-            const phaseDef = ENEMY_MAP[bossMechanic.summonEnemy];
-            nextEnemies.push(makeUnit({ ...phaseDef, hp: Math.round(phaseDef.hp * (1 + phaseIndex * 0.35)), atk: Math.round(phaseDef.atk * (1 + phaseIndex * 0.25)) }, "enemy", 90, 1000 + uidRef.current++));
-          }
-        }
       }
       // Heroes move, attack, and hit the enemy castle when the lane is clear.
       for (let i = 0; i < nextHeroes.length; i++) {
@@ -225,6 +206,31 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
           nextHeroes[i].attackTargetX = target.x;
+        }
+      }
+
+      // Resolve boss death after hero damage, before surviving enemies attack.
+      const bossAfterAttack = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);
+      const bossWasAlive = Boolean(livingBoss || enemiesRef.current.some((enemy) => enemy.id === bossId && enemy.currentHp > 0));
+      if (bossWaveActive && bossMechanic?.deathEnrage && bossWasAlive && !bossAfterAttack && !bossEnrageTriggeredRef.current) {
+        bossEnrageTriggeredRef.current = true;
+        nextEnemies = nextEnemies.map((enemy) => enemy.currentHp > 0 && enemy.id !== bossId ? { ...enemy, deathEnraged: true } : enemy);
+        setNotice(`${stage.bossName ?? "BOSS"} 격파 · 남은 군세 광폭화!`);
+      }
+      if (bossWaveActive && bossMechanic?.auraAtk) {
+        nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, atk: enemy.baseAtk * (1 + (bossAfterAttack && enemy.id !== bossId && enemy.currentHp > 0 ? bossMechanic.auraAtk! : 0) + (enemy.deathEnraged ? bossMechanic.deathEnrage ?? 0 : 0)) }));
+      }
+      if (bossAfterAttack && bossMechanic?.phaseElements?.length) {
+        const progress = 1 - bossAfterAttack.currentHp / Math.max(1, bossAfterAttack.hp);
+        const phaseIndex = Math.min(bossMechanic.phaseElements.length - 1, Math.floor(progress * bossMechanic.phaseElements.length));
+        if (phaseIndex !== bossPhaseRef.current) {
+          bossPhaseRef.current = phaseIndex;
+          const phase = bossMechanic.phaseElements[phaseIndex];
+          setNotice(`${stage.bossName ?? "BOSS"} · ${phase} 페이즈`);
+          if (phaseIndex > 0 && bossMechanic.summonEnemy) {
+            const phaseDef = ENEMY_MAP[bossMechanic.summonEnemy];
+            nextEnemies.push(makeUnit({ ...phaseDef, hp: Math.round(phaseDef.hp * (1 + phaseIndex * 0.35)), atk: Math.round(phaseDef.atk * (1 + phaseIndex * 0.25)) }, "enemy", 90, 1000 + uidRef.current++));
+          }
         }
       }
 
