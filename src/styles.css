@@ -322,3 +322,30 @@ button { font: inherit; }
 @keyframes rangedRecoil{0%{transform:translateX(0)}40%{transform:translateX(-5px) scale(.96)}100%{transform:translateX(0)}}
 @keyframes meleeImpact{0%{opacity:0;transform:scale(.3) rotate(-25deg)}35%{opacity:1;transform:scale(1.35) rotate(8deg)}100%{opacity:0;transform:scale(.75) rotate(25deg)}}
 @keyframes projectileImpact{0%{opacity:1;transform:translate(-50%,0) scale(.65)}80%{opacity:1;transform:translate(calc(-50% + var(--shot-x)),0) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--shot-x)),0) scale(1.55)}}
+
+
+/* Strategy readability v1 */
+.boss-bar.enraged .boss-title::after{
+  content:"  · 공격력 +20% / 공격속도 증가";
+  display:block;
+  margin-top:3px;
+  font-size:8px;
+  letter-spacing:.4px;
+  color:#ffc0a8;
+}
+.battle-unit.hit::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:38px;
+  width:34px;
+  height:34px;
+  border:2px solid rgba(255,245,190,.85);
+  transform:translate(-50%,-50%) rotate(45deg);
+  animation:hitRing .14s steps(3) forwards;
+  pointer-events:none;
+}
+@keyframes hitRing{
+  from{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(.25)}
+  to{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1.25)}
+}
