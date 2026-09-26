@@ -44,11 +44,6 @@ function App() {
 
   const deploy = useCallback((def: UnitDef) => {
     if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
-    const activeSame = heroes.filter((h) => h.id === def.id && h.alive).length;
-    if (activeSame >= 5) {
-      setNotice("같은 영웅은 동시에 최대 5기까지 배치할 수 있어요.");
-      return;
-    }
     const uid = nextUid;
     setNextUid((v) => v + 1);
     setBattleGold((g) => g - def.cost);
