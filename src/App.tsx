@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, HERO_UNLOCK_STAGE, clamp } from "./game/constants";
 import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
@@ -45,6 +45,7 @@ function App() {
   }, [deckPage]);
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
+  const isHeroUnlocked = (id: string) => (HERO_UNLOCK_STAGE[id] ?? 1) <= unlockedStage;
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : 150 * getUnitLevel(id);
 
   const upgradeUnit = (id: string) => {
@@ -63,7 +64,7 @@ function App() {
   };
 
   const deploy = useCallback((def: UnitDef) => {
-    if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
+    if (!isHeroUnlocked(def.id) || battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
     const uid = nextUid;
     const level = getUnitLevel(def.id);
     const statMultiplier = 1 + (level - 1) * 0.08;
@@ -447,12 +448,13 @@ function App() {
           <div className="deck-slots">
             {visibleDeck.map((hero) => {
               const cooldownLeft = deployCooldowns[hero.id] ?? 0;
-              const disabled = battleGold < hero.cost || cooldownLeft > 0;
+              const unlocked = isHeroUnlocked(hero.id);
+              const disabled = !unlocked || battleGold < hero.cost || cooldownLeft > 0;
               return (
-                <button key={hero.id} className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
+                <button key={hero.id} className={`hero-card ${disabled ? "disabled" : ""} ${!unlocked ? "locked" : ""}`} onClick={() => deploy(hero)}>
                   <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
-                  <div className="hero-name">{hero.name} <small>Lv.{getUnitLevel(hero.id)}</small></div>
-                  <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
+                  <div className="hero-name">{hero.name} <small>{unlocked ? `Lv.${getUnitLevel(hero.id)}` : "🔒 LOCKED"}</small></div>
+                  <div className="hero-meta"><span>{hero.role}</span><b>{unlocked ? `🪙 ${hero.cost}` : `🔓 STAGE ${HERO_UNLOCK_STAGE[hero.id]}`}</b></div>
                   <div className="hero-combat-type">
                     <span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span>
                     <span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span>
@@ -465,17 +467,17 @@ function App() {
                     {!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}
                     {!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}
                   </div>
-                  <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
-                  <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={(event) => { event.stopPropagation(); upgradeUnit(hero.id); }}>
+                  <div className="cooldown">{!unlocked ? `STAGE ${HERO_UNLOCK_STAGE[hero.id]} 클리어로 해금` : cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
+                  {unlocked && <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={(event) => { event.stopPropagation(); upgradeUnit(hero.id); }}>
                     {getUpgradeCost(hero.id) === 0 ? "MAX" : `강화 👑${getUpgradeCost(hero.id)}`}
-                  </button>
+                  </button>}
                 </button>
               );
             })}
           </div>
           <button className="swap-btn" onClick={() => setDeckPage(1)} disabled={deckPage === 1}>▼</button>
         </div>
-        <div className="deck-indicator">덱 {deckPage + 1}/2 · 10명 덱 중 5명씩 표시 · ▲▼ 스왑</div>
+        <div className="deck-indicator">덱 {deckPage + 1}/2 · 🔓 해금된 영웅만 출격 가능 · ▲▼ 스왑</div>
       </section>
 
       <section className="battle-info">
