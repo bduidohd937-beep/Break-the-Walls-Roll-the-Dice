@@ -41,7 +41,6 @@ function App() {
   const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
   const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
   const [killCombo, setKillCombo] = useState(0);
-  const [bossEnraged, setBossEnraged] = useState(false);
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
