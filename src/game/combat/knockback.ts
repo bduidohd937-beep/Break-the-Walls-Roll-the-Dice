@@ -26,10 +26,28 @@ export function applyKnockback(
   return {
     ...target,
     currentHp: nextHp,
-    x: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale, 9, 87),
+    x: target.x,
+    knockbackTimer: 0.22,
+    knockbackFromX: target.x,
+    knockbackTargetX: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale, 9, 87),
     attackTimer: Math.max(target.attackTimer, 0.35),
     hitFlash: 0.28,
     attackFlash: 0,
     knockbackCount: target.knockbackCount + 1,
+  };
+}
+
+
+export function updateKnockback(unit: Unit, dt: number): Unit {
+  if (unit.knockbackTimer <= 0) return unit;
+
+  const nextTimer = Math.max(0, unit.knockbackTimer - dt);
+  const progress = 1 - nextTimer / 0.22;
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  return {
+    ...unit,
+    x: unit.knockbackFromX + (unit.knockbackTargetX - unit.knockbackFromX) * eased,
+    knockbackTimer: nextTimer,
   };
 }
