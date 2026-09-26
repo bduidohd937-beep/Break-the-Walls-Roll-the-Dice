@@ -80,6 +80,7 @@ function App() {
   const [dragHeroId, setDragHeroId] = useState<string | null>(null);
   const [gatherHp, setGatherHp] = useState({ wood: 10, stone: 14 });
   const [gatherHit, setGatherHit] = useState<"wood" | "stone" | null>(null);
+  const [gatherRegion, setGatherRegion] = useState<"basic" | "ancient" | "crystal">("basic");
   const gatherMaxHp = { wood: 10, stone: 14 };
   const gatherReward = { wood: 4, stone: 3 };
   const [notice, setNotice] = useState("전투 시작!");
@@ -119,19 +120,22 @@ function App() {
     setResources(next);
     window.localStorage.setItem("btw-resources", JSON.stringify(next));
   };
+  const gatherRegionScale = gatherRegion === "crystal" ? 3 : gatherRegion === "ancient" ? 2 : 1;
   const gatherResource = (type: "wood" | "stone") => {
     setGatherHit(type);
     window.setTimeout(() => setGatherHit((current) => current === type ? null : current), 140);
     setGatherHp((current) => {
       const damage = type === "wood" ? 2 : 3;
-      const nextHp = Math.max(0, current[type] - damage);
+      const scaledMaxHp = gatherMaxHp[type] * gatherRegionScale;
+      const effectiveHp = Math.min(current[type], scaledMaxHp);
+      const nextHp = Math.max(0, effectiveHp - damage);
       if (nextHp > 0) return { ...current, [type]: nextHp };
       setResources((stored) => {
-        const nextResources = { ...stored, [type]: stored[type] + gatherReward[type] };
+        const nextResources = { ...stored, [type]: stored[type] + gatherReward[type] * gatherRegionScale };
         window.localStorage.setItem("btw-resources", JSON.stringify(nextResources));
         return nextResources;
       });
-      return { ...current, [type]: gatherMaxHp[type] };
+      return { ...current, [type]: gatherMaxHp[type] * gatherRegionScale };
     });
   };
   const sellResource = (type: "wood" | "stone") => {
@@ -672,16 +676,17 @@ function App() {
               <div className="resource-storage"><span>📦 보관함</span><b>🌲 {resources.wood} 나무</b><b>🪨 {resources.stone} 돌</b></div>
               <div className="gather-region-progress">
                 <b>🗺️ 채집 지역</b>
-                <span className="unlocked">왕국 외곽 · 기본 지역</span>
-                <span className={clearedStages.includes(2) ? "unlocked" : "locked"}>{clearedStages.includes(2) ? "✓" : "🔒"} 고대 숲 · STAGE 2 클리어</span>
-                <span className={clearedStages.includes(4) ? "unlocked" : "locked"}>{clearedStages.includes(4) ? "✓" : "🔒"} 수정 광산 · STAGE 4 클리어</span>
+                <button className={gatherRegion === "basic" ? "active" : ""} onClick={() => { setGatherRegion("basic"); setGatherHp({ wood: 10, stone: 14 }); }}>왕국 외곽<br/><small>HP ×1 · 보상 ×1</small></button>
+                <button disabled={!clearedStages.includes(2)} className={gatherRegion === "ancient" ? "active" : ""} onClick={() => { setGatherRegion("ancient"); setGatherHp({ wood: 20, stone: 28 }); }}>🌲 고대 숲<br/><small>{clearedStages.includes(2) ? "HP ×2 · 보상 ×2" : "STAGE 2 필요"}</small></button>
+                <button disabled={!clearedStages.includes(4)} className={gatherRegion === "crystal" ? "active" : ""} onClick={() => { setGatherRegion("crystal"); setGatherHp({ wood: 30, stone: 42 }); }}>💎 수정 광산<br/><small>{clearedStages.includes(4) ? "HP ×3 · 보상 ×3" : "STAGE 4 필요"}</small></button>
               </div>
-              {(clearedStages.includes(2) || clearedStages.includes(4)) && <div className="region-bonus">{clearedStages.includes(4) ? "💎 수정 광산 발견 · 향후 고급 광석 채집 가능" : "🌲 고대 숲 발견 · 향후 고급 목재 채집 가능"}</div>}
+              <div className="region-bonus">{gatherRegion === "crystal" ? "💎 수정 광산 · 단단한 자원 / 3배 보상" : gatherRegion === "ancient" ? "🌲 고대 숲 · 강화 자원 / 2배 보상" : "🌿 왕국 외곽 · 기본 채집 지역"}</div>
               <div className="gather-grid">
                 {(["wood", "stone"] as const).map((type) => {
                   const isWood = type === "wood";
                   const assigned = workers[type] ? HEROES.find((hero) => hero.id === workers[type]) : undefined;
-                  const hpPercent = (gatherHp[type] / gatherMaxHp[type]) * 100;
+                  const scaledMaxHp = gatherMaxHp[type] * gatherRegionScale;
+                  const hpPercent = (gatherHp[type] / scaledMaxHp) * 100;
                   return <div className={`gather-site resource-battle ${gatherHit === type ? "resource-hit" : ""}`} key={type}>
                     <h2>{isWood ? "🌲 왕국 숲" : "🪨 채석장"}</h2>
                     <p>{isWood ? "거목을 쓰러뜨려 목재를 획득하세요." : "광맥을 파괴해 석재를 획득하세요."}</p>
@@ -693,7 +698,7 @@ function App() {
                       </button>
                     </div>
                     <div className="resource-hp"><span style={{ width: `${hpPercent}%` }} /></div>
-                    <div className="resource-hp-label">{gatherHp[type]} / {gatherMaxHp[type]} HP · 파괴 보상 +{gatherReward[type]}</div>
+                    <div className="resource-hp-label">{gatherHp[type]} / {scaledMaxHp} HP · 파괴 보상 +{gatherReward[type] * gatherRegionScale}</div>
                     <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
                     <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{resources[type] * (isWood ? 5 : 8)} 🪙</button>
                     <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 공격 +${isWood ? facilityLevels.lumber : facilityLevels.quarry}/3초` : "영웅을 배치하면 자동 공격"}</span></div>
