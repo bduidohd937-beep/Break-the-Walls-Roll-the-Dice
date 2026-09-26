@@ -31,6 +31,10 @@ export const ENEMIES: UnitDef[] = [
   { id: "archerE", name: "오크 궁수", sprite: "🏹", element: "neutral", hp: 150, atk: 34, speed: 22, range: 150, rangeType: "ranged", attackInterval: 1.6, cost: 0, cooldown: 0, role: "원거리" },
   { id: "fireMageE", name: "불꽃 사술사", sprite: "🔮", element: "fire", hp: 220, atk: 58, speed: 18, range: 175, rangeType: "ranged", attackInterval: 2.1, cost: 0, cooldown: 0, role: "광역", attackType: "splash", splashRadius: 10, effect: "burn" },
   { id: "assassinE", name: "그림자 암살자", sprite: "🥷", element: "dark", hp: 180, atk: 105, speed: 58, range: 42, rangeType: "melee", attackInterval: 1.7, cost: 0, cooldown: 0, role: "암살자" },
+  { id: "morgarE", name: "흑기사단장 모르가르", sprite: "🌑", element: "dark", hp: 3200, atk: 220, speed: 24, range: 55, rangeType: "melee", attackInterval: 1.55, cost: 0, cooldown: 0, role: "월드 보스", attackType: "splash", splashRadius: 9 },
+  { id: "ignisE", name: "화염의 군주 이그니스", sprite: "🔥", element: "fire", hp: 5200, atk: 290, speed: 20, range: 75, rangeType: "melee", attackInterval: 1.9, cost: 0, cooldown: 0, role: "월드 보스", attackType: "splash", splashRadius: 13, effect: "burn" },
+  { id: "voltrasE", name: "번개의 포식자 볼트라스", sprite: "⚡", element: "neutral", hp: 7600, atk: 350, speed: 34, range: 110, rangeType: "ranged", attackInterval: 1.25, cost: 0, cooldown: 0, role: "월드 보스", attackType: "splash", splashRadius: 11 },
+  { id: "arcanonE", name: "균열의 포식자 아르카논", sprite: "⚪", element: "neutral", hp: 12000, atk: 460, speed: 25, range: 125, rangeType: "ranged", attackInterval: 1.5, cost: 0, cooldown: 0, role: "월드 보스", attackType: "splash", splashRadius: 15 },
 ];
 
 export const DECK_IDS = HEROES.map((hero) => hero.id);
@@ -44,6 +48,10 @@ export const ENEMY_MAP = {
   archer: ENEMIES[4],
   fireMage: ENEMIES[5],
   assassin: ENEMIES[6],
+  morgar: ENEMIES[7],
+  ignis: ENEMIES[8],
+  voltras: ENEMIES[9],
+  arcanon: ENEMIES[10],
 } as const;
 
 export const WAVES: Wave[] = [
