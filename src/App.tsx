@@ -16,13 +16,14 @@ import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
-import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
+import { type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
 import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
 import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
+import { useKingdomController } from "./game/controllers/useKingdomController";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -140,33 +141,12 @@ function App() {
   const { battleGoldMax, goldPerSecond, trainingBonus, battleStartGold, economyUpgradeCost } =
     getBattleEconomy(economyLevel, facilityLevels.vault, facilityLevels.training);
 
-  const kingdomUpgradeCost = 400 * kingdomLevel;
-  const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
-  const kingdomSellBonus = 1 + Math.floor((kingdomLevel - 1) / 3) * 0.1;
-  const kingdomUnlocks = KINGDOM_UNLOCKS;
-  const nextKingdomUnlock = kingdomUnlocks.find((entry) => entry.level > kingdomLevel);
-  const kingdomMilestone = nextKingdomUnlock ? `Lv.${nextKingdomUnlock.level} · ${nextKingdomUnlock.title}` : "현재 준비된 왕국 해금 완료";
-  const facilityDefs = FACILITY_DEFS;
-  const facilityUpgradeCost = (type: FacilityKey) => facilityDefs[type].baseCost * facilityLevels[type];
-  const upgradeKingdom = () => {
-    if (kingdomGold < kingdomUpgradeCost) return;
-    const nextLevel = kingdomLevel + 1;
-    const nextGold = kingdomGold - kingdomUpgradeCost;
-    setKingdomLevel(nextLevel);
-    setKingdomGold(nextGold);
-    saveNumber(STORAGE_KEYS.kingdomLevel, nextLevel);
-    saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
-  };
-  const upgradeFacility = (type: FacilityKey) => {
-    const cost = facilityUpgradeCost(type);
-    if (kingdomGold < cost) return;
-    const next = { ...facilityLevels, [type]: facilityLevels[type] + 1 };
-    const nextGold = kingdomGold - cost;
-    setFacilityLevels(next);
-    setKingdomGold(nextGold);
-    saveJson(STORAGE_KEYS.facilityLevels, next);
-    saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
-  };
+  const {
+    kingdomUpgradeCost, kingdomProductionBonus, kingdomSellBonus, kingdomUnlocks, nextKingdomUnlock,
+    kingdomMilestone, facilityDefs, facilityUpgradeCost, upgradeKingdom, upgradeFacility
+  } = useKingdomController({
+    kingdomLevel, setKingdomLevel, kingdomGold, setKingdomGold, facilityLevels, setFacilityLevels
+  });
 
   const saveResources = (next: { wood: number; stone: number }) => {
     setResources(next);
