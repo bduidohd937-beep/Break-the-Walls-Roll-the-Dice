@@ -48,3 +48,11 @@ export type WaveMeta = {
   reward: number;
   boss?: boolean;
 };
+
+export type StageDef = {
+  id: number;
+  name: string;
+  waves: Wave[];
+  waveMeta: WaveMeta[];
+  enemyCastleHp: number;
+};
