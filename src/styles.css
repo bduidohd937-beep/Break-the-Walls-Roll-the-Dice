@@ -165,3 +165,7 @@ button { font: inherit; }
 
 .hero-combat-type { display:flex; justify-content:space-between; gap:4px; margin-top:5px; color:#d2e7f2; font-size:8px; font-weight:900; }
 .hero-combat-type span { padding:2px 4px; border-radius:4px; background:#0a1822; border:1px solid #294657; }
+
+.hero-name small { margin-left:3px; color:#ffd76c; font-size:8px; }
+.upgrade-btn { width:100%; margin-top:5px; padding:4px 3px; border:1px solid #735f2c; border-radius:5px; background:#2b2410; color:#ffd76c; font-size:8px; font-weight:1000; cursor:pointer; }
+.upgrade-btn:disabled { opacity:.35; cursor:not-allowed; }
