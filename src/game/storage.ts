@@ -1,0 +1,14 @@
+export const STORAGE_KEYS = {
+  unlockedStage:"btw-unlocked-stage", kingdomGold:"btw-kingdom-gold", gems:"btw-gems",
+  unitLevels:"btw-unit-levels", clearedStages:"btw-cleared-stages", claimedGoals:"btw-claimed-goals",
+  deckIds:"btw-deck-ids", kingdomLevel:"btw-kingdom-level", facilityLevels:"btw-facility-levels",
+  ownedHeroes:"btw-owned-heroes", resources:"btw-resources", workers:"btw-workers",
+  summonStorage:"btw-summon-storage", heroSouls:"btw-hero-souls", soulShards:"btw-soul-shards",
+  transcendShards:"btw-transcend-shards", fusionRecords:"btw-fusion-records",
+  legendPity:"btw-legend-pity", mythPity:"btw-myth-pity", gatherLastSeen:"btw-gather-last-seen"
+} as const;
+
+export const loadNumber=(key:string,fallback=0)=>{const n=Number(window.localStorage.getItem(key)??String(fallback));return Number.isFinite(n)?n:fallback};
+export const loadJson=<T,>(key:string,fallback:T):T=>{try{const raw=window.localStorage.getItem(key);if(raw==null)return fallback;return JSON.parse(raw) as T}catch{return fallback}};
+export const saveNumber=(key:string,value:number)=>window.localStorage.setItem(key,String(value));
+export const saveJson=<T,>(key:string,value:T)=>window.localStorage.setItem(key,JSON.stringify(value));
