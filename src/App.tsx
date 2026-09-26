@@ -1023,7 +1023,7 @@ function App() {
                     <div className={`stage-type stage-type-${stage.type}`}>{stage.type === "boss" ? "BOSS" : stage.type === "elite" ? "ELITE" : "NORMAL"}</div>
                     <h2>{stage.name}</h2>
                     <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
-                    <div className="stage-card-reward">{cleared ? `REPEAT · +${stage.repeatReward} 🪙` : `FIRST · +${stage.clearReward} 🪙 · +${stage.firstClearGems} 💎`}</div>
+                    {stage.bossName && <div className="stage-boss-name">👑 {stage.bossName}</div>}{stage.mechanic && <div className="stage-mechanic">{stage.mechanic}</div>}<div className="stage-card-reward">{cleared ? `REPEAT · +${stage.repeatReward} 🪙` : `FIRST · +${stage.clearReward} 🪙 · +${stage.firstClearGems} 💎`}</div>
                   </button>
                 );
               })}
