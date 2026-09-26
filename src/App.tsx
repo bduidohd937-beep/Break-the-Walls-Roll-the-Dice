@@ -3,7 +3,6 @@ import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { STAGES } from "./game/stages";
-import { BattleUnit } from "./components/BattleUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
 import { GatheringPanel } from "./components/GatheringPanel";
 import { HeroesPanel } from "./components/HeroesPanel";
@@ -12,13 +11,12 @@ import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
-import { type FacilityKey } from "./game/systems/kingdom";
-import { GATHER_REGIONS, type GatherRegionKey } from "./game/systems/gathering";
+import { type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
-import { type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
+import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
-import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
+import { STORAGE_KEYS, loadJson, loadNumber, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
@@ -48,7 +46,7 @@ function App() {
   const [clearedStages, setClearedStages] = useState<number[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.clearedStages, []);
-      return Array.isArray(saved) ? saved.filter((value) => Number.isInteger(value)) : [];
+      return Array.isArray(saved) ? saved.filter((value): value is number => typeof value === "number" && Number.isInteger(value)) : [];
     } catch {
       return [];
     }
@@ -56,7 +54,7 @@ function App() {
   const [claimedGoals, setClaimedGoals] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.claimedGoals, []);
-      return Array.isArray(saved) ? saved.filter((id) => typeof id === "string") : [];
+      return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : [];
     } catch { return []; }
   });
   const [battleGold, setBattleGold] = useState(300);
@@ -75,10 +73,9 @@ function App() {
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.deckIds, []);
-      return Array.isArray(saved) && saved.every((id) => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+      return Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
     } catch { return DECK_IDS.slice(0, 5); }
   });
-  const [deckEditMode, setDeckEditMode] = useState(false);
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, 1)));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
@@ -87,10 +84,9 @@ function App() {
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.ownedHeroes, []);
-      return Array.isArray(saved) && saved.every((id) => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+      return Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
     } catch { return DECK_IDS.slice(0, 5); }
   });
-  const [summonOpen, setSummonOpen] = useState(false);
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
     try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: Math.max(0, Number(saved.wood) || 0), stone: Math.max(0, Number(saved.stone) || 0) }; } catch { return { wood: 0, stone: 0 }; }
   });
@@ -179,7 +175,7 @@ function App() {
   const getSoulBonuses = (id: string) => calculateSoulBonuses(heroSouls[id] ?? 0);
 
   const {
-    gatherRegions, activeGatherRegion, gatherRegionScale, isGatherRegionUnlocked,
+    gatherRegions, gatherRegionScale, isGatherRegionUnlocked,
     getGatherEfficiency, getAutoGatherAmount, getGatherAttackDamage, gatherResource, sellResource, assignWorker
   } = useGatheringController({
     heroes: HEROES, clearedStages, gatherRegion, resources, setResources, workers, setWorkers,
