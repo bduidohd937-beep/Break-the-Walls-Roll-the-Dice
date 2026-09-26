@@ -12,6 +12,8 @@ import { KingdomPanel } from "./components/KingdomPanel";
 import { GatheringPanel } from "./components/GatheringPanel";
 import { HeroesPanel } from "./components/HeroesPanel";
 import { SummonPanel } from "./components/SummonPanel";
+import { StoragePanel } from "./components/StoragePanel";
+import { FusionPanel } from "./components/FusionPanel";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
@@ -1095,25 +1097,17 @@ function App() {
             onSummon={performSummon} onStorage={() => setMainTab("storage")} onFusion={() => setMainTab("fusion")}
           />}
 
-          {mainTab === "storage" && (
-            <div className="summon-panel storage-screen">
-              <div className="storage-screen-head"><button onClick={() => setMainTab("summon")}>← 소환으로</button><div><small>SUMMON STORAGE</small><h2>📦 영웅 저장소</h2></div><b>{summonStorage.length}명</b></div>
-              <div className="storage-wallet">🧩 영혼 파편 <b>{soulShards.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
-              <div className="storage-help">미보유 영웅은 <b>영입</b> · 보유 중복은 해당 영웅 <b>영혼 +1</b> · 필요 없으면 <b>영혼 파편</b>으로 변환</div>
-              <div className="storage-bulk"><button onClick={bulkUseStoredHeroes}>미보유 일괄 영입</button><button onClick={() => bulkSoulStoredHeroes("희귀")}>희귀↓ 중복 일괄 영혼 +1</button><button onClick={() => bulkShardStoredHeroes("일반")}>일반 일괄 파편화</button><button onClick={() => bulkShardStoredHeroes("희귀")}>희귀↓ 일괄 파편화</button></div>
-              <div className="summon-storage full">{summonStorage.length === 0 ? <div className="storage-empty">저장소가 비어 있습니다.</div> : summonStorage.map((item) => { const hero = HEROES.find((unit) => unit.id === item.heroId); if (!hero) return null; const owned = ownedHeroes.includes(hero.id); const soulLevel = heroSouls[hero.id] ?? 0; return <div key={item.uid} className={`storage-card grade-${item.grade}`}><div className="storage-hero"><span>{hero.sprite}</span><div><small>{item.grade} · 영혼 +{soulLevel}/30</small><b>{hero.name}</b></div></div><div className="storage-actions">{!owned ? <button onClick={() => useStoredHero(item.uid)}>영입</button> : <button disabled={soulLevel >= 30} onClick={() => soulStoredHero(item.uid)}>{soulLevel >= 30 ? "영혼 MAX" : "영혼 +1"}</button>}<button onClick={() => shardStoredHero(item.uid)}>파편화</button></div></div>; })}</div>
-            </div>
-          )}
+          {mainTab === "storage" && <StoragePanel
+            heroes={HEROES} items={summonStorage} ownedHeroes={ownedHeroes} heroSouls={heroSouls}
+            soulShards={soulShards} transcendShards={transcendShards} onBack={() => setMainTab("summon")}
+            onBulkUse={bulkUseStoredHeroes} onBulkSoul={bulkSoulStoredHeroes} onBulkShard={bulkShardStoredHeroes}
+            onUse={useStoredHero} onSoul={soulStoredHero} onShard={shardStoredHero}
+          />}
 
-          {mainTab === "fusion" && (
-            <div className="summon-panel fusion-screen">
-              <div className="storage-screen-head"><button onClick={() => setMainTab("summon")}>← 소환으로</button><div><small>HERO FUSION</small><h2>⚗️ 영웅 합성소</h2></div><b>✦ {transcendShards}</b></div>
-              <div className="fusion-warning">??? 등급은 가챠에서 등장하지 않습니다. 지정된 영웅 족보와 초월 조각을 모아 합성합니다. 현재 레시피/영웅은 시스템 검증용 임시 데이터입니다.</div>
-              <div className="fusion-recipes">{fusionRecipes.map((recipe) => { const complete = recipe.materials.every((id) => ownedHeroes.includes(id)); const crafted = fusionRecords.includes(recipe.id); return <div key={recipe.id} className={`fusion-card ${crafted ? "crafted" : ""}`}><span>{recipe.icon}</span><div><small>SECRET RECIPE</small><h3>{recipe.name}</h3><p>{recipe.materials.map((id) => { const hero = HEROES.find((unit) => unit.id === id); return `${ownedHeroes.includes(id) ? "✓" : "✕"} ${hero?.name ?? id}`; }).join(" + ")}</p><b>필요 초월 조각 {recipe.shardCost}</b></div><button disabled={crafted || !complete || transcendShards < recipe.shardCost} onClick={() => performFusion(recipe.id)}>{crafted ? "족보 완성" : complete ? "합성" : "재료 부족"}</button></div>; })}</div>
-              <div className="fusion-book"><b>📖 발견한 족보</b><span>{fusionRecords.length}/{fusionRecipes.length}</span></div>
-            </div>
-          )}
-
+          {mainTab === "fusion" && <FusionPanel
+            heroes={HEROES} recipes={fusionRecipes} records={fusionRecords} ownedHeroes={ownedHeroes}
+            transcendShards={transcendShards} onBack={() => setMainTab("summon")} onFusion={performFusion}
+          />}
 
           <nav className="main-nav five">
             <button className={mainTab === "home" ? "active" : ""} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
