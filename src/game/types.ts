@@ -27,6 +27,9 @@ export type Unit = UnitDef & {
   hitFlash: number;
   attackFlash: number;
   knockbackCount: number;
+  knockbackTimer: number;
+  knockbackFromX: number;
+  knockbackTargetX: number;
   alive: boolean;
 };
 
