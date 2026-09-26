@@ -1,5 +1,6 @@
 export type ElementType = "neutral" | "dark" | "fire";
 export type Team = "hero" | "enemy";
+export type AttackType = "single" | "splash";
 
 export type UnitDef = {
   id: string;
@@ -15,6 +16,8 @@ export type UnitDef = {
   cooldown: number;
   role: string;
   effect?: "burn";
+  attackType?: AttackType;
+  splashRadius?: number;
 };
 
 export type Unit = UnitDef & {
