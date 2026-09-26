@@ -214,11 +214,17 @@ function App() {
         const hero = nextHeroes[i];
         if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
 
-        const target = nextEnemies
-          .filter((e) => e.currentHp > 0 && e.x >= hero.x)
-          .sort((a, b) => a.x - b.x)[0] ?? nextEnemies
-          .filter((e) => e.currentHp > 0)
+        const livingEnemies = nextEnemies.filter((e) => e.currentHp > 0);
+        const frontTarget = livingEnemies
+          .filter((e) => e.x >= hero.x)
+          .sort((a, b) => a.x - b.x)[0] ?? livingEnemies
           .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
+        const assassinTarget = hero.id === "assassin"
+          ? livingEnemies
+              .filter((e) => e.rangeType === "ranged")
+              .sort((a, b) => a.currentHp - b.currentHp || a.x - b.x)[0]
+          : undefined;
+        const target = assassinTarget ?? frontTarget;
 
         if (!target) {
           nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
