@@ -192,6 +192,15 @@ function App() {
     return { name: "초월", multiplier: 9 };
   };
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : Math.round(150 * getUnitLevel(id) * getHeroGrade(id).multiplier);
+  const getSoulBonuses = (id: string) => {
+    const soul = heroSouls[id] ?? 0;
+    return {
+      hp: 1 + (soul >= 5 ? 0.08 : 0) + (soul >= 20 ? 0.12 : 0) + (soul >= 30 ? 0.1 : 0),
+      atk: 1 + (soul >= 10 ? 0.08 : 0) + (soul >= 25 ? 0.12 : 0) + (soul >= 30 ? 0.1 : 0),
+      speed: 1 - (soul >= 15 ? 0.08 : 0) - (soul >= 30 ? 0.05 : 0),
+    };
+  };
+
 
   const upgradeUnit = (id: string) => {
     const level = getUnitLevel(id);
@@ -222,14 +231,20 @@ function App() {
     const uid = nextUid;
     const level = getUnitLevel(def.id);
     const statMultiplier = 1 + (level - 1) * 0.08;
-    const upgradedDef: UnitDef = { ...def, hp: Math.round(def.hp * statMultiplier), atk: Math.round(def.atk * statMultiplier) };
+    const soulBonus = getSoulBonuses(def.id);
+    const upgradedDef: UnitDef = {
+      ...def,
+      hp: Math.round(def.hp * statMultiplier * soulBonus.hp),
+      atk: Math.round(def.atk * statMultiplier * soulBonus.atk),
+      attackInterval: Math.max(0.25, Number((def.attackInterval * soulBonus.speed).toFixed(3)))
+    };
     setNextUid((v) => v + 1);
     goldRef.current = Math.max(0, goldRef.current - def.cost);
     setBattleGold(goldRef.current);
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
-  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels]);
+  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels, heroSouls]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -892,6 +907,7 @@ function App() {
             const owned = ownedHeroes.includes(selectedHero.id);
             const level = getUnitLevel(selectedHero.id);
             const multiplier = 1 + (level - 1) * 0.08;
+            const soulBonus = getSoulBonuses(selectedHero.id);
             const upgradeCost = getUpgradeCost(selectedHero.id);
             const grade = getHeroGrade(selectedHero.id);
             const soulPlus = heroSouls[selectedHero.id] ?? 0;
@@ -912,7 +928,7 @@ function App() {
                   </div>
                 </> : <div className="hero-management upgrade-only">
                   <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{HEROES.map((hero) => { const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `${getHeroGrade(hero.id).name} · Lv.${getUnitLevel(hero.id)} · 영혼 +${heroSouls[hero.id] ?? 0}` : "🔒 미보유"}</small></button>; })}</div></div>
-                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier)}</b></div><div><span>공격속도</span><b>{selectedHero.attackInterval}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-soul-panel"><div className="hero-soul-head"><span>영혼 성장</span><b>+{soulPlus}/30</b></div><div className="hero-soul-track"><i style={{width:`${(soulPlus / 30) * 100}%`}}/></div><div className="hero-soul-milestones">{soulMilestones.map((value) => <div key={value} className={soulPlus >= value ? "reached" : ""}><b>+{value}</b><small>{value === 5 ? "HP 강화" : value === 10 ? "ATK 강화" : value === 15 ? "공속 강화" : value === 20 ? "HP 강화" : value === 25 ? "ATK 강화" : "최종 강화"}</small></div>)}</div><div className="hero-soul-next">{soulPlus >= 30 ? "영혼 성장 MAX" : `다음 마일스톤 +${nextSoulMilestone} · 중복 영웅을 저장소에서 영혼으로 변환하세요.`}</div></div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
+                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier * soulBonus.hp)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier * soulBonus.atk)}</b></div><div><span>공격속도</span><b>{(selectedHero.attackInterval * soulBonus.speed).toFixed(2)}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-soul-panel"><div className="hero-soul-head"><span>영혼 성장</span><b>+{soulPlus}/30</b></div><div className="hero-soul-track"><i style={{width:`${(soulPlus / 30) * 100}%`}}/></div><div className="hero-soul-milestones">{soulMilestones.map((value) => <div key={value} className={soulPlus >= value ? "reached" : ""}><b>+{value}</b><small>{value === 5 ? "HP +8%" : value === 10 ? "ATK +8%" : value === 15 ? "공속 +8%" : value === 20 ? "HP +12%" : value === 25 ? "ATK +12%" : "HP/ATK +10% · 공속 +5%"}</small></div>)}</div><div className="hero-soul-next">{soulPlus >= 30 ? "영혼 성장 MAX" : `다음 마일스톤 +${nextSoulMilestone} · 중복 영웅을 저장소에서 영혼으로 변환하세요.`}</div></div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
                 </div>}
               </div>
             );
