@@ -11,6 +11,7 @@ export function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit
     cooldownTimer: 0,
     hitFlash: 0,
     attackFlash: 0,
+    attackTargetX: x,
     knockbackCount: 0,
     knockbackTimer: 0,
     knockbackFromX: x,
