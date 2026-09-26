@@ -469,6 +469,15 @@ function App() {
   const bossUnit = currentStage.waveMeta[waveIndex]?.boss ? enemies.find((unit) => unit.id === "fireOgreE") : undefined;
   const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
   const bossPhaseTwo = Boolean(bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5);
+  const waveThreat = currentWave?.some((group) => group.enemy === "assassin")
+    ? "⚠ 암살자 · 원거리 후열 우선 공격"
+    : currentWave?.some((group) => group.enemy === "fireMage")
+      ? "⚠ 사술사 · 광역 공격"
+      : currentWave?.some((group) => group.enemy === "archer")
+        ? "⚠ 적 원거리 지원"
+        : currentStage.waveMeta[waveIndex]?.boss
+          ? "⚠ BOSS · 광역 공격 / 반피 이하 격노"
+          : "";
 
   if (battleState === "stageSelect") {
     return (
@@ -565,6 +574,7 @@ function App() {
             <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
             <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
             <div className="wave-notice">{notice}</div>
+            {waveThreat && <div className="wave-threat">{waveThreat}</div>}
           </div>
         </div>
 
