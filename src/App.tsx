@@ -40,7 +40,6 @@ function App() {
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
   const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
   const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
-  const [killCombo, setKillCombo] = useState(0);
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
@@ -109,7 +108,6 @@ function App() {
   const spawnTimerRef = useRef(1.2);
   const uidRef = useRef(1);
   const finalClearNotifiedRef = useRef(false);
-  const comboTimerRef = useRef(0);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
@@ -125,10 +123,6 @@ function App() {
       setCastleHit(null);
       setDamagePopups((popups) => popups.slice(-24));
       setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
-      if (comboTimerRef.current > 0) {
-        comboTimerRef.current = Math.max(0, comboTimerRef.current - dt);
-        if (comboTimerRef.current === 0) setKillCombo(0);
-      }
 
       goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -319,8 +313,6 @@ function App() {
       if (defeatedEnemies > 0) {
         goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
         setBattleGold(Math.floor(goldRef.current));
-        comboTimerRef.current = 2.2;
-        setKillCombo((combo) => combo + defeatedEnemies);
       }
 
       nextHeroes = nextHeroes
@@ -405,8 +397,6 @@ function App() {
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
-    comboTimerRef.current = 0;
-    setKillCombo(0);
     setStageIndex(nextStageIndex);
     setBattleGold(500);
     setWaveIndex(0);
@@ -566,7 +556,6 @@ function App() {
             <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
             <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
             <div className="wave-notice">{notice}</div>
-            {killCombo >= 2 && <div className="combo-banner">⚔️ {killCombo} KILL COMBO</div>}
           </div>
         </div>
 
