@@ -35,7 +35,11 @@ button { font: inherit; }
 .castle-hp span { display:block; height:100%; background:linear-gradient(90deg,#37d97a,#b8f45d); }
 .castle-hp.enemy span { background:linear-gradient(90deg,#ff5769,#ffb45a); }
 
-.wave-banner { position:absolute; z-index:8; top: 14px; left:50%; transform:translateX(-50%); padding:8px 20px; border:1px solid #d8edf9; border-radius:999px; background:#07131dcc; box-shadow:0 6px 18px #0007; font-weight:900; font-size:13px; }
+.wave-banner { position:absolute; z-index:8; top:14px; left:50%; transform:translateX(-50%); width:min(360px,58%); padding:8px 14px; border:1px solid #d8edf9; border-radius:14px; background:#07131de8; box-shadow:0 6px 18px #0007; text-align:center; }
+.wave-title { font-size:12px; font-weight:1000; letter-spacing:.4px; }
+.wave-progress { height:5px; margin:6px 0 5px; border-radius:5px; overflow:hidden; background:#253642; border:1px solid #0a1117; }
+.wave-progress span { display:block; height:100%; background:linear-gradient(90deg,#63e88b,#ffe36e); transition:width .15s linear; }
+.wave-notice { color:#a9c9df; font-size:9px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 .battle-unit { position:absolute; z-index:4; bottom: 16%; width: 76px; transform: translateX(-50%); text-align:center; transition: left .12s linear; }
 .battle-unit.hero { z-index: 5; }.battle-unit.enemy { z-index: 4; }
@@ -86,6 +90,7 @@ button { font: inherit; }
   .game-shell { padding:5px; }.topbar { align-items:flex-start; flex-direction:row; gap:6px; margin-bottom:6px; }.game-title { font-size:17px; }.sub-title { font-size:9px; }.top-stats { margin-left:auto; justify-content:flex-end; gap:4px; }.stat-pill { padding:6px 7px; border-radius:8px; font-size:9px; }
   .battle-card { border-radius:12px; }.battle-sky { min-height:380px; height:57vh; }.lane { inset: 40% 13% 17%; }.battle-unit { width:58px; }.unit-sprite { font-size:37px; }.unit-name { font-size:7px; }.unit-hp { width:50px; }
   .castle { width:78px; bottom:12%; }.tower { font-size:48px; }.castle-label { font-size:9px; }
+  .wave-banner { width:min(300px,62%); padding:6px 9px; }.wave-title { font-size:9px; }.wave-progress { margin:4px 0; height:4px; }.wave-notice { font-size:7px; }
   .zoom-controls { right:7px; bottom:7px; gap:3px; padding:4px; }.zoom-controls button { width:30px; height:30px; }.zoom-controls span { min-width:42px; }.zoom-controls .zoom-reset { padding:0 5px; }
   .deck-panel { grid-template-columns:40px 1fr 40px; gap:5px; padding:8px; }.deck-slots { gap:5px; }.hero-card { padding:5px; }.hero-sprite { height:55px; font-size:32px; }.hero-name { font-size:9px; }.hero-meta,.cooldown { font-size:7px; }
 }
