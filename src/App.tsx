@@ -365,6 +365,9 @@ function App() {
   const finalClearNotifiedRef = useRef(false);
   const bossSummonTimerRef = useRef(0);
   const bossEnrageTriggeredRef = useRef(false);
+  const bossFieldTickRef = useRef(1);
+  const bossChargeRef = useRef(0);
+  const bossPhaseRef = useRef(-1);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
@@ -508,6 +511,32 @@ function App() {
         setNotice(`${stage.bossName ?? "BOSS"} 격파 · 남은 군세 광폭화!`);
       }
 
+      if (bossWaveActive && bossMechanic?.fieldDamagePerSecond) {
+        bossFieldTickRef.current -= dt;
+        if (bossFieldTickRef.current <= 0) {
+          nextHeroes = nextHeroes.map((hero) => ({ ...hero, currentHp: Math.max(0, hero.currentHp - bossMechanic.fieldDamagePerSecond!) }));
+          bossFieldTickRef.current = 1;
+        }
+      }
+      if (bossWaveActive && bossMechanic?.enemyAttackSpeedPerStack) {
+        bossChargeRef.current += dt;
+        const stacks = Math.min(10, Math.floor(bossChargeRef.current / 4));
+        const speedMultiplier = Math.max(0.55, 1 - stacks * bossMechanic.enemyAttackSpeedPerStack);
+        nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, attackTimer: Math.min(enemy.attackTimer, enemy.attackInterval * speedMultiplier) }));
+      }
+      if (bossWaveActive && bossMechanic?.phaseElements?.length) {
+        const progress = 1 - enemyCastleRef.current / Math.max(1, stage.enemyCastleHp);
+        const phaseIndex = Math.min(bossMechanic.phaseElements.length - 1, Math.floor(progress * bossMechanic.phaseElements.length));
+        if (phaseIndex !== bossPhaseRef.current) {
+          bossPhaseRef.current = phaseIndex;
+          const phase = bossMechanic.phaseElements[phaseIndex];
+          setNotice(`${stage.bossName ?? "BOSS"} · ${phase} 페이즈`);
+          if (phaseIndex > 0 && bossMechanic.summonEnemy) {
+            const phaseDef = ENEMY_MAP[bossMechanic.summonEnemy];
+            nextEnemies.push(makeUnit({ ...phaseDef, hp: Math.round(phaseDef.hp * (1 + phaseIndex * 0.35)), atk: Math.round(phaseDef.atk * (1 + phaseIndex * 0.25)) }, "enemy", 90, 1000 + uidRef.current++));
+          }
+        }
+      }
       // Heroes move, attack, and hit the enemy castle when the lane is clear.
       for (let i = 0; i < nextHeroes.length; i++) {
         const hero = nextHeroes[i];
@@ -757,6 +786,9 @@ function App() {
     finalClearNotifiedRef.current = false;
     bossSummonTimerRef.current = 0;
     bossEnrageTriggeredRef.current = false;
+    bossFieldTickRef.current = 1;
+    bossChargeRef.current = 0;
+    bossPhaseRef.current = -1;
     setStageIndex(nextStageIndex);
     setBattleGold(battleStartGold);
     setEconomyLevel(1);
