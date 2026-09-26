@@ -10,7 +10,8 @@ export const STORAGE_KEYS = {
 
 // The developer profile keeps its progress under separate keys on the same origin.
 const devParam = new URLSearchParams(window.location.search).get("dev");
-export const DEV_MODE = devParam === "1" || (import.meta.env.DEV && devParam !== "0");
+// The shipped client never includes a URL switch that can grant developer progress.
+export const DEV_MODE = import.meta.env.DEV && devParam !== "0";
 const profileKey = (key:string) => DEV_MODE ? `btw-dev-${key.slice(4)}` : key;
 
 export const loadNumber=(key:string,fallback=0)=>{const n=Number(window.localStorage.getItem(profileKey(key))??String(fallback));return Number.isFinite(n)?n:fallback};
