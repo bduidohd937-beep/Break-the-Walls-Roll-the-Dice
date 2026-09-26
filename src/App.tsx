@@ -383,6 +383,13 @@ function App() {
   };
   const setDeckSlot = (slotIndex: number, heroId: string) => {
     if (!ownedHeroes.includes(heroId)) return;
+    if (!deckIds.includes(heroId) && deckIds.length >= deckSlotCount) {
+      const next = [...deckIds];
+      next[slotIndex] = heroId;
+      setDeckIds(next);
+      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+      return;
+    }
     const next = deckIds.filter((id) => id !== heroId);
     const displaced = deckIds[slotIndex];
     next.splice(Math.min(slotIndex, next.length), 0, heroId);

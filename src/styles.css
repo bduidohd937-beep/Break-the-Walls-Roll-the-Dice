@@ -581,12 +581,14 @@ button { font: inherit; }
 .formation-hero{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border:1px solid #314657;background:#102330;color:#eaf7ff;cursor:grab;user-select:none}
 .formation-hero:active{cursor:grabbing}
 .formation-hero.in-deck{border-color:#9c7a32;background:#2b250f}
+.formation-hero.selected{border-color:#64d9f3;box-shadow:0 0 0 2px #64d9f3 inset}
 .formation-hero span{font-size:30px}
 .formation-hero b{font-size:8px}
 .formation-hero small{font-size:6px;color:#7894a5}
 .formation-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
 .formation-slot{position:relative;min-height:74px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:2px dashed #314657;background:#071119;color:#587182;cursor:pointer}
 .formation-slot.filled{border-style:solid;border-color:#d6a94c;background:#30250e;color:#ffe49a}
+.formation-slot:disabled{opacity:.45;cursor:default}
 .formation-slot em{position:absolute;left:5px;top:4px;font-size:7px;font-style:normal;color:#587182}
 .formation-slot span{font-size:28px}
 .formation-slot b{font-size:7px}

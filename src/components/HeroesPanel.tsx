@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { UnitDef } from "../game/types";
 import { ELEMENT_LABEL } from "../game/constants";
 import type { HeroGradeName } from "../game/systems/heroGrowth";
@@ -18,17 +19,18 @@ type Props={
  upgradeUnit:(id:string)=>void; buySoul:(id:string)=>void;
 };
 export function HeroesPanel(p:Props){
+ const [pendingHeroId,setPendingHeroId]=useState<string|null>(null);
  const selected=p.heroes.find(h=>h.id===p.selectedHeroId)??p.heroes[0],owned=p.ownedHeroes.includes(selected.id);
  const level=p.getLevel(selected.id),mult=p.getMultiplier(selected.id,level),nextMult=p.getMultiplier(selected.id,Math.min(10,level+1));
  const power=p.getPower(selected,level),nextPower=p.getPower(selected,Math.min(10,level+1)),soul=p.getSoulBonus(selected.id),cost=p.getUpgradeCost(selected.id),grade=p.getGrade(selected.id);
  const soulPlus=p.heroSouls[selected.id]??0,milestones=[5,10,15,20,25,30],nextMilestone=milestones.find(v=>v>soulPlus)??30;
  return <div className="hero-center">
   <div className="hero-mode-tabs"><button className={p.heroMode==="formation"?"active":""} onClick={()=>p.setHeroMode("formation")}>⚔️ 영웅 편성</button><button className={p.heroMode==="upgrade"?"active":""} onClick={()=>p.setHeroMode("upgrade")}>⬆️ 영웅 강화</button></div>
-  {p.heroMode==="formation"?<><div className="formation-help">보유 영웅을 아래 출전 슬롯으로 드래그하세요. 슬롯의 영웅을 누르면 편성에서 빠집니다.</div>
-   <div className="formation-roster">{p.heroes.filter(h=>p.ownedHeroes.includes(h.id)).map(h=><div key={h.id} className={`formation-hero ${p.deckIds.includes(h.id)?"in-deck":""}`} draggable onDragStart={()=>p.setDragHeroId(h.id)} onDragEnd={()=>p.setDragHeroId(null)}><span>{h.sprite}</span><b>{h.name}</b><small>{p.getGrade(h.id).name} · Lv.{p.getLevel(h.id)}</small></div>)}</div>
+  {p.heroMode==="formation"?<><div className="formation-help">영웅을 누르고 출전 슬롯을 누르면 편성됩니다. 드래그도 가능합니다. 선택 없이 슬롯을 누르면 편성에서 빠집니다.{pendingHeroId&&<b> · 선택: {p.heroes.find(h=>h.id===pendingHeroId)?.name}</b>}</div>
+   <div className="formation-roster">{p.heroes.filter(h=>p.ownedHeroes.includes(h.id)).map(h=><button type="button" key={h.id} className={`formation-hero ${p.deckIds.includes(h.id)?"in-deck":""} ${pendingHeroId===h.id?"selected":""}`} aria-pressed={pendingHeroId===h.id} draggable onDragStart={()=>p.setDragHeroId(h.id)} onDragEnd={()=>p.setDragHeroId(null)} onClick={()=>setPendingHeroId(current=>current===h.id?null:h.id)}><span>{h.sprite}</span><b>{h.name}</b><small>{p.getGrade(h.id).name} · Lv.{p.getLevel(h.id)}</small></button>)}</div>
    <div className="formation-pager" onTouchStart={e=>{p.touchY.current=e.touches[0]?.clientY??null}} onTouchEnd={e=>{if(p.touchY.current==null)return;const end=e.changedTouches[0]?.clientY??p.touchY.current,d=end-p.touchY.current;if(d< -35)p.setFormationPage(1);if(d>35)p.setFormationPage(0);p.touchY.current=null}}>
     <button className="formation-arrow" disabled={p.formationPage===0} onClick={()=>p.setFormationPage(0)}>↑</button><div className="formation-page-label">{p.formationPage===0?"출전 1 · 슬롯 1~5":"출전 2 · 슬롯 6~10"}</div>
-    <div className="formation-slots five">{Array.from({length:5},(_,local)=>{const index=p.formationPage*5+local,id=p.deckIds[index],h=p.heroes.find(x=>x.id===id);return <div key={index} className={`formation-slot ${h?"filled":""}`} onDragOver={e=>e.preventDefault()} onDrop={()=>{if(p.dragHeroId)p.setDeckSlot(index,p.dragHeroId);p.setDragHeroId(null)}} onClick={()=>h&&p.removeDeckSlot(index)}><em>{index+1}</em>{h?<><span>{h.sprite}</span><b>{h.name}</b></>:<small>DROP</small>}</div>})}</div>
+    <div className="formation-slots five">{Array.from({length:5},(_,local)=>{const index=p.formationPage*5+local,id=p.deckIds[index],h=p.heroes.find(x=>x.id===id);return <button type="button" key={index} className={`formation-slot ${h?"filled":""}`} disabled={index>p.deckIds.length} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(p.dragHeroId)p.setDeckSlot(index,p.dragHeroId);p.setDragHeroId(null);setPendingHeroId(null)}} onClick={()=>{if(pendingHeroId){p.setDeckSlot(index,pendingHeroId);setPendingHeroId(null)}else if(h)p.removeDeckSlot(index)}}><em>{index+1}</em>{h?<><span>{h.sprite}</span><b>{h.name}</b></>:<small>{index>p.deckIds.length?"앞 슬롯부터":"비어 있음"}</small>}</button>})}</div>
     <button className="formation-arrow" disabled={p.formationPage===1} onClick={()=>p.setFormationPage(1)}>↓</button><div className="formation-dots"><i className={p.formationPage===0?"active":""}/><i className={p.formationPage===1?"active":""}/></div>
    </div></>:<div className="hero-management upgrade-only">
     <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{p.heroes.map(h=>{const own=p.ownedHeroes.includes(h.id);return <button key={h.id} className={`deck-builder-card ${!own?"disabled":""} ${selected.id===h.id?"focused":""}`} onClick={()=>p.setSelectedHeroId(h.id)}><span>{h.sprite}</span><b>{h.name}</b><small>{own?`${p.getGrade(h.id).name} · Lv.${p.getLevel(h.id)} · 영혼 +${p.heroSouls[h.id]??0}`:"🔒 미보유"}</small></button>})}</div></div>
