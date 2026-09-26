@@ -240,7 +240,7 @@ function App() {
 
             nextEnemies[targetIndex] = hero.effect === "burn"
               ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
-              : { ...hitTarget, attackFlash: 0.08 };
+              : { ...hitTarget, hitFlash: 0.14 };
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: hitTarget.x, value: Math.max(1, Math.round(damage)), critical: damage >= hero.atk * 1.9 }]);
           }
@@ -298,8 +298,8 @@ function App() {
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
           }
-          nextEnemies[i].attackTimer = enemy.attackInterval;
-          nextEnemies[i].attackFlash = 0.16;
+          nextEnemies[i].attackTimer = enragedBoss ? enemy.attackInterval * 0.65 : enemy.attackInterval;
+          nextEnemies[i].attackFlash = enragedBoss ? 0.22 : 0.16;
           nextEnemies[i].attackTargetX = target.x;
         }
       }
