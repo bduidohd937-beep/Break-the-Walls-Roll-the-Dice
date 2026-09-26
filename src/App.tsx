@@ -4,6 +4,7 @@ import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
+import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damage";
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
@@ -23,10 +24,6 @@ function App() {
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
-  const lastFrame = useRef(performance.now());
-
-  const isRanged = (unit: Unit) => unit.range >= 100;
-
   const visibleDeck = useMemo(() => {
     const start = deckPage * 5;
     return DECK_IDS.slice(start, start + 5).map((id) => HEROES.find((hero) => hero.id === id)!);
@@ -87,11 +84,12 @@ function App() {
           hitFlash: Math.max(0, u.hitFlash - dt),
           attackFlash: Math.max(0, u.attackFlash - dt),
         }, dt);
-        if (unit.burnTimer <= 0) return unit;
+        const healed = Math.min(unit.hp, unit.currentHp + regenAmount(unit, dt));
+        if (unit.burnTimer <= 0) return { ...unit, currentHp: healed };
         const burnTick = Math.min(unit.burnTimer, dt);
         return {
           ...unit,
-          currentHp: Math.max(0, unit.currentHp - unit.burnDamage * burnTick),
+          currentHp: Math.max(0, healed - unit.burnDamage * burnTick),
           burnTimer: Math.max(0, unit.burnTimer - dt),
         };
       });
@@ -152,8 +150,7 @@ function App() {
         if (distance > hero.range / 10) {
           nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (hero.attackTimer <= 0) {
-          const advantage = hero.element === "fire" && target.element === "dark" ? 1.25 : 1;
-          const damage = hero.atk * advantage;
+          const damage = outgoingDamage(hero, target, hero.atk);
           const splashRadius = hero.splashRadius ?? 0;
           const hitTargets = hero.attackType === "splash"
             ? nextEnemies
@@ -209,15 +206,23 @@ function App() {
           nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
-          if (targetIndex >= 0) {
-            nextHeroes[targetIndex] = {
-              ...applyKnockback(
-                nextHeroes[targetIndex],
-                nextHeroes[targetIndex].currentHp - enemy.atk,
-                "enemy",
-                enemy.atk,
-              ),
-            };
+          const splashRadius = enemy.splashRadius ?? 0;
+          const hitTargets = enemy.attackType === "splash"
+            ? nextHeroes
+                .filter((heroTarget) => heroTarget.currentHp > 0 && Math.abs(heroTarget.x - target.x) <= splashRadius)
+                .map((heroTarget) => heroTarget.uid)
+            : [target.uid];
+
+          for (const targetUid of hitTargets) {
+            const hitIndex = nextHeroes.findIndex((heroTarget) => heroTarget.uid === targetUid);
+            if (hitIndex < 0) continue;
+            const damage = incomingDamage(nextHeroes[hitIndex], enemy.atk);
+            nextHeroes[hitIndex] = applyKnockback(
+              nextHeroes[hitIndex],
+              nextHeroes[hitIndex].currentHp - damage,
+              "enemy",
+              enemy.atk,
+            );
           }
           nextEnemies[i].attackTimer = enemy.attackInterval;
           nextEnemies[i].attackFlash = 0.16;
@@ -338,6 +343,14 @@ function App() {
                   <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
                   <div className="hero-name">{hero.name}</div>
                   <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
+                  <div className="hero-ability">
+                    {hero.ability === "guard" && "🛡️ 피해 감소 22%"}
+                    {hero.ability === "regen" && "✚ 초당 HP 회복"}
+                    {hero.ability === "crit" && "⚡ 28% 치명타"}
+                    {hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}
+                    {!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}
+                    {!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}
+                  </div>
                   <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
                 </button>
               );
