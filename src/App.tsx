@@ -39,6 +39,12 @@ function App() {
       return [];
     }
   });
+  const [claimedGoals, setClaimedGoals] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("btw-claimed-goals") ?? "[]");
+      return Array.isArray(saved) ? saved.filter((id) => typeof id === "string") : [];
+    } catch { return []; }
+  });
   const [battleGold, setBattleGold] = useState(300);
   const [economyLevel, setEconomyLevel] = useState(1);
   const [waveIndex, setWaveIndex] = useState(0);
@@ -1025,6 +1031,40 @@ function App() {
     }
   }, [ownedHeroes, deckSlotCount]);
 
+  const progressionGoals = [
+    { id: "first-clear", icon: "⚔️", title: "첫 승리", text: "스테이지 1을 클리어", done: clearedStages.includes(1), gold: 300, gems: 50 },
+    { id: "gather-start", icon: "🌲", title: "왕국의 자원", text: "목재와 석재를 각각 10개 이상 보유", done: resources.wood >= 10 && resources.stone >= 10, gold: 400, gems: 0 },
+    { id: "kingdom-2", icon: "🏰", title: "성장의 시작", text: "왕성을 Lv.2로 강화", done: kingdomLevel >= 2, gold: 500, gems: 50 },
+    { id: "hero-roster", icon: "🎲", title: "새로운 동료", text: "영웅을 6명 이상 보유", done: ownedHeroes.length >= 6, gold: 300, gems: 100 },
+    { id: "hero-growth", icon: "🛡️", title: "전력 강화", text: "아무 영웅이나 Lv.2 이상 달성", done: Object.values(unitLevels).some((level) => level >= 2), gold: 600, gems: 50 },
+    { id: "facility-growth", icon: "🏗️", title: "왕국 기반", text: "아무 시설이나 Lv.2 이상 달성", done: Object.values(facilityLevels).some((level) => level >= 2), gold: 700, gems: 0 },
+    { id: "stage-10", icon: "🏆", title: "퓨어 월드 전진", text: "스테이지 10까지 클리어", done: clearedStages.some((stage) => stage >= 10), gold: 1200, gems: 150 },
+    { id: "morgar", icon: "🌑", title: "검은 대지 돌파", text: "스테이지 20 모르가르 격파", done: clearedStages.includes(20), gold: 2500, gems: 300 },
+  ];
+  const completedGoalCount = progressionGoals.filter((goal) => goal.done).length;
+  const claimedGoalCount = progressionGoals.filter((goal) => claimedGoals.includes(goal.id)).length;
+  const nextProgressionGoal = progressionGoals.find((goal) => !goal.done) ?? progressionGoals.find((goal) => !claimedGoals.includes(goal.id));
+  const claimGoalReward = (goal: typeof progressionGoals[number]) => {
+    if (!goal.done || claimedGoals.includes(goal.id)) return;
+    const nextClaimed = [...claimedGoals, goal.id];
+    setClaimedGoals(nextClaimed);
+    window.localStorage.setItem("btw-claimed-goals", JSON.stringify(nextClaimed));
+    if (goal.gold > 0) {
+      setKingdomGold((current) => {
+        const next = current + goal.gold;
+        window.localStorage.setItem("btw-kingdom-gold", String(next));
+        return next;
+      });
+    }
+    if (goal.gems > 0) {
+      setGems((current) => {
+        const next = current + goal.gems;
+        window.localStorage.setItem("btw-gems", String(next));
+        return next;
+      });
+    }
+  };
+
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
@@ -1065,7 +1105,21 @@ function App() {
           {mainTab === "home" && (
             <div className="kingdom-home">
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
-              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {clearedStages.length < 2 ? "STAGE 2 클리어 → 고대 숲" : clearedStages.length < 4 ? "STAGE 4 클리어 → 수정 광산" : "왕성·시설 강화 후 다음 전선 준비"}</small></div>
+              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {nextProgressionGoal ? nextProgressionGoal.text : "현재 준비된 진행 목표 완료"}</small></div>
+              <div className="progression-board">
+                <div className="progression-head"><div><span>ADVENTURE GOALS</span><b>왕국 성장 목표</b></div><strong>{claimedGoalCount}/{progressionGoals.length}</strong></div>
+                <div className="progression-meter"><span style={{ width: `${(completedGoalCount / progressionGoals.length) * 100}%` }} /></div>
+                <div className="progression-list">
+                  {progressionGoals.map((goal) => {
+                    const claimed = claimedGoals.includes(goal.id);
+                    return <div key={goal.id} className={`progression-goal ${goal.done ? "done" : ""} ${claimed ? "claimed" : ""}`}>
+                      <span className="goal-icon">{goal.icon}</span>
+                      <div><b>{goal.title}</b><small>{goal.text}</small><em>{goal.gold > 0 ? `🪙 ${goal.gold.toLocaleString()}` : ""}{goal.gold > 0 && goal.gems > 0 ? " · " : ""}{goal.gems > 0 ? `💎 ${goal.gems}` : ""}</em></div>
+                      <button disabled={!goal.done || claimed} onClick={() => claimGoalReward(goal)}>{claimed ? "수령 완료" : goal.done ? "보상 수령" : "진행 중"}</button>
+                    </div>;
+                  })}
+                </div>
+              </div>
               <div className="kingdom-unlock-road"><div className="kingdom-unlock-head"><b>왕국 성장 로드</b><span>{nextKingdomUnlock ? `NEXT · Lv.${nextKingdomUnlock.level}` : "CURRENT MAX"}</span></div><div className="kingdom-unlock-list">{kingdomUnlocks.map((entry) => <div key={entry.level} className={kingdomLevel >= entry.level ? "unlocked" : entry.level === nextKingdomUnlock?.level ? "next" : ""}><span>{entry.icon}</span><b>Lv.{entry.level}</b><small>{entry.title}</small><p>{entry.text}</p></div>)}</div></div>
               <div className="facility-grid">
                 <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
