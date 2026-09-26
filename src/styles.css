@@ -110,3 +110,7 @@ button { font: inherit; }
   z-index: 5;
   pointer-events: none;
 }
+
+.ability-badge,.regen-badge,.execute-badge{position:absolute;z-index:6;pointer-events:none;font-size:12px;font-weight:1000;text-shadow:0 2px 2px #000}
+.ability-badge{left:-6px;top:0}.regen-badge{left:3px;top:-3px;color:#7dffad}.execute-badge{left:50%;top:-20px;transform:translateX(-50%);font-size:8px;color:#ff6978;border:1px solid #ff6978;border-radius:5px;padding:2px 4px;background:#260a10}
+.ability-burst{position:absolute;right:-9px;top:8px;color:#ffe66b;font-size:18px;animation:burst .22s ease-out}
