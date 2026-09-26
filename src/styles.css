@@ -262,6 +262,7 @@ button { font: inherit; }
 .battle-deck-pages .deck-slots{grid-template-columns:repeat(5,minmax(0,1fr))}
 .battle-deck-pages .swap-btn{font-size:20px}
 .hero-name em{font-style:normal;color:#ffdb81}
+.dev-hero-skills{margin-top:4px;font-size:9px;color:#ffcc76;line-height:1.3}
 .battle-deck-header{
   display:flex;
   align-items:center;

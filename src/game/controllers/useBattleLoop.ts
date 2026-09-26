@@ -53,6 +53,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           attackTimer: Math.max(0, u.attackTimer - dt),
           hitFlash: Math.max(0, u.hitFlash - dt),
           attackFlash: Math.max(0, u.attackFlash - dt),
+          specialTimer: Math.max(0, u.specialTimer - dt),
         }, dt);
         const healed = Math.min(unit.hp, unit.currentHp + regenAmount(unit, dt));
         if (unit.burnTimer <= 0) return { ...unit, currentHp: healed };
@@ -70,6 +71,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           attackTimer: Math.max(0, u.attackTimer - dt),
           hitFlash: Math.max(0, u.hitFlash - dt),
           attackFlash: Math.max(0, u.attackFlash - dt),
+          slowTimer: Math.max(0, u.slowTimer - dt),
         }, dt);
         if (unit.burnTimer <= 0) return unit;
         const burnTick = Math.min(unit.burnTimer, dt);
@@ -176,7 +178,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         if (distance > hero.range / 10) {
           nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (hero.attackTimer <= 0) {
-          const damage = outgoingDamage(hero, target, hero.atk);
+          const wukongOpener = hero.id === "devWukong" && !hero.wukongOpenerUsed;
+          const damage = outgoingDamage(hero, target, hero.atk * (wukongOpener ? 1.8 : 1));
           const splashRadius = hero.splashRadius ?? 0;
           const hitTargets = hero.attackType === "splash"
             ? nextEnemies
@@ -199,13 +202,29 @@ export function useBattleLoop(ctx: BattleLoopContext) {
 
             nextEnemies[targetIndex] = hero.effect === "burn"
               ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
-              : { ...hitTarget, hitFlash: 0.14 };
+              : { ...hitTarget, hitFlash: 0.14, slowTimer: wukongOpener ? 3 : hitTarget.slowTimer, slowMultiplier: wukongOpener ? 0.3 : hitTarget.slowMultiplier };
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: hitTarget.x, value: Math.max(1, Math.round(damage)), critical: damage >= hero.atk * 1.9 }]);
           }
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
           nextHeroes[i].attackTargetX = target.x;
+          if (hero.id === "devWukong") {
+            if (wukongOpener) {
+              nextHeroes[i].wukongOpenerUsed = true;
+              setNotice("손오공 · 여의신철! 적 군세 둔화");
+            }
+            if (hero.specialTimer <= 0) {
+              nextEnemies = nextEnemies.map((enemy) => enemy.currentHp > 0 ? { ...enemy, currentHp: Math.max(0, enemy.currentHp - hero.atk * 2.5), burnTimer: 3, burnDamage: Math.max(enemy.burnDamage, hero.atk * 0.15), hitFlash: 0.25 } : enemy);
+              nextHeroes[i].specialTimer = 8;
+              setNotice("손오공 · 근두운 질주! 전장 폭격");
+            }
+            if (Math.random() < 0.35 && nextHeroes.filter((unit) => unit.summonOwnerUid === hero.uid && unit.currentHp > 0).length < 3 && nextHeroes.length < 50) {
+              const clone = makeUnit({ ...hero, id: "devWukongClone", name: "손오공의 분신", sprite: "🐒", hp: Math.round(hero.hp * 0.18), atk: Math.round(hero.atk * 0.4), attackInterval: 1.2, ability: undefined, cost: 0, cooldown: 0 }, "hero", hero.x, 200000 + uidRef.current++);
+              clone.summonOwnerUid = hero.uid;
+              nextHeroes.push(clone);
+            }
+          }
         }
       }
 
@@ -264,14 +283,14 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               nextEnemies[i].attackTargetX = 9;
             }
           } else {
-            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
+            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
           continue;
         }
 
         const distance = Math.abs(target.x - enemy.x);
         if (distance > enemy.range / 10) {
-          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
+          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
           const backlinePressure = enemy.id === "assassinE" && target.rangeType === "ranged";

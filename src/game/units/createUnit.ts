@@ -20,5 +20,8 @@ export function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit
     alive: true,
     burnTimer: 0,
     burnDamage: 0,
+    slowTimer: 0,
+    slowMultiplier: 1,
+    specialTimer: def.id === "devWukong" ? 8 : 0,
   };
 }

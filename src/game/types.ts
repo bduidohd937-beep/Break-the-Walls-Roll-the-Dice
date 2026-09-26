@@ -18,6 +18,7 @@ export type UnitDef = {
   cost: number;
   cooldown: number;
   role: string;
+  story?: string;
   effect?: "burn";
   attackType?: AttackType;
   splashRadius?: number;
@@ -44,6 +45,11 @@ export type Unit = UnitDef & {
   alive: boolean;
   burnTimer: number;
   burnDamage: number;
+  slowTimer: number;
+  slowMultiplier: number;
+  specialTimer: number;
+  summonOwnerUid?: number;
+  wukongOpenerUsed?: boolean;
 };
 
 export type EnemyKey = "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin" | "morgar" | "ignis" | "voltras" | "arcanon";
