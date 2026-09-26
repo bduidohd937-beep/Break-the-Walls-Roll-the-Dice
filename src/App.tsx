@@ -112,6 +112,7 @@ function App() {
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
+  const [autoCom, setAutoCom] = useState(false);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
@@ -326,6 +327,30 @@ function App() {
     setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
   }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels, heroSouls, trainingBonus]);
+
+  useEffect(() => {
+    if (!autoCom || battleState !== "playing") return;
+    const timer = window.setInterval(() => {
+      const activeCount = heroesRef.current.filter((hero) => hero.currentHp > 0).length;
+      const currentGold = goldRef.current;
+      const reserveForUpgrade = economyLevel < economyMaxLevel ? economyUpgradeCost : 0;
+      if (economyLevel < economyMaxLevel && currentGold >= economyUpgradeCost && (economyLevel < 3 || currentGold >= economyUpgradeCost + 350)) {
+        upgradeEconomy();
+        return;
+      }
+      if (activeCount >= 50) return;
+      const ready = visibleDeck
+        .filter((hero) => (deployCooldowns[hero.id] ?? 0) <= 0 && currentGold >= hero.cost)
+        .sort((a, b) => {
+          const roleScore = (hero: UnitDef) => hero.role.includes("탱") || hero.ability === "guard" ? 3 : hero.rangeType === "ranged" ? 2 : 1;
+          if (activeCount < 4) return roleScore(b) - roleScore(a) || a.cost - b.cost;
+          return b.atk / Math.max(1, b.cost) - a.atk / Math.max(1, a.cost);
+        });
+      const affordable = ready.find((hero) => economyLevel >= economyMaxLevel || currentGold - hero.cost >= Math.min(reserveForUpgrade, 250));
+      if (affordable) deploy(affordable);
+    }, 650);
+    return () => window.clearInterval(timer);
+  }, [autoCom, battleState, economyLevel, economyUpgradeCost, economyMaxLevel, visibleDeck, deployCooldowns, deploy]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -1189,7 +1214,7 @@ function App() {
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()} / {battleGoldMax.toLocaleString()}</b></div>
           <div className="stat-pill">💰 지갑 <b>Lv.{economyLevel}/{economyMaxLevel}</b></div>
           <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
-          <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
+          <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button><button className={`stat-pill auto-com-control ${autoCom ? "active" : ""}`} onClick={() => setAutoCom((value) => !value)}>🤖 AUTO {autoCom ? "ON" : "OFF"}</button>
         </div>
       </header>
 
