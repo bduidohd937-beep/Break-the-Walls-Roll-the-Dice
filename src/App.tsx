@@ -205,7 +205,6 @@ function App() {
         if (distance > enemy.range / 10) {
           nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
-          const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
           const splashRadius = enemy.splashRadius ?? 0;
           const hitTargets = enemy.attackType === "splash"
             ? nextHeroes
