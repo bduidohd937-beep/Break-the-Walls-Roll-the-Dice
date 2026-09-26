@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, SUMMON_GEM_COST, INITIAL_GEMS, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
@@ -15,7 +15,7 @@ function App() {
     const saved = Number(window.localStorage.getItem("btw-unlocked-stage") ?? "1");
     return clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
-  const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));\n  const [gems, setGems] = useState(() => Number(window.localStorage.getItem("btw-gems") ?? "300"));
+  const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));\n  const [gems, setGems] = useState(() => Number(window.localStorage.getItem("btw-gems") ?? String(INITIAL_GEMS)));
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-unit-levels") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
@@ -390,15 +390,15 @@ function App() {
 
   const summonHero = () => {
     const pool = HEROES.filter((hero) => !ownedHeroes.includes(hero.id));
-    if (pool.length === 0 || gems < 100) return;
+    if (pool.length === 0 || gems < SUMMON_GEM_COST) return;
     const hero = pool[Math.floor(Math.random() * pool.length)];
     const nextOwned = [...ownedHeroes, hero.id];
     setOwnedHeroes(nextOwned);
     window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
-    setKingdomGold((gold) => {
-      const nextGold = gold - 300;
-      window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
-      return nextGold;
+    setGems((current) => {
+      const nextGems = current - SUMMON_GEM_COST;
+      window.localStorage.setItem("btw-gems", String(nextGems));
+      return nextGems;
     });
     setSummonMessage(`${hero.sprite} ${hero.name} 획득!`);
   };
@@ -430,7 +430,7 @@ function App() {
           <p className="stage-select-sub">영웅은 뽑기로 획득하고, 영지는 성장할수록 전투 슬롯이 늘어납니다.</p>
           <div className="stage-select-stats"><span>🏯 영지 Lv.<b>{kingdomLevel}</b></span><span>⚔️ 전투 슬롯 <b>{deckIds.length}/{deckSlotCount}</b></span></div>
           <div className="management-buttons"><button className="deck-builder-open" onClick={() => setDeckEditMode((value) => !value)}>{deckEditMode ? "전장 선택으로 돌아가기" : "⚔️ 영웅 편성"}</button><button className="summon-open" onClick={() => { setSummonOpen((value) => !value); setSummonMessage(""); }}>{summonOpen ? "뽑기 닫기" : "🎲 영웅 뽑기"}</button></div>
-          {summonOpen && <div className="summon-panel"><div className="deck-builder-title">영웅 소환 · 1회 100 💎</div><p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p><button className="summon-btn" disabled={gems < 100 || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : "🎲 100 💎 뽑기"}</button>{summonMessage && <div className="summon-result">{summonMessage}</div>}<div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div></div>}
+          {summonOpen && <div className="summon-panel"><div className="deck-builder-title">영웅 소환 · 1회 ${SUMMON_GEM_COST} 💎</div><p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p><button className="summon-btn" disabled={gems < 100 || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : "🎲 ${SUMMON_GEM_COST} 💎 뽑기"}</button>{summonMessage && <div className="summon-result">{summonMessage}</div>}<div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div></div>}
           {deckEditMode && <div className="deck-builder"><div className="deck-builder-title">보유 영웅 · 뽑기로 획득한 영웅만 편성 가능</div><div className="deck-builder-grid">{HEROES.map((hero) => { const selected = deckIds.includes(hero.id); const owned = ownedHeroes.includes(hero.id); const full = !selected && deckIds.length >= deckSlotCount; return <button key={hero.id} className={`deck-builder-card ${selected ? "selected" : ""} ${!owned || full ? "disabled" : ""}`} disabled={!owned || full} onClick={() => toggleDeckHero(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{selected ? "✓ 출전" : owned ? "보유" : "🔒 미보유"}</small></button>; })}</div><div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div></div>}
           <div className="stage-select-stats">
             <span>💎 GEM <b>{gems.toLocaleString()}</b></span><span>🪙 강화 골드 <b>{kingdomGold.toLocaleString()}</b></span>
