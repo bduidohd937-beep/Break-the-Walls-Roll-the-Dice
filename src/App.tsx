@@ -21,6 +21,8 @@ function App() {
   const [deckPage, setDeckPage] = useState(0);
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
+  const [gameSpeed, setGameSpeed] = useState(5);
+  const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const lastFrame = useRef(performance.now());
 
   const isRanged = (unit: Unit) => unit.range >= 100;
@@ -31,7 +33,7 @@ function App() {
   }, [deckPage]);
 
   const deploy = useCallback((def: UnitDef) => {
-    if (battleState !== "playing" || battleGold < def.cost) return;
+    if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
     const activeSame = heroes.filter((h) => h.id === def.id && h.alive).length;
     if (activeSame >= 5) {
       setNotice("같은 영웅은 동시에 최대 5기까지 배치할 수 있어요.");
@@ -40,9 +42,10 @@ function App() {
     const uid = nextUid;
     setNextUid((v) => v + 1);
     setBattleGold((g) => g - def.cost);
+    setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     setHeroes((list) => [...list, makeUnit(def, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
-  }, [battleGold, battleState, heroes, nextUid]);
+  }, [battleGold, battleState, heroes, nextUid, deployCooldowns]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -64,12 +67,18 @@ function App() {
     if (battleState !== "playing") return;
 
     const interval = window.setInterval(() => {
-      const dt = 0.05;
+      const dt = 0.05 * gameSpeed;
 
       goldRef.current = Math.min(99999, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
 
       spawnTimerRef.current -= dt;
+
+      setDeployCooldowns((cooldowns) => {
+        const next = { ...cooldowns };
+        for (const id of Object.keys(next)) next[id] = Math.max(0, next[id] - dt);
+        return next;
+      });
 
       let nextHeroes = heroesRef.current.map((u) => updateKnockback({
         ...u,
@@ -236,7 +245,7 @@ function App() {
     }, 50);
 
     return () => window.clearInterval(interval);
-  }, [battleState]);
+  }, [battleState, gameSpeed]);
 
   const reset = () => {
     goldRef.current = 500;
@@ -256,6 +265,7 @@ function App() {
     setCastleHp(1000);
     setEnemyCastleHp(1800);
     setBattleState("playing");
+    setDeployCooldowns({});
     setNotice("전투 시작!");
   };
 
@@ -270,6 +280,7 @@ function App() {
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()}</b></div>
           <div className="stat-pill">🌊 WAVE <b>{Math.min(waveIndex + 1, WAVES.length)}/{WAVES.length}</b></div>
+          <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
         </div>
       </header>
 
@@ -292,13 +303,14 @@ function App() {
           <button className="swap-btn" onClick={() => setDeckPage(0)} disabled={deckPage === 0}>▲</button>
           <div className="deck-slots">
             {visibleDeck.map((hero) => {
-              const disabled = battleGold < hero.cost;
+              const cooldownLeft = deployCooldowns[hero.id] ?? 0;
+              const disabled = battleGold < hero.cost || cooldownLeft > 0;
               return (
                 <button key={hero.id} className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
                   <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
                   <div className="hero-name">{hero.name}</div>
                   <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
-                  <div className="cooldown">배치 쿨 {hero.cooldown}s</div>
+                  <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
                 </button>
               );
             })}
