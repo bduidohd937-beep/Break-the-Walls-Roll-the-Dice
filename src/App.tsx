@@ -72,6 +72,10 @@ function App() {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-workers") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
   const [summonMessage, setSummonMessage] = useState("");
+  const [gatherHp, setGatherHp] = useState({ wood: 10, stone: 14 });
+  const [gatherHit, setGatherHit] = useState<"wood" | "stone" | null>(null);
+  const gatherMaxHp = { wood: 10, stone: 14 };
+  const gatherReward = { wood: 4, stone: 3 };
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
@@ -88,8 +92,19 @@ function App() {
     window.localStorage.setItem("btw-resources", JSON.stringify(next));
   };
   const gatherResource = (type: "wood" | "stone") => {
-    const next = { ...resources, [type]: resources[type] + 1 };
-    saveResources(next);
+    setGatherHit(type);
+    window.setTimeout(() => setGatherHit((current) => current === type ? null : current), 140);
+    setGatherHp((current) => {
+      const damage = type === "wood" ? 2 : 3;
+      const nextHp = Math.max(0, current[type] - damage);
+      if (nextHp > 0) return { ...current, [type]: nextHp };
+      setResources((stored) => {
+        const nextResources = { ...stored, [type]: stored[type] + gatherReward[type] };
+        window.localStorage.setItem("btw-resources", JSON.stringify(nextResources));
+        return nextResources;
+      });
+      return { ...current, [type]: gatherMaxHp[type] };
+    });
   };
   const sellResource = (type: "wood" | "stone") => {
     const amount = resources[type];
@@ -602,13 +617,22 @@ function App() {
                 {(["wood", "stone"] as const).map((type) => {
                   const isWood = type === "wood";
                   const assigned = workers[type] ? HEROES.find((hero) => hero.id === workers[type]) : undefined;
-                  return <div className="gather-site" key={type}>
-                    <div className="gather-site-icon">{isWood ? "🌲" : "🪨"}</div>
-                    <h2>{isWood ? "왕국 숲" : "채석장"}</h2>
-                    <p>{isWood ? "목재를 모아 상점에 판매합니다." : "석재를 캐서 더 높은 가격에 판매합니다."}</p>
-                    <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 나무 채집" : "⛏️ 돌 채집"} +1</button>
+                  const hpPercent = (gatherHp[type] / gatherMaxHp[type]) * 100;
+                  return <div className={`gather-site resource-battle ${gatherHit === type ? "resource-hit" : ""}`} key={type}>
+                    <h2>{isWood ? "🌲 왕국 숲" : "🪨 채석장"}</h2>
+                    <p>{isWood ? "거목을 쓰러뜨려 목재를 획득하세요." : "광맥을 파괴해 석재를 획득하세요."}</p>
+                    <div className="resource-arena">
+                      {assigned && <div className="worker-fighter"><span>{assigned.sprite}</span><small>{assigned.name}</small><i>{isWood ? "🪓" : "⛏️"}</i></div>}
+                      <button className="resource-target" onClick={() => gatherResource(type)} aria-label={isWood ? "나무 공격" : "돌 공격"}>
+                        <span className="resource-object">{isWood ? "🌳" : "🪨"}</span>
+                        <span className="resource-impact">{isWood ? "🪵" : "✦"}</span>
+                      </button>
+                    </div>
+                    <div className="resource-hp"><span style={{ width: `${hpPercent}%` }} /></div>
+                    <div className="resource-hp-label">{gatherHp[type]} / {gatherMaxHp[type]} HP · 파괴 보상 +{gatherReward[type]}</div>
+                    <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
                     <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{resources[type] * (isWood ? 5 : 8)} 🪙</button>
-                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 3초마다 +1` : "배치된 영웅 없음"}</span></div>
+                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 공격 중` : "영웅을 배치하면 자동 공격"}</span></div>
                     <div className="worker-list">{ownedHeroes.map((id) => { const hero = HEROES.find((unit) => unit.id === id); if (!hero) return null; const busyElsewhere = Object.entries(workers).some(([key, value]) => key !== type && value === id); return <button key={id} disabled={busyElsewhere} className={workers[type] === id ? "assigned" : ""} onClick={() => assignWorker(type, id)}>{hero.sprite}<small>{hero.name}</small></button>; })}</div>
                   </div>;
                 })}
