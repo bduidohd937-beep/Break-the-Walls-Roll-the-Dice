@@ -15,6 +15,15 @@ function App() {
     const saved = Number(window.localStorage.getItem("btw-unlocked-stage") ?? "1");
     return clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
+  const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));
+  const [clearedStages, setClearedStages] = useState<number[]>(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("btw-cleared-stages") ?? "[]");
+      return Array.isArray(saved) ? saved.filter((value) => Number.isInteger(value)) : [];
+    } catch {
+      return [];
+    }
+  });
   const [battleGold, setBattleGold] = useState(500);
   const [waveIndex, setWaveIndex] = useState(0);
   const [heroes, setHeroes] = useState<Unit[]>([]);
@@ -292,6 +301,18 @@ function App() {
           window.localStorage.setItem("btw-unlocked-stage", String(next));
           return next;
         });
+        setClearedStages((current) => {
+          if (current.includes(clearedStage)) return current;
+          const next = [...current, clearedStage].sort((a, b) => a - b);
+          window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
+          const reward = stage.clearReward;
+          setKingdomGold((gold) => {
+            const nextGold = gold + reward;
+            window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+            return nextGold;
+          });
+          return next;
+        });
         setBattleState("victory");
       } else if (castleRef.current <= 0) {
         setCastleHp(0);
@@ -341,6 +362,7 @@ function App() {
         <div className="top-stats">
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()}</b></div>
+          <div className="stat-pill">👑 Kingdom <b>{Math.floor(kingdomGold).toLocaleString()}</b></div>
           <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
           <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
         </div>
