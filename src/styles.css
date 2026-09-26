@@ -744,3 +744,7 @@ button { font: inherit; }
 
 /* Stage content classification */
 .stage-type{display:inline-flex;margin-top:7px;padding:3px 7px;border:1px solid #3b4850;font-size:6px;font-weight:900;letter-spacing:.14em}.stage-type-normal{color:#9eb0b8;background:#10171b}.stage-type-elite{color:#d3b96f;border-color:#6b5930;background:#201a0d}.stage-type-boss{color:#e58b82;border-color:#743c38;background:#25100f}
+
+
+/* Pure World stage story metadata */
+.stage-boss-name{margin-top:7px;padding:5px 7px;border:1px solid #70423b;background:#241210;color:#efaaa0;font-size:7px;font-weight:900}.stage-mechanic{margin-top:5px;min-height:24px;padding:5px 7px;border-left:2px solid #52636c;background:#0d1418;color:#8fa0a8;font-size:6px;line-height:1.5}
