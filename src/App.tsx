@@ -26,23 +26,24 @@ import { useBattleLoop } from "./game/controllers/useBattleLoop";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
-const DEV_MODE = true;
+// Local test profile; this URL switch is not account authentication.
+const DEV_MODE = new URLSearchParams(window.location.search).get("dev") === "1";
+const DEV_FACILITY_LEVEL = 10; // Facilities currently have no level cap.
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
   const [unlockedStage, setUnlockedStage] = useState(() => {
     const saved = loadNumber(STORAGE_KEYS.unlockedStage, 1);
-    return clamp(Math.floor(saved) || 1, 1, STAGES.length);
+    return DEV_MODE ? STAGES.length : clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
-  const [kingdomGold, setKingdomGold] = useState(() => loadNumber(STORAGE_KEYS.kingdomGold, 0));
+  const [kingdomGold, setKingdomGold] = useState(() => DEV_MODE ? 99999999 : loadNumber(STORAGE_KEYS.kingdomGold, 0));
   const [gems, setGems] = useState(() => {
     const saved = loadNumber(STORAGE_KEYS.gems, INITIAL_GEMS);
-    const devGems = Math.max(saved, 999999);
-    saveNumber(STORAGE_KEYS.gems, devGems);
-    return devGems;
+    return DEV_MODE ? 99999999 : saved;
   });
   const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
-    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {}); return saved && typeof saved === "object" ? saved : {};
+    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {});
+    return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 10])) : saved && typeof saved === "object" ? saved : {};
   });
   const [clearedStages, setClearedStages] = useState<number[]>(() => {
     try {
@@ -78,14 +79,14 @@ function App() {
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
-  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, 1)));
+  const [kingdomLevel, setKingdomLevel] = useState(() => DEV_MODE ? 6 : Math.max(1, loadNumber(STORAGE_KEYS.kingdomLevel, 1)));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {}); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1), vault: Math.max(1, Number(saved.vault) || 1), training: Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {}); return { lumber: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.lumber) || 1), quarry: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.quarry) || 1), vault: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.vault) || 1), training: DEV_MODE ? DEV_FACILITY_LEVEL : Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
       const saved = loadJson<unknown[]>(STORAGE_KEYS.ownedHeroes, []);
-      return Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+      return DEV_MODE ? DECK_IDS : Array.isArray(saved) && saved.every((id): id is string => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
@@ -101,10 +102,10 @@ function App() {
     try { const saved = loadJson<SummonStorageItem[]>(STORAGE_KEYS.summonStorage, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
   const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 30])) : saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
-  const [soulShards, setSoulShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.soulShards, 0)));
-  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, 0)));
+  const [soulShards, setSoulShards] = useState(() => DEV_MODE ? 999999 : Math.max(0, loadNumber(STORAGE_KEYS.soulShards, 0)));
+  const [transcendShards, setTranscendShards] = useState(() => DEV_MODE ? 999999 : Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, 0)));
   const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
     try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
@@ -167,7 +168,7 @@ function App() {
     gatherRegions, gatherRegionScale, isGatherRegionUnlocked,
     getGatherEfficiency, getAutoGatherAmount, getGatherAttackDamage, gatherResource, sellResource, assignWorker
   } = useGatheringController({
-    heroes: HEROES, clearedStages, gatherRegion, resources, setResources, workers, setWorkers,
+    heroes: HEROES, clearedStages, devMode: DEV_MODE, gatherRegion, resources, setResources, workers, setWorkers,
     gatherHp, setGatherHp, setGatherHit, kingdomSellBonus, kingdomProductionBonus,
     facilityLevels, setKingdomGold, gatherLastSeenRef, getUnitLevel, getLevelMultiplier, getHeroGrade,
     gatherMaxHp, gatherReward
@@ -438,6 +439,7 @@ function App() {
       <main className="stage-select-shell">
         <section className="stage-select-card main-hub-card">
           <div className="stage-select-kicker">BREAK THE WALLS</div>
+          {DEV_MODE && <div className="stage-select-kicker">🛠 DEV TEST · 전체 영웅 Lv.10 / 영혼 +30 · 모든 스테이지 해금</div>}
           <h1>{mainTab === "home" ? "KINGDOM" : mainTab === "gather" ? "GATHER" : mainTab === "battle" ? "BATTLE" : mainTab === "heroes" ? "HEROES" : "SUMMON"}</h1>
           <div className="stage-select-stats">
             <span>🏯 영지 Lv.<b>{kingdomLevel}</b></span>

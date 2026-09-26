@@ -9,7 +9,7 @@ type Workers=Partial<Record<ResourceType,string>>;
 type Hp=Record<ResourceType,number>;
 type Grade={name:HeroGradeName;multiplier:number};
 type Args={
- heroes:UnitDef[]; clearedStages:number[]; gatherRegion:GatherRegionKey; resources:Resources; setResources:Dispatch<SetStateAction<Resources>>;
+ heroes:UnitDef[]; clearedStages:number[]; devMode:boolean; gatherRegion:GatherRegionKey; resources:Resources; setResources:Dispatch<SetStateAction<Resources>>;
  workers:Workers; setWorkers:Dispatch<SetStateAction<Workers>>; gatherHp:Hp; setGatherHp:Dispatch<SetStateAction<Hp>>;
  setGatherHit:Dispatch<SetStateAction<ResourceType|null>>; kingdomSellBonus:number; kingdomProductionBonus:number;
  facilityLevels:{lumber:number;quarry:number}; setKingdomGold:Dispatch<SetStateAction<number>>;
@@ -18,7 +18,7 @@ type Args={
 };
 export function useGatheringController(a:Args){
  const region=GATHER_REGIONS[a.gatherRegion],scale=region.scale;
- const isGatherRegionUnlocked=(key:GatherRegionKey)=>GATHER_REGIONS[key].unlockStage===0||a.clearedStages.includes(GATHER_REGIONS[key].unlockStage);
+ const isGatherRegionUnlocked=(key:GatherRegionKey)=>a.devMode||GATHER_REGIONS[key].unlockStage===0||a.clearedStages.includes(GATHER_REGIONS[key].unlockStage);
  const getGatherEfficiency=(heroId?:string)=>{if(!heroId)return 1;const grade=a.getHeroGrade(heroId).name;return calculateGatherEfficiency(a.getUnitLevel(heroId),GATHER_GRADE_BONUS[grade]??1)};
  const getAutoGatherAmount=(type:ResourceType)=>{const id=a.workers[type];if(!id)return 0;const level=type==="wood"?a.facilityLevels.lumber:a.facilityLevels.quarry;return calculateAutoGatherAmount(level,a.kingdomProductionBonus,getGatherEfficiency(id))};
  const getGatherAttackDamage=(type:ResourceType)=>{const id=a.workers[type],hero=id?a.heroes.find(h=>h.id===id):undefined;return calculateGatherAttackDamage(type,hero?.atk,hero?a.getLevelMultiplier(hero.id):1)};
