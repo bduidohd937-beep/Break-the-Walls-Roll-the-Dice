@@ -740,3 +740,7 @@ button { font: inherit; }
 
 /* Gathering worker efficiency */
 .worker-fighter b{display:block;margin-top:2px;padding:2px 4px;border:1px solid #536947;background:#101b12;color:#b9d77b;font-size:6px}.worker-list button small{line-height:1.35}
+
+
+/* Stage content classification */
+.stage-type{display:inline-flex;margin-top:7px;padding:3px 7px;border:1px solid #3b4850;font-size:6px;font-weight:900;letter-spacing:.14em}.stage-type-normal{color:#9eb0b8;background:#10171b}.stage-type-elite{color:#d3b96f;border-color:#6b5930;background:#201a0d}.stage-type-boss{color:#e58b82;border-color:#743c38;background:#25100f}
