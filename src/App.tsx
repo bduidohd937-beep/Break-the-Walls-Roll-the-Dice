@@ -416,6 +416,16 @@ function App() {
     setDeckIds(next);
     window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
   };
+  useEffect(() => {
+    const ownedSet = new Set(ownedHeroes);
+    const valid = deckIds.filter((id) => HEROES.some((hero) => hero.id === id) && ownedSet.has(id));
+    const next = valid.slice(0, deckSlotCount);
+    if (next.length !== deckIds.length || next.some((id, index) => id !== deckIds[index])) {
+      setDeckIds(next);
+      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+    }
+  }, [ownedHeroes, deckSlotCount]);
+
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
@@ -429,7 +439,7 @@ function App() {
           <p className="stage-select-sub">영웅은 뽑기로 획득하고, 영지는 성장할수록 전투 슬롯이 늘어납니다.</p>
           <div className="stage-select-stats"><span>🏯 영지 Lv.<b>{kingdomLevel}</b></span><span>⚔️ 전투 슬롯 <b>{deckIds.length}/{deckSlotCount}</b></span></div>
           <div className="management-buttons"><button className="deck-builder-open" onClick={() => setDeckEditMode((value) => !value)}>{deckEditMode ? "전장 선택으로 돌아가기" : "⚔️ 영웅 편성"}</button><button className="summon-open" onClick={() => { setSummonOpen((value) => !value); setSummonMessage(""); }}>{summonOpen ? "뽑기 닫기" : "🎲 영웅 뽑기"}</button></div>
-          {summonOpen && <div className="summon-panel"><div className="deck-builder-title">영웅 소환 · 1회 {SUMMON_GEM_COST} 💎</div><p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p><button className="summon-btn" disabled={gems < 100 || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : "🎲 {SUMMON_GEM_COST} 💎 뽑기"}</button>{summonMessage && <div className="summon-result">{summonMessage}</div>}<div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div></div>}
+          {summonOpen && <div className="summon-panel"><div className="deck-builder-title">영웅 소환 · 1회 {SUMMON_GEM_COST} 💎</div><p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p><div className="summon-gem-balance">보유 젬 <b>💎 {gems.toLocaleString()}</b></div><button className="summon-btn" disabled={gems < SUMMON_GEM_COST || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : "🎲 {SUMMON_GEM_COST} 💎 뽑기"}</button>{summonMessage && <div className="summon-result">{summonMessage}</div>}<div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div></div>}
           {deckEditMode && <div className="deck-builder"><div className="deck-builder-title">보유 영웅 · 뽑기로 획득한 영웅만 편성 가능</div><div className="deck-builder-grid">{HEROES.map((hero) => { const selected = deckIds.includes(hero.id); const owned = ownedHeroes.includes(hero.id); const full = !selected && deckIds.length >= deckSlotCount; return <button key={hero.id} className={`deck-builder-card ${selected ? "selected" : ""} ${!owned || full ? "disabled" : ""}`} disabled={!owned || full} onClick={() => toggleDeckHero(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{selected ? "✓ 출전" : owned ? "보유" : "🔒 미보유"}</small></button>; })}</div><div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div></div>}
           <div className="stage-select-stats">
             <span>💎 GEM <b>{gems.toLocaleString()}</b></span><span>🪙 강화 골드 <b>{kingdomGold.toLocaleString()}</b></span>
