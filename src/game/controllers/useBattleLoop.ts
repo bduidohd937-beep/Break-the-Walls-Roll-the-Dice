@@ -299,7 +299,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               ? { ...hitHero, burnTimer: 3, burnDamage: Math.max(hitHero.burnDamage, enemy.atk * 0.12), hitFlash: 0.14 }
               : hitHero;
             const popupId = popupUidRef.current++;
-            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
+            const popupX = hitHero.x;
+            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: popupX, value: Math.max(1, Math.round(damage)), critical: false }]);
           }
           nextEnemies[i].attackTimer = enragedBoss ? enemy.attackInterval * 0.65 : enemy.attackInterval;
           nextEnemies[i].attackFlash = enragedBoss ? 0.22 : 0.16;
