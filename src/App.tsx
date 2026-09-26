@@ -114,6 +114,7 @@ function App() {
   const [gameSpeed, setGameSpeed] = useState(5);
   const [autoCom, setAutoCom] = useState(false);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
+  const deployCooldownsRef = useRef<Record<string, number>>({});
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
   const economyMaxLevel = 8;
@@ -340,7 +341,7 @@ function App() {
       }
       if (activeCount >= 50) return;
       const ready = visibleDeck
-        .filter((hero) => (deployCooldowns[hero.id] ?? 0) <= 0 && currentGold >= hero.cost)
+        .filter((hero) => (deployCooldownsRef.current[hero.id] ?? 0) <= 0 && currentGold >= hero.cost)
         .sort((a, b) => {
           const roleScore = (hero: UnitDef) => hero.role.includes("탱") || hero.ability === "guard" ? 3 : hero.rangeType === "ranged" ? 2 : 1;
           if (activeCount < 4) return roleScore(b) - roleScore(a) || a.cost - b.cost;
@@ -368,10 +369,12 @@ function App() {
   const bossFieldTickRef = useRef(1);
   const bossChargeRef = useRef(0);
   const bossPhaseRef = useRef(-1);
+  const bossSpawnAnnouncedRef = useRef(false);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
   useEffect(() => { goldRef.current = battleGold; }, [battleGold]);
+  useEffect(() => { deployCooldownsRef.current = deployCooldowns; }, [deployCooldowns]);
   useEffect(() => { castleRef.current = castleHp; }, [castleHp]);
   useEffect(() => { enemyCastleRef.current = enemyCastleHp; }, [enemyCastleHp]);
   useEffect(() => {
@@ -485,6 +488,10 @@ function App() {
         };
         const uid = 1000 + uidRef.current++;
         nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
+        if (waveMeta?.boss && stage.bossName && !bossSpawnAnnouncedRef.current && ["morgarE", "ignisE", "voltrasE", "arcanonE"].includes(enemyDef.id)) {
+          bossSpawnAnnouncedRef.current = true;
+          setNotice(`⚠ BOSS 등장 · ${stage.bossName}`);
+        }
         spawnRef.current += 1;
         spawnTimerRef.current = group.gap ?? 0.8;
       }
@@ -789,6 +796,7 @@ function App() {
     bossFieldTickRef.current = 1;
     bossChargeRef.current = 0;
     bossPhaseRef.current = -1;
+    bossSpawnAnnouncedRef.current = false;
     setStageIndex(nextStageIndex);
     setBattleGold(battleStartGold);
     setEconomyLevel(1);
@@ -1034,7 +1042,11 @@ function App() {
       : currentWave?.some((group) => group.enemy === "archer")
         ? "⚠ 적 원거리 지원"
         : currentStage.waveMeta[waveIndex]?.boss
-          ? "⚠ BOSS · 광역 공격 / 반피 이하 격노"
+          ? currentStage.id === 20 ? "🌑 모르가르 · 공격 오라 / 흑기사 증원"
+            : currentStage.id === 30 ? "🔥 이그니스 · 전장 지속 피해 / 화염 증원"
+            : currentStage.id === 40 ? "⚡ 볼트라스 · 전하 축적 / 공격속도 증가"
+            : currentStage.id === 50 ? "⚪ 아르카논 · 5단계 속성 페이즈 / 균열 증원"
+            : "⚠ BOSS · 강력한 특수 공격"
           : "";
 
   if (battleState === "stageSelect") {
@@ -1291,6 +1303,7 @@ function App() {
               <div className="boss-title">{bossDisplayIcon} BOSS · {bossDisplayName} {bossPhaseTwo ? "· ENRAGED" : ""}</div>
               <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
               <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
+              {bossUnit && <div className="boss-mechanic-status">{currentStage.id === 40 ? `전하 ${Math.min(10, Math.floor(bossChargeRef.current / 4))}/10` : currentStage.id === 50 && currentStage.bossMechanic?.phaseElements ? `현재 페이즈 · ${currentStage.bossMechanic.phaseElements[Math.max(0, bossPhaseRef.current)] ?? currentStage.bossMechanic.phaseElements[0]}` : currentStage.mechanic}</div>}
             </div>
           )}
 
