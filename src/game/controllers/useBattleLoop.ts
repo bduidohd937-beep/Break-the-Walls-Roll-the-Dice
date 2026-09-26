@@ -1,13 +1,27 @@
-import { useEffect } from "react";
+import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
-import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
+import { STORAGE_KEYS, saveNumber } from "../storage";
 
-export function useBattleLoop(ctx: any) {
+type Setter = Dispatch<SetStateAction<any>>;
+type Ref = MutableRefObject<any>;
+type BattleLoopContext = {
+  battleState: string; gameSpeed: number; battleGoldMax: number; goldPerSecond: number;
+  setCastleHit: Setter; setDamagePopups: Setter; setDeathEffects: Setter; setBattleGold: Setter;
+  setDeployCooldowns: Setter; setNotice: Setter; setEnemyCastleHp: Setter; setCastleHp: Setter;
+  setHeroes: Setter; setEnemies: Setter; setWaveIndex: Setter; setUnlockedStage: Setter;
+  setClearedStages: Setter; setGems: Setter; setKingdomGold: Setter; setBattleState: Setter;
+  goldRef: Ref; spawnTimerRef: Ref; heroesRef: Ref; enemiesRef: Ref; stageRef: Ref; waveRef: Ref;
+  spawnRef: Ref; uidRef: Ref; bossSpawnAnnouncedRef: Ref; bossSummonTimerRef: Ref;
+  bossEnrageTriggeredRef: Ref; bossFieldTickRef: Ref; bossChargeRef: Ref; bossPhaseRef: Ref;
+  enemyCastleRef: Ref; popupUidRef: Ref; castleRef: Ref; deathUidRef: Ref; finalClearNotifiedRef: Ref;
+};
+
+export function useBattleLoop(ctx: BattleLoopContext) {
   const { battleState, gameSpeed, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState } = ctx;
   useEffect(() => {
     if (battleState !== "playing") return;
