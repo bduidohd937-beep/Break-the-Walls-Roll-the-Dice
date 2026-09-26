@@ -85,6 +85,8 @@ function App() {
   const summonUidRef = useRef(Date.now());
   const [summonSequence, setSummonSequence] = useState<SummonStorageItem[]>([]);
   const [summonRevealIndex, setSummonRevealIndex] = useState(0);
+  const [summonSummaryOpen, setSummonSummaryOpen] = useState(false);
+  const [lastSummonResults, setLastSummonResults] = useState<SummonStorageItem[]>([]);
   const [summonPhase, setSummonPhase] = useState<"idle" | "throw" | "impact" | "crack" | "reveal">("idle");
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
   const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
@@ -633,6 +635,8 @@ function App() {
     setGems(nextGems);
     window.localStorage.setItem("btw-gems", String(nextGems));
     setSummonSequence(items);
+    setLastSummonResults(items);
+    setSummonSummaryOpen(false);
     setSummonRevealIndex(0);
     setSummonMessage("");
     setSummonPhase("throw");
@@ -647,11 +651,13 @@ function App() {
     }
     setSummonPhase("idle");
     setSummonSequence([]);
+    setSummonSummaryOpen(true);
     setSummonMessage("소환 완료 · 모든 결과가 저장소로 이동했습니다.");
   };
   const skipSummonReveal = () => {
     setSummonPhase("idle");
     setSummonSequence([]);
+    setSummonSummaryOpen(true);
     setSummonMessage("연출 스킵 · 모든 결과가 저장소로 이동했습니다.");
   };
   const useStoredHero = (uid: number) => {
@@ -853,13 +859,17 @@ function App() {
                 const item = summonSequence[summonRevealIndex];
                 const hero = item ? HEROES.find((unit) => unit.id === item.heroId) : undefined;
                 const highGrade = item ? ["전설", "신화", "초월"].includes(item.grade) : false;
-                return <div className={`summon-cinematic phase-${summonPhase} ${highGrade ? "high-grade" : ""}`}>
+                const omenGrade = item?.grade ?? "일반";
+                const fakeout = item ? ["전설", "신화", "초월"].includes(item.grade) : false;
+                return <div className={`summon-cinematic phase-${summonPhase} grade-scene-${omenGrade} ${highGrade ? "high-grade" : ""} ${fakeout ? "summon-fakeout" : ""}`}>
                   <button className="summon-skip" onClick={skipSummonReveal}>SKIP</button>
                   <div className="summon-scene">
                     <div className="summon-moon">✦</div>
                     <div className="summon-die">🎲</div>
                     <div className="summon-wall"><div className="wall-top">▥▥▥</div><div className="wall-body">▦▦▦<i>⚡</i>▦▦▦</div></div>
                     <div className="summon-impact-ring"/>
+                    <div className="summon-omen">{summonPhase === "crack" && item && <><span>◆</span><b>{["일반","희귀"].includes(item.grade) ? "..." : item.grade === "영웅" ? "강한 기척" : "성벽이 버티지 못한다"}</b></>}</div>
+                    {fakeout && summonPhase === "crack" && <div className="second-die">🎲</div>}
                     {summonPhase === "reveal" && hero && item && <div className={`hero-reveal grade-${item.grade}`} onClick={nextSummonReveal}>
                       <div className="reveal-rays"/>
                       <small>{summonRevealIndex + 1} / {summonSequence.length}</small>
@@ -874,6 +884,13 @@ function App() {
                 </div>;
               })()}
 
+              {summonSummaryOpen && lastSummonResults.length > 0 && <div className="summon-summary-overlay">
+                <div className="summon-summary-box">
+                  <div className="summon-summary-title"><div><small>SUMMON RESULT</small><h2>{lastSummonResults.length === 11 ? "10+1 소환 결과" : "소환 결과"}</h2></div><button onClick={() => setSummonSummaryOpen(false)}>✕</button></div>
+                  <div className="summon-summary-grid">{lastSummonResults.map((result) => { const resultHero = HEROES.find((hero) => hero.id === result.heroId); return resultHero ? <div key={result.uid} className={`summary-card grade-${result.grade}`}><span>{resultHero.sprite}</span><b>{resultHero.name}</b><small>{result.grade}</small></div> : null; })}</div>
+                  <button className="summary-confirm" onClick={() => setSummonSummaryOpen(false)}>보관소 확인</button>
+                </div>
+              </div>}
               <p>소환 결과는 바로 영웅이 되지 않고 저장소로 이동합니다. 사용할 영웅만 영입하거나 영혼으로 변환하세요.</p>
               <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 👻 영혼 <b>{souls.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
               <div className="summon-actions">
