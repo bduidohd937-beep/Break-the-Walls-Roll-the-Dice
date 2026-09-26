@@ -3,7 +3,7 @@ import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, clamp } from "./game/constants";
 import { makeUnit } from "./game/units/createUnit";
-import { applyKnockback } from "./game/combat/knockback";
+import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { resolveSameTeamSpacing } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
@@ -69,19 +69,19 @@ function App() {
 
       spawnTimerRef.current -= dt;
 
-      let nextHeroes = heroesRef.current.map((u) => ({
+      let nextHeroes = heroesRef.current.map((u) => updateKnockback({
         ...u,
         attackTimer: Math.max(0, u.attackTimer - dt),
         hitFlash: Math.max(0, u.hitFlash - dt),
         attackFlash: Math.max(0, u.attackFlash - dt),
-      }));
+      }, dt));
 
-      let nextEnemies = enemiesRef.current.map((u) => ({
+      let nextEnemies = enemiesRef.current.map((u) => updateKnockback({
         ...u,
         attackTimer: Math.max(0, u.attackTimer - dt),
         hitFlash: Math.max(0, u.hitFlash - dt),
         attackFlash: Math.max(0, u.attackFlash - dt),
-      }));
+      }, dt));
 
       // Spawn the fixed wave sequence.
       const wave = WAVES[waveRef.current];
@@ -99,7 +99,7 @@ function App() {
       // Heroes move, attack, and hit the enemy castle when the lane is clear.
       for (let i = 0; i < nextHeroes.length; i++) {
         const hero = nextHeroes[i];
-        if (hero.currentHp <= 0) continue;
+        if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
 
         const target = nextEnemies
           .filter((e) => e.currentHp > 0)
@@ -145,7 +145,7 @@ function App() {
       // Enemies move, attack heroes, or damage our castle.
       for (let i = 0; i < nextEnemies.length; i++) {
         const enemy = nextEnemies[i];
-        if (enemy.currentHp <= 0) continue;
+        if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
 
         const target = nextHeroes
           .filter((h) => h.currentHp > 0)
