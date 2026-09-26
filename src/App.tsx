@@ -10,6 +10,8 @@ import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat
 import { BattleUnit } from "./components/BattleUnit";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
+type SummonGrade = "일반" | "희귀" | "영웅" | "전설" | "신화" | "초월";
+type SummonStorageItem = { uid: number; heroId: string; grade: SummonGrade; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
 
 function App() {
@@ -75,6 +77,12 @@ function App() {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-workers") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
   });
   const [summonMessage, setSummonMessage] = useState("");
+  const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-summon-storage") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
+  });
+  const [souls, setSouls] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-souls") ?? "0")));
+  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-transcend-shards") ?? "0")));
+  const summonUidRef = useRef(Date.now());
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
   const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
   const [dragHeroId, setDragHeroId] = useState<string | null>(null);
@@ -166,10 +174,12 @@ function App() {
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
   const getHeroGrade = (id: string) => {
     const index = DECK_IDS.indexOf(id);
-    if (index <= 2) return { name: "일반", multiplier: 1 };
-    if (index <= 5) return { name: "희귀", multiplier: 1.6 };
-    if (index <= 7) return { name: "영웅", multiplier: 2.5 };
-    return { name: "전설", multiplier: 4 };
+    if (index <= 5) return { name: "일반", multiplier: 1 };
+    if (index <= 11) return { name: "희귀", multiplier: 1.6 };
+    if (index <= 15) return { name: "영웅", multiplier: 2.5 };
+    if (index <= 17) return { name: "전설", multiplier: 4 };
+    if (index === 18) return { name: "신화", multiplier: 6 };
+    return { name: "초월", multiplier: 9 };
   };
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : Math.round(150 * getUnitLevel(id) * getHeroGrade(id).multiplier);
 
@@ -583,19 +593,67 @@ function App() {
   const currentStage = STAGES[stageIndex] ?? STAGES[0];
   const currentWave = currentStage.waves[waveIndex];
 
-  const summonHero = () => {
-    const pool = HEROES.filter((hero) => !ownedHeroes.includes(hero.id));
-    if (pool.length === 0 || gems < SUMMON_GEM_COST) return;
-    const hero = pool[Math.floor(Math.random() * pool.length)];
-    const nextOwned = [...ownedHeroes, hero.id];
-    setOwnedHeroes(nextOwned);
-    window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
-    setGems((current) => {
-      const nextGems = current - SUMMON_GEM_COST;
-      window.localStorage.setItem("btw-gems", String(nextGems));
-      return nextGems;
+  const summonGrade = (minimumHero = false): SummonGrade => {
+    if (minimumHero) {
+      const roll = Math.random() * 10;
+      if (roll < 0.05) return "초월";
+      if (roll < 0.5) return "신화";
+      if (roll < 3) return "전설";
+      return "영웅";
+    }
+    const roll = Math.random() * 100;
+    if (roll < 0.05) return "초월";
+    if (roll < 0.5) return "신화";
+    if (roll < 3) return "전설";
+    if (roll < 10) return "영웅";
+    if (roll < 35) return "희귀";
+    return "일반";
+  };
+  const rollHero = (grade: SummonGrade) => {
+    const pool = HEROES.filter((hero) => getHeroGrade(hero.id).name === grade);
+    const fallback = HEROES.filter((hero) => ["일반", "희귀", "영웅", "전설"].includes(getHeroGrade(hero.id).name));
+    return (pool.length ? pool : fallback)[Math.floor(Math.random() * (pool.length ? pool.length : fallback.length))];
+  };
+  const performSummon = (count: 1 | 11) => {
+    const cost = count === 11 ? 1000 : SUMMON_GEM_COST;
+    if (gems < cost) return;
+    const items: SummonStorageItem[] = Array.from({ length: count }, (_, index) => {
+      const grade = summonGrade(count === 11 && index === count - 1);
+      const hero = rollHero(grade);
+      return { uid: summonUidRef.current++, heroId: hero.id, grade };
     });
-    setSummonMessage(`${hero.sprite} ${hero.name} 획득!`);
+    const nextStorage = [...items, ...summonStorage];
+    setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
+    const nextGems = gems - cost;
+    setGems(nextGems);
+    window.localStorage.setItem("btw-gems", String(nextGems));
+    setSummonMessage(count === 11 ? "11연속 소환 완료 · 결과가 저장소로 이동했습니다." : "소환 완료 · 결과가 저장소로 이동했습니다.");
+  };
+  const useStoredHero = (uid: number) => {
+    const item = summonStorage.find((entry) => entry.uid === uid);
+    if (!item) return;
+    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
+    if (!ownedHeroes.includes(item.heroId)) {
+      const nextOwned = [...ownedHeroes, item.heroId];
+      setOwnedHeroes(nextOwned);
+      window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
+    }
+    setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
+  };
+  const soulStoredHero = (uid: number) => {
+    const item = summonStorage.find((entry) => entry.uid === uid);
+    if (!item) return;
+    const soulValue: Record<SummonGrade, number> = { 일반: 10, 희귀: 25, 영웅: 60, 전설: 150, 신화: 350, 초월: 800 };
+    const shardValue = item.grade === "신화" ? 1 : item.grade === "초월" ? 5 : 0;
+    const nextSouls = souls + soulValue[item.grade];
+    const nextShards = transcendShards + shardValue;
+    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
+    setSouls(nextSouls); setTranscendShards(nextShards); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-souls", String(nextSouls));
+    window.localStorage.setItem("btw-transcend-shards", String(nextShards));
+    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
   };
 
   const toggleDeckHero = (id: string) => {
@@ -766,12 +824,18 @@ function App() {
 
           {mainTab === "summon" && (
             <div className="summon-panel hub-summon">
-              <div className="deck-builder-title">영웅 소환 · 1회 {SUMMON_GEM_COST} 💎</div>
-              <p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p>
-              <div className="summon-gem-balance">보유 젬 <b>💎 {gems.toLocaleString()}</b></div>
-              <button className="summon-btn" disabled={gems < SUMMON_GEM_COST || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : `🎲 ${SUMMON_GEM_COST} 💎 뽑기`}</button>
+              <div className="deck-builder-title">🎲 성벽 소환</div>
+              <p>소환 결과는 바로 영웅이 되지 않고 저장소로 이동합니다. 사용할 영웅만 영입하거나 영혼으로 변환하세요.</p>
+              <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 👻 영혼 <b>{souls.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
+              <div className="summon-actions">
+                <button className="summon-btn" disabled={gems < SUMMON_GEM_COST} onClick={() => performSummon(1)}>🎲 1회 소환 · 100 💎</button>
+                <button className="summon-btn multi" disabled={gems < 1000} onClick={() => performSummon(11)}>🎲 10+1 소환 · 1000 💎<small>11명 소환 · 마지막 1명 영웅 이상 보장</small></button>
+              </div>
+              <div className="summon-rates">일반 65% · 희귀 25% · 영웅 7% · 전설 2.5% · 신화 0.45% · 초월 0.05%</div>
               {summonMessage && <div className="summon-result">{summonMessage}</div>}
-              <div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div>
+              <div className="summon-storage-head"><b>소환 저장소</b><span>{summonStorage.length}명</span></div>
+              <div className="summon-storage">{summonStorage.length === 0 ? <div className="storage-empty">아직 보관된 소환 영웅이 없습니다.</div> : summonStorage.map((item) => { const hero = HEROES.find((unit) => unit.id === item.heroId); if (!hero) return null; return <div key={item.uid} className="storage-card"><div className="storage-hero"><span>{hero.sprite}</span><div><small>{item.grade}</small><b>{hero.name}</b></div></div><div className="storage-actions"><button onClick={() => useStoredHero(item.uid)}>{ownedHeroes.includes(hero.id) ? "중복 보유" : "사용"}</button><button onClick={() => soulStoredHero(item.uid)}>영혼화</button></div></div>; })}</div>
+              <div className="owned-count">실사용 보유 영웅 {ownedHeroes.length}/{HEROES.length}</div>
             </div>
           )}
 
