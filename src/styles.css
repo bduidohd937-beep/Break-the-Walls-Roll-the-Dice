@@ -364,3 +364,39 @@ button { font: inherit; }
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
+
+/* Battle economy / worker upgrade */
+.economy-panel{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 12px;
+  border-top:2px solid #59471f;
+  background:linear-gradient(90deg,#211a0c,#101922 55%,#211a0c);
+}
+.economy-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.economy-info b{color:#ffe18a;font-size:11px}
+.economy-info span{color:#9fb1ba;font-size:8px;font-weight:800}
+.economy-upgrade{
+  flex:0 0 auto;
+  min-width:155px;
+  padding:9px 12px;
+  border:1px solid #b58b35;
+  border-radius:4px;
+  background:#382a0d;
+  color:#ffe18a;
+  font-size:10px;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 3px 0 #120d04;
+}
+.economy-upgrade:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 #120d04}
+.economy-upgrade:disabled{opacity:.38;cursor:not-allowed}
+@media(max-width:800px){
+  .economy-panel{padding:6px 7px}
+  .economy-info b{font-size:9px}
+  .economy-info span{font-size:7px}
+  .economy-upgrade{min-width:118px;padding:7px 8px;font-size:8px}
+}
