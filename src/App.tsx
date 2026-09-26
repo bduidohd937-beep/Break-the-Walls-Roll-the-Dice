@@ -516,12 +516,19 @@ function App() {
 
       <section className="battle-card">
         <div className="battle-sky">
+          <div className="pixel-sky-grid" />
           <div className="cloud c1" /><div className="cloud c2" /><div className="mountains" />
+          <div className="battle-horizon" />
+          <div className="battle-title-plate">⚔️ FRONTLINE</div>
           <div className={`castle our-castle ${castleHit === "our" ? "castle-hit" : ""}`}><div className="tower">🏰</div><div className="castle-label">우리 성</div><div className="castle-hp"><span style={{width: `${clamp(castleHp / 10, 0, 100)}%`}} /></div></div>
           <div className={`castle enemy-castle ${castleHit === "enemy" ? "castle-hit" : ""}`}><div className="tower">🏯</div><div className="castle-label">적 성</div><div className="castle-hp enemy"><span style={{width: `${clamp(enemyCastleHp / 18, 0, 100)}%`}} /></div></div>
 
           <div className="lane">
             <div className="lane-ground" />
+            <div className="lane-grid" />
+            <div className="lane-center-line" />
+            <div className="castle-zone our-zone" />
+            <div className="castle-zone enemy-zone" />
             {heroes.map((u) => <BattleUnit key={u.uid} unit={u} />)}
             {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
              {deathEffects.map((effect) => (
