@@ -522,7 +522,12 @@ function App() {
         });
         setClearedStages((current) => {
           if (current.includes(clearedStage)) return current;
-          setKingdomLevel((level) => { const nextLevel = Math.min(DECK_IDS.length - 4, level + 1); window.localStorage.setItem("btw-kingdom-level", String(nextLevel)); return nextLevel; });
+          const gemReward = 25 + clearedStage * 10;
+          setGems((currentGems) => {
+            const nextGems = currentGems + gemReward;
+            window.localStorage.setItem("btw-gems", String(nextGems));
+            return nextGems;
+          });
           const next = [...current, clearedStage].sort((a, b) => a - b);
           window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
           const reward = stage.clearReward;
@@ -666,7 +671,7 @@ function App() {
           {mainTab === "home" && (
             <div className="kingdom-home">
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
-              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small></div>
+              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {clearedStages.length < 2 ? "STAGE 2 클리어 → 고대 숲" : clearedStages.length < 4 ? "STAGE 4 클리어 → 수정 광산" : "왕성·시설 강화 후 다음 전선 준비"}</small></div>
               <div className="facility-grid">
                 <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
                 <div className="facility-card"><span>🪚</span><div><b>벌목장 Lv.{facilityLevels.lumber}</b><small>배치 영웅 자동채집 +{facilityLevels.lumber} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("lumber")} onClick={() => upgradeFacility("lumber")}>강화 · {facilityUpgradeCost("lumber")} 🪙</button></div>
@@ -888,7 +893,7 @@ function App() {
           <div className={`result-box ${battleState}`}>
             <div className="result-kicker">{battleState === "victory" ? "STAGE CLEAR" : "STAGE FAILED"}</div>
             <h1>{battleState === "victory" ? "적 성을 돌파했다!" : "성이 함락됐다..."}</h1>
-            <p>{battleState === "victory" ? `STAGE ${currentStage.id} 클리어! 다음 전장을 선택할 수 있어요.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
+            <p>{battleState === "victory" ? `STAGE ${currentStage.id} 클리어! 최초 클리어 시 ${currentStage.clearReward} 골드 + ${25 + currentStage.id * 10} 보석 · 다음 전장/채집 지역이 해금됩니다.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
             <div className="result-actions">
               <button onClick={() => reset(stageIndex)}>다시 전투</button>
               <button onClick={() => setBattleState("stageSelect")}>스테이지 선택</button>
