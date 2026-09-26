@@ -82,6 +82,8 @@ const ELEMENT_CLASS: Record<ElementType, string> = {
   fire: "el-fire",
 };
 
+const BATTLE_GOLD_MAX = 9999;
+const MOVE_SPEED_MULTIPLIER = 1.8;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
