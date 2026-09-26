@@ -326,9 +326,9 @@ function App() {
           window.localStorage.setItem("btw-unlocked-stage", String(next));
           return next;
         });
-        setKingdomLevel((level) => { const nextLevel = Math.min(DECK_IDS.length - 4, level + 1); window.localStorage.setItem("btw-kingdom-level", String(nextLevel)); return nextLevel; });
         setClearedStages((current) => {
           if (current.includes(clearedStage)) return current;
+          setKingdomLevel((level) => { const nextLevel = Math.min(DECK_IDS.length - 4, level + 1); window.localStorage.setItem("btw-kingdom-level", String(nextLevel)); return nextLevel; });
           const next = [...current, clearedStage].sort((a, b) => a - b);
           window.localStorage.setItem("btw-cleared-stages", JSON.stringify(next));
           const reward = stage.clearReward;
