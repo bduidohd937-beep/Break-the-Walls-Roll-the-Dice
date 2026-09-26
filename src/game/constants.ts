@@ -1,5 +1,13 @@
 import type { ElementType, UnitDef, Wave } from "./types";
 
+// Temporary combat-only test unit. Never add this to HEROES or the summon pool.
+export const DEV_TEST_HERO: UnitDef = {
+  id: "devRiftbreaker", name: "균열 파쇄자", sprite: "☄️", element: "neutral",
+  hp: 500000, atk: 50000, speed: 65, range: 260, rangeType: "ranged",
+  attackType: "splash", splashRadius: 40, attackInterval: 0.35,
+  cost: 50, cooldown: 1, role: "??? · 개발 테스트", ability: "regen", abilityValue: 0.04
+};
+
 export const HEROES: UnitDef[] = [
   { id: "goblin", name: "고블린", sprite: "👺", element: "neutral", hp: 90, atk: 14, speed: 48, range: 34, rangeType: "melee", attackType: "single", attackInterval: 0.9, cost: 50, cooldown: 2.5, role: "근접" },
   { id: "fireGoblin", name: "화염 고블린", sprite: "👺", element: "fire", hp: 82, atk: 24, speed: 43, range: 120, rangeType: "ranged", attackType: "single", attackInterval: 1.2, cost: 90, cooldown: 4, role: "원거리", effect: "burn" },

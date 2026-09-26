@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, DEV_TEST_HERO, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
@@ -136,7 +136,10 @@ function App() {
   const nextUidRef = useRef(1);
   const autoTickRef = useRef<() => void>(() => {});
   const deckSlotCount = 10;
-  const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
+  const visibleDeck = useMemo(() => {
+    const equipped = deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[];
+    return DEV_MODE ? [DEV_TEST_HERO, ...equipped.slice(0, 9)] : equipped;
+  }, [deckIds]);
   const economyMaxLevel = ECONOMY_MAX_LEVEL;
   const { battleGoldMax, goldPerSecond, trainingBonus, battleStartGold, economyUpgradeCost } =
     getBattleEconomy(economyLevel, facilityLevels.vault, facilityLevels.training);
@@ -543,7 +546,7 @@ function App() {
     bossDisplayIcon={bossDisplayIcon} bossDisplayName={bossDisplayName} bossHpPercent={bossHpPercent} bossUnit={bossUnit}
     bossDefeated={Boolean(bossSpawnAnnouncedRef.current && !bossUnit)} battleDeckPage={battleDeckPage} onDeckPage={setBattleDeckPage}
     bossCharge={bossChargeRef.current} bossPhase={bossPhaseRef.current} waveProgress={waveProgress} notice={notice} waveThreat={waveThreat}
-    visibleDeck={visibleDeck} deployCooldowns={deployCooldowns} deckCount={deckIds.length} deckSlotCount={deckSlotCount}
+    visibleDeck={visibleDeck} deployCooldowns={deployCooldowns} deckCount={visibleDeck.length} deckSlotCount={deckSlotCount}
     kingdomLevel={kingdomLevel} ownedHeroCount={ownedHeroes.length} heroTotal={HEROES.length} getUnitLevel={getUnitLevel}
     onSpeed={() => setGameSpeed(v => v === 1 ? 5 : 1)} onAuto={() => setAutoCom(v => !v)}
     onUpgradeEconomy={upgradeEconomy} onDeploy={deploy} onRetry={() => reset(stageIndex)}
