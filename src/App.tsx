@@ -8,6 +8,10 @@ import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damage";
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
+import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
+import { GATHER_REGIONS, type GatherRegionKey } from "./game/systems/gathering";
+import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
+import { getProgressionGoals } from "./game/systems/progression";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type SummonGrade = "일반" | "희귀" | "영웅" | "전설" | "신화" | "초월";
@@ -133,23 +137,10 @@ function App() {
   const kingdomUpgradeCost = 400 * kingdomLevel;
   const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
   const kingdomSellBonus = 1 + Math.floor((kingdomLevel - 1) / 3) * 0.1;
-  const kingdomUnlocks = [
-    { level: 1, icon: "🪚", title: "기초 생산", text: "벌목장 · 채석장 운영" },
-    { level: 2, icon: "🏦", title: "왕국 금고", text: "전투 시작 골드와 최대 골드 확장" },
-    { level: 3, icon: "🏋️", title: "훈련소", text: "출전 영웅 HP / ATK 강화" },
-    { level: 4, icon: "🌲", title: "생산 확장", text: "자동채집 생산 보너스 강화" },
-    { level: 5, icon: "⚗️", title: "고급 성장", text: "합성·성장 시설 확장 기반" },
-    { level: 6, icon: "👑", title: "왕국 2단계", text: "생산·판매 보너스 상위 단계" }
-  ];
+  const kingdomUnlocks = KINGDOM_UNLOCKS;
   const nextKingdomUnlock = kingdomUnlocks.find((entry) => entry.level > kingdomLevel);
   const kingdomMilestone = nextKingdomUnlock ? `Lv.${nextKingdomUnlock.level} · ${nextKingdomUnlock.title}` : "현재 준비된 왕국 해금 완료";
-  const facilityDefs = {
-    lumber: { name: "벌목장", icon: "🪚", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 목재 자동채집 +${lv} / 3초` },
-    quarry: { name: "채석장", icon: "⛏️", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 석재 자동채집 +${lv} / 3초` },
-    vault: { name: "왕국 금고", icon: "🏦", unlock: 2, baseCost: 300, text: (lv: number) => `전투 시작 골드 +${(lv - 1) * 50} · 기본 최대 골드 +${(lv - 1) * 250}` },
-    training: { name: "훈련소", icon: "🏋️", unlock: 3, baseCost: 360, text: (lv: number) => `출전 영웅 HP / ATK +${(lv - 1) * 2}%` }
-  } as const;
-  type FacilityKey = keyof typeof facilityDefs;
+  const facilityDefs = FACILITY_DEFS;
   const facilityUpgradeCost = (type: FacilityKey) => facilityDefs[type].baseCost * facilityLevels[type];
   const upgradeKingdom = () => {
     if (kingdomGold < kingdomUpgradeCost) return;
@@ -175,12 +166,7 @@ function App() {
     setResources(next);
     window.localStorage.setItem("btw-resources", JSON.stringify(next));
   };
-  const gatherRegions = {
-    basic: { name: "왕국 외곽", icon: "🌿", scale: 1, unlockStage: 0, description: "기본 채집 지역" },
-    ancient: { name: "고대 숲", icon: "🌲", scale: 2, unlockStage: 2, description: "강화 자원 · 2배 보상" },
-    crystal: { name: "수정 광산", icon: "💎", scale: 3, unlockStage: 4, description: "단단한 자원 · 3배 보상" }
-  } as const;
-  type GatherRegionKey = keyof typeof gatherRegions;
+  const gatherRegions = GATHER_REGIONS;
   const activeGatherRegion = gatherRegions[gatherRegion as GatherRegionKey];
   const gatherRegionScale = activeGatherRegion.scale;
   const isGatherRegionUnlocked = (key: GatherRegionKey) => gatherRegions[key].unlockStage === 0 || clearedStages.includes(gatherRegions[key].unlockStage);
@@ -234,19 +220,10 @@ function App() {
   };
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
-  const getHeroGrade = (id: string) => {
-    const index = DECK_IDS.indexOf(id);
-    if (index <= 5) return { name: "일반", multiplier: 1 };
-    if (index <= 11) return { name: "희귀", multiplier: 1.6 };
-    if (index <= 15) return { name: "영웅", multiplier: 2.5 };
-    if (index <= 17) return { name: "전설", multiplier: 4 };
-    if (index === 18) return { name: "신화", multiplier: 6 };
-    return { name: "초월", multiplier: 9 };
-  };
+  const getHeroGrade = (id: string) => getHeroGradeByIndex(DECK_IDS.indexOf(id));
   const getGradeGrowth = (id: string) => {
     const grade = getHeroGrade(id).name;
-    const perLevel: Record<string, number> = { "일반": 0.07, "희귀": 0.075, "영웅": 0.08, "전설": 0.085, "신화": 0.09, "초월": 0.10 };
-    return perLevel[grade] ?? 0.08;
+    return GRADE_GROWTH[grade] ?? 0.08;
   };
   const getLevelMultiplier = (id: string, level = getUnitLevel(id)) => 1 + (level - 1) * getGradeGrowth(id);
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : Math.round(150 * getUnitLevel(id) * getHeroGrade(id).multiplier);
@@ -258,21 +235,11 @@ function App() {
     const interval = Math.max(0.25, def.attackInterval * soul.speed);
     return Math.round(hp * 0.35 + (atk / interval) * 12);
   };
-  const getHeroTrait = (def: UnitDef) => {
-    if (def.ability === "guard") return { name: "가드", text: `받는 피해 ${Math.round((def.abilityValue ?? 0) * 100)}% 감소` };
-    if (def.ability === "crit") return { name: "치명타", text: `치명타 확률 ${Math.round((def.abilityValue ?? 0) * 100)}%` };
-    if (def.ability === "regen") return { name: "재생", text: `전투 중 지속 회복 ${((def.abilityValue ?? 0) * 100).toFixed(1)}%` };
-    if (def.ability === "execute") return { name: "처형", text: `체력이 낮은 적에게 처형 판정 ${Math.round((def.abilityValue ?? 0) * 100)}%` };
-    if (def.effect === "burn") return { name: "화상", text: "공격 적중 시 화상 피해" };
-    if (def.attackType === "splash") return { name: "광역 공격", text: `주 대상 주변 ${def.splashRadius ?? 0} 범위 공격` };
-    return { name: "기본 공격", text: def.rangeType === "ranged" ? "안전한 거리에서 단일 대상을 공격" : "전열에서 단일 대상을 공격" };
-  };
   const getGatherEfficiency = (heroId?: string) => {
     if (!heroId) return 1;
     const levelBonus = 1 + (getUnitLevel(heroId) - 1) * 0.03;
     const grade = getHeroGrade(heroId).name;
-    const gradeBonus: Record<string, number> = { "일반": 1, "희귀": 1.08, "영웅": 1.16, "전설": 1.25, "신화": 1.35, "초월": 1.5 };
-    return levelBonus * (gradeBonus[grade] ?? 1);
+    return levelBonus * (GATHER_GRADE_BONUS[grade] ?? 1);
   };
   const getAutoGatherAmount = (type: "wood" | "stone") => {
     const heroId = workers[type];
@@ -281,14 +248,7 @@ function App() {
     return Math.max(1, Math.floor(facilityLevel * kingdomProductionBonus * getGatherEfficiency(heroId)));
   };
 
-  const getSoulBonuses = (id: string) => {
-    const soul = heroSouls[id] ?? 0;
-    return {
-      hp: 1 + (soul >= 5 ? 0.08 : 0) + (soul >= 20 ? 0.12 : 0) + (soul >= 30 ? 0.1 : 0),
-      atk: 1 + (soul >= 10 ? 0.08 : 0) + (soul >= 25 ? 0.12 : 0) + (soul >= 30 ? 0.1 : 0),
-      speed: 1 - (soul >= 15 ? 0.08 : 0) - (soul >= 30 ? 0.05 : 0),
-    };
-  };
+  const getSoulBonuses = (id: string) => calculateSoulBonuses(heroSouls[id] ?? 0);
 
 
   const upgradeUnit = (id: string) => {
@@ -1031,16 +991,15 @@ function App() {
     }
   }, [ownedHeroes, deckSlotCount]);
 
-  const progressionGoals = [
-    { id: "first-clear", icon: "⚔️", title: "첫 승리", text: "스테이지 1을 클리어", done: clearedStages.includes(1), gold: 300, gems: 50 },
-    { id: "gather-start", icon: "🌲", title: "왕국의 자원", text: "목재와 석재를 각각 10개 이상 보유", done: resources.wood >= 10 && resources.stone >= 10, gold: 400, gems: 0 },
-    { id: "kingdom-2", icon: "🏰", title: "성장의 시작", text: "왕성을 Lv.2로 강화", done: kingdomLevel >= 2, gold: 500, gems: 50 },
-    { id: "hero-roster", icon: "🎲", title: "새로운 동료", text: "영웅을 6명 이상 보유", done: ownedHeroes.length >= 6, gold: 300, gems: 100 },
-    { id: "hero-growth", icon: "🛡️", title: "전력 강화", text: "아무 영웅이나 Lv.2 이상 달성", done: Object.values(unitLevels).some((level) => level >= 2), gold: 600, gems: 50 },
-    { id: "facility-growth", icon: "🏗️", title: "왕국 기반", text: "아무 시설이나 Lv.2 이상 달성", done: Object.values(facilityLevels).some((level) => level >= 2), gold: 700, gems: 0 },
-    { id: "stage-10", icon: "🏆", title: "퓨어 월드 전진", text: "스테이지 10까지 클리어", done: clearedStages.some((stage) => stage >= 10), gold: 1200, gems: 150 },
-    { id: "morgar", icon: "🌑", title: "검은 대지 돌파", text: "스테이지 20 모르가르 격파", done: clearedStages.includes(20), gold: 2500, gems: 300 },
-  ];
+  const progressionGoals = getProgressionGoals({
+    clearedStages,
+    wood: resources.wood,
+    stone: resources.stone,
+    kingdomLevel,
+    ownedHeroCount: ownedHeroes.length,
+    unitLevels,
+    facilityLevels,
+  });
   const completedGoalCount = progressionGoals.filter((goal) => goal.done).length;
   const claimedGoalCount = progressionGoals.filter((goal) => claimedGoals.includes(goal.id)).length;
   const nextProgressionGoal = progressionGoals.find((goal) => !goal.done) ?? progressionGoals.find((goal) => !claimedGoals.includes(goal.id));
