@@ -1,11 +1,15 @@
-import type { StageDef } from "./types";
+import type { EnemyKey, StageDef } from "./types";
+
+export const BOSS_ENEMY_KEYS: Partial<Record<number, EnemyKey>> = {
+  9: "gigantos", 20: "morgar", 30: "ignis", 40: "voltras", 50: "arcanon",
+};
 
 
 const chapter1KeyStages: Record<number, Partial<StageDef>> = {
   1: { name: "대지의 서막", mechanic: "고블린 위주의 입문용 기초 웨이브" },
   3: { name: "첫 번째 낚시", type: "elite", mechanic: "자원 채집 이후 후속 기습으로 성채가 위협받는 첫 관문" },
   6: { name: "황금의 유혹", type: "elite", mechanic: "도망치는 황금 고블린을 추적하는 지정기·암살자 대응 구간" },
-  9: { name: "발걸음의 무게", type: "boss", bossName: "대지룡 기간토스", mechanic: "대지룡 기간토스가 등장하는 첫 브레이크 포인트" },
+  9: { name: "발걸음의 무게", type: "boss", bossName: "대지룡 기간토스", mechanic: "성벽 붕괴 직전에 등장하는 대지룡 · 근거리 광역 공격" },
   12: { name: "샌드위치 협공", type: "elite", mechanic: "양방향 동시 진격으로 전방 덱을 압박하는 포위 웨이브" },
   15: { name: "폭풍 전야", type: "elite", mechanic: "평온한 초반 이후 화염의 거인 오거가 등장하는 지연 웨이브" },
   18: { name: "완벽한 호위", type: "elite", mechanic: "엘리트를 보호하는 선행 잡몹을 신속히 제거해야 하는 호위 파훼전" },

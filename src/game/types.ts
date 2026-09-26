@@ -52,7 +52,7 @@ export type Unit = UnitDef & {
   wukongOpenerUsed?: boolean;
 };
 
-export type EnemyKey = "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin" | "morgar" | "ignis" | "voltras" | "arcanon";
+export type EnemyKey = "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin" | "gigantos" | "morgar" | "ignis" | "voltras" | "arcanon";
 export type WaveGroup = { enemy: EnemyKey; count: number; gap?: number };
 export type Wave = WaveGroup[];
 export type WaveMeta = {

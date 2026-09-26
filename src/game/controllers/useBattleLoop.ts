@@ -1,6 +1,6 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { Unit } from "../types";
-import { STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
+import { BOSS_ENEMY_KEYS, STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
@@ -106,7 +106,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
 
       const bossMechanic = stage.bossMechanic;
       const bossWaveActive = Boolean(waveMeta?.boss && bossMechanic);
-      const bossId = ({ 9: "fireOgreE", 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" } as Record<number, string>)[stage.id];
+      const bossKey = BOSS_ENEMY_KEYS[stage.id];
+      const bossId = bossKey ? ENEMY_MAP[bossKey].id : undefined;
       const livingBoss = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);
       const bossAlive = bossWaveActive && Boolean(livingBoss);
       if (bossAlive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
@@ -159,8 +160,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               nextEnemies.every((enemy) => enemy.currentHp <= 0);
             if (finalWaveCleared) {
               const damage = hero.atk * 1.8;
-              if (stage.type === "boss" && bossId && !bossSpawnAnnouncedRef.current && damage >= enemyCastleRef.current) {
-                const bossDef = ENEMY_MAP[({ 9: "fireOgre", 20: "morgar", 30: "ignis", 40: "voltras", 50: "arcanon" } as const)[stage.id as 9 | 20 | 30 | 40 | 50]];
+              if (stage.type === "boss" && bossKey && !bossSpawnAnnouncedRef.current && damage >= enemyCastleRef.current) {
+                const bossDef = ENEMY_MAP[bossKey];
                 const hpScale = 1 + stageRef.current * STAGE_HP_SCALE + waveRef.current * WAVE_HP_SCALE + 0.35;
                 const atkScale = 1 + stageRef.current * STAGE_ATK_SCALE + waveRef.current * WAVE_ATK_SCALE + 0.15;
                 nextEnemies.push(makeUnit({ ...bossDef, hp: Math.round(bossDef.hp * hpScale), atk: Math.round(bossDef.atk * atkScale) }, "enemy", 90, 1000 + uidRef.current++));

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
-import { STAGES } from "./game/stages";
+import { HEROES, DECK_IDS, ENEMY_MAP, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
 import { GatheringPanel } from "./components/GatheringPanel";
@@ -440,11 +440,11 @@ function App() {
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
-  const bossUnitIds: Record<number, string> = { 9: "fireOgreE", 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" };
-  const currentBossUnitId = bossUnitIds[currentStage.id];
+  const currentBossKey = BOSS_ENEMY_KEYS[currentStage.id];
+  const currentBossUnitId = currentBossKey ? ENEMY_MAP[currentBossKey].id : undefined;
   const bossUnit = currentStage.waveMeta[waveIndex]?.boss && currentBossUnitId ? enemies.find((unit) => unit.id === currentBossUnitId) : undefined;
   const bossDisplayName = currentStage.bossName ?? bossUnit?.name ?? "BOSS";
-  const bossDisplayIcon = currentStage.id === 20 ? "🌑" : currentStage.id === 30 ? "🔥" : currentStage.id === 40 ? "⚡" : currentStage.id === 50 ? "⚪" : "👹";
+  const bossDisplayIcon = currentBossKey ? ENEMY_MAP[currentBossKey].sprite : "👹";
   const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
   const bossPhaseTwo = Boolean(bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5);
   const waveThreat = currentWave?.some((group) => group.enemy === "assassin")
