@@ -491,7 +491,7 @@ function App() {
                 </button>
               );
             })}
-          </div>
+          </div>}
         </section>
       </main>
     );
