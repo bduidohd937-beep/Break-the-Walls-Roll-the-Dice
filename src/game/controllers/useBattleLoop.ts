@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { STAGES } from "../stages";
-import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, STAGE_ATK_SCALE, STAGE_HP_SCALE, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
+import { STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
+import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
