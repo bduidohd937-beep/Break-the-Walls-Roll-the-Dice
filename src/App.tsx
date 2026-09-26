@@ -520,7 +520,17 @@ function App() {
             <div className="lane-ground" />
             {heroes.map((u) => <BattleUnit key={u.uid} unit={u} />)}
             {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
-            {deathEffects.map((effect) => (\n              <div key={effect.id} style={{ position: "absolute", zIndex: 17, left: `${effect.x}%`, top: effect.team === "hero" ? "42%" : "48%", transform: "translate(-50%,-50%)", fontSize: 25, pointerEvents: "none", opacity: Math.min(1, effect.life * 3) }}>{effect.team === "hero" ? "💥" : "💢"}</div>\n            ))}\n            {damagePopups.map((popup) => (
+             {deathEffects.map((effect) => (
+               <div key={effect.id} style={{
+                 position: "absolute", zIndex: 17, left: String(effect.x) + "%",
+                 top: effect.team === "hero" ? "42%" : "48%",
+                 transform: "translate(-50%,-50%)", fontSize: 25, pointerEvents: "none",
+                 opacity: Math.min(1, effect.life * 3),
+               }}>
+                 {effect.team === "hero" ? "💥" : "💢"}
+               </div>
+             ))}
+             {damagePopups.map((popup) => (
               <div key={popup.id} className={`damage-popup ${popup.critical ? "critical" : ""}`} style={{ left: `${popup.x}%` }}>-{popup.value}</div>
             ))}
           </div>
