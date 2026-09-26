@@ -212,3 +212,7 @@ button { font: inherit; }
 /* Ranged attack projectile feedback */
 .attack-effect.projectile { left:50%; top:8px; color:#ffe06a; font-size:18px; text-shadow:0 0 8px rgba(255,220,100,.9); animation:projectile .16s ease-out forwards; }
 @keyframes projectile { from { opacity:1; transform:translate(-50%,0) scale(.65); } to { opacity:0; transform:translate(calc(-50% + var(--shot-x)),0) scale(1.05); } }
+
+
+.damage-popup{position:absolute;z-index:18;pointer-events:none;animation:damageFloat .55s ease-out forwards}.damage-popup.critical{font-size:22px}@keyframes damageFloat{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-32px) scale(1.1)}}
+.boss-bar{position:absolute;z-index:19;top:72px;left:50%;transform:translateX(-50%);width:min(420px,62%);padding:7px 12px;border:2px solid #a83d4b;border-radius:12px;background:#170b10e8;text-align:center}.boss-title{color:#ff8a96;font-size:11px;font-weight:1000}.boss-hp{height:9px;margin-top:5px;border-radius:8px;overflow:hidden;background:#250d12}.boss-hp span{display:block;height:100%;background:#ff4b4b;transition:width .15s}.boss-hp-text{font-size:8px;font-weight:900}
