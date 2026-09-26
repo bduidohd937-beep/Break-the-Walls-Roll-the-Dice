@@ -11,6 +11,16 @@ export const HEROES: UnitDef[] = [
   { id: "assassin", name: "암살자", sprite: "🥷", element: "dark", hp: 210, atk: 145, speed: 64, range: 45, rangeType: "melee", attackType: "single", attackInterval: 1.8, cost: 900, cooldown: 18, role: "암살자", ability: "crit", abilityValue: 0.28 },
   { id: "dragon", name: "성룡", sprite: "🐉", element: "fire", hp: 1250, atk: 220, speed: 30, range: 170, rangeType: "ranged", attackInterval: 2.4, cost: 1600, cooldown: 25, role: "광역", effect: "burn", attackType: "splash", splashRadius: 15 },
   { id: "arthur", name: "아서왕", sprite: "👑", element: "dark", hp: 2100, atk: 330, speed: 25, range: 55, rangeType: "melee", attackType: "single", attackInterval: 2.6, cost: 3000, cooldown: 40, role: "전설", ability: "execute", abilityValue: 0.25 },
+  { id: "rustKnight", name: "녹슨 갑옷 기사", sprite: "🪖", element: "neutral", hp: 300, atk: 24, speed: 27, range: 34, rangeType: "melee", attackType: "single", attackInterval: 1.45, cost: 180, cooldown: 7, role: "탱커", ability: "guard", abilityValue: 0.18 },
+  { id: "traineeSword", name: "견습 검사", sprite: "🗡️", element: "neutral", hp: 180, atk: 42, speed: 39, range: 38, rangeType: "melee", attackType: "single", attackInterval: 1.05, cost: 160, cooldown: 6, role: "근접 딜러" },
+  { id: "woodArcher", name: "나무활 궁수", sprite: "🏹", element: "neutral", hp: 105, atk: 34, speed: 36, range: 185, rangeType: "ranged", attackType: "single", attackInterval: 1.3, cost: 170, cooldown: 7, role: "원거리 딜러" },
+  { id: "traineeMage", name: "견습 마법사", sprite: "🧙‍♂️", element: "neutral", hp: 115, atk: 48, speed: 27, range: 180, rangeType: "ranged", attackType: "splash", splashRadius: 8, attackInterval: 1.75, cost: 240, cooldown: 9, role: "마법 딜러" },
+  { id: "villagePriest", name: "마을 사제", sprite: "🙏", element: "neutral", hp: 145, atk: 28, speed: 28, range: 155, rangeType: "ranged", attackType: "single", attackInterval: 1.6, cost: 220, cooldown: 9, role: "지원가", ability: "regen", abilityValue: 0.012 },
+  { id: "forestThief", name: "숲속 도둑", sprite: "🗡️", element: "neutral", hp: 135, atk: 72, speed: 57, range: 40, rangeType: "melee", attackType: "single", attackInterval: 1.25, cost: 280, cooldown: 10, role: "암살자", ability: "crit", abilityValue: 0.18 },
+  { id: "lance", name: "란스 — 맹수 투사", sprite: "🐺", element: "neutral", hp: 420, atk: 76, speed: 43, range: 42, rangeType: "melee", attackType: "single", attackInterval: 1.35, cost: 520, cooldown: 13, role: "희귀 · 브레이커" },
+  { id: "sharon", name: "샤론 — 바람꼬리 궁수", sprite: "🦊", element: "neutral", hp: 175, atk: 68, speed: 43, range: 205, rangeType: "ranged", attackType: "single", attackInterval: 1.05, cost: 560, cooldown: 14, role: "희귀 · 원거리" },
+  { id: "vulcan", name: "불칸 — 용암 골렘", sprite: "🌋", element: "fire", hp: 850, atk: 92, speed: 20, range: 45, rangeType: "melee", attackType: "splash", splashRadius: 9, attackInterval: 1.9, cost: 760, cooldown: 18, role: "희귀 · 마법 탱커", effect: "burn" },
+  { id: "venom", name: "베놈 — 늪지 독거미", sprite: "🕷️", element: "neutral", hp: 260, atk: 88, speed: 35, range: 145, rangeType: "ranged", attackType: "single", attackInterval: 1.4, cost: 680, cooldown: 16, role: "희귀 · 지속 딜러" },
 ];
 
 export const ENEMIES: UnitDef[] = [
@@ -23,7 +33,7 @@ export const ENEMIES: UnitDef[] = [
   { id: "assassinE", name: "그림자 암살자", sprite: "🥷", element: "dark", hp: 180, atk: 105, speed: 58, range: 42, rangeType: "melee", attackInterval: 1.7, cost: 0, cooldown: 0, role: "암살자" },
 ];
 
-export const DECK_IDS = ["goblin", "fireGoblin", "shield", "archer", "knight", "mage", "paladin", "assassin", "dragon", "arthur"];
+export const DECK_IDS = HEROES.map((hero) => hero.id);
 
 
 export const ENEMY_MAP = {
