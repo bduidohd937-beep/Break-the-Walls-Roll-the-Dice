@@ -285,9 +285,14 @@ function App() {
 
         if (!target) {
           if (enemy.x <= 13) {
-            castleRef.current = Math.max(0, castleRef.current - enemy.atk * dt);
-            setCastleHp(castleRef.current);
-            setCastleHit("our");
+            if (enemy.attackTimer <= 0) {
+              castleRef.current = Math.max(0, castleRef.current - enemy.atk);
+              setCastleHp(castleRef.current);
+              setCastleHit("our");
+              nextEnemies[i].attackTimer = enemy.attackInterval;
+              nextEnemies[i].attackFlash = 0.16;
+              nextEnemies[i].attackTargetX = 9;
+            }
           } else {
             nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
@@ -538,8 +543,7 @@ function App() {
         <div className="top-stats">
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()} / {battleGoldMax.toLocaleString()}</b></div>
-          <div className="stat-pill">💎 Gem <b>{Math.floor(gems).toLocaleString()}</b></div><div className="stat-pill">🪙 Gold <b>{Math.floor(kingdomGold).toLocaleString()}</b></div>
-          <div className="stat-pill">🏆 CLEAR <b>{clearedStages.length}/{STAGES.length}</b></div>
+          <div className="stat-pill">💰 지갑 <b>Lv.{economyLevel}/{economyMaxLevel}</b></div>
           <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
           <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
         </div>
@@ -595,7 +599,7 @@ function App() {
 
         <div className="economy-panel">
           <div className="economy-info"><b>💰 전투 지갑 Lv.{economyLevel}/{economyMaxLevel}</b><span>초당 +{goldPerSecond} 🪙 · 최대 {battleGoldMax.toLocaleString()}</span></div>
-          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "지갑 MAX" : `지갑 강화 🪙 ${economyUpgradeCost} · +9/s · +1,250 MAX`}</button>
+          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "지갑 MAX" : `지갑 강화 · 🪙 ${economyUpgradeCost}`}</button>
         </div>
         <div className="deck-panel">
           <div className="battle-deck-header"><b>⚔️ 출전 영웅</b><span>카드를 눌러 전장에 배치 · {deckIds.length}/{deckSlotCount}</span></div>
