@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
@@ -430,6 +429,10 @@ function App() {
                   <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
                   <div className="hero-name">{hero.name}</div>
                   <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
+                  <div className="hero-combat-type">
+                    <span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span>
+                    <span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span>
+                  </div>
                   <div className="hero-ability">
                     {hero.ability === "guard" && "🛡️ 피해 감소 22%"}
                     {hero.ability === "regen" && "✚ 초당 HP 회복"}
