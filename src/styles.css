@@ -400,3 +400,33 @@ button { font: inherit; }
   .economy-info span{font-size:7px}
   .economy-upgrade{min-width:118px;padding:7px 8px;font-size:8px}
 }
+
+
+/* Wallet clarity + deploy readiness */
+.economy-upgrade{min-width:245px}
+.hero-card{position:relative;overflow:hidden}
+.hero-card-wrap.ready .hero-card{
+  border-color:#6f9f5c;
+  box-shadow:0 3px 0 #081007,inset 0 0 0 1px rgba(177,255,139,.08);
+}
+.hero-card-wrap.ready .cooldown{color:#a9ed82;font-weight:1000}
+.hero-card-wrap.no-gold .hero-card{filter:saturate(.55);opacity:.66}
+.hero-card-wrap.no-gold .cooldown{color:#e3a868}
+.hero-card-wrap.cooling .hero-card{filter:saturate(.4);opacity:.7}
+.hero-card-wrap.cooling .cooldown{color:#9ab4c7}
+.cooldown-mask{
+  position:absolute;
+  z-index:5;
+  left:0;
+  right:0;
+  bottom:0;
+  height:var(--cooldown-ratio);
+  pointer-events:none;
+  background:linear-gradient(to top,rgba(2,8,13,.68),rgba(2,8,13,.28));
+  border-top:1px solid rgba(160,210,240,.22);
+  transition:height .08s linear;
+}
+.hero-card > *:not(.cooldown-mask){position:relative;z-index:6}
+@media(max-width:800px){
+  .economy-upgrade{min-width:170px;font-size:7px}
+}
