@@ -20,11 +20,12 @@ import { type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
-import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
+import { type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
 import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
+import { useSummonController } from "./game/controllers/useSummonController";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -721,154 +722,20 @@ function App() {
   const currentStage = STAGES[stageIndex] ?? STAGES[0];
   const currentWave = currentStage.waves[waveIndex];
 
-  const summonGrade = (minimumHero = false): SummonGrade => rollSummonGrade(minimumHero);
-  const rollHero = (grade: SummonGrade) => {
-    const pool = HEROES.filter((hero) => getHeroGrade(hero.id).name === grade);
-    const fallback = HEROES.filter((hero) => ["일반", "희귀", "영웅", "전설"].includes(getHeroGrade(hero.id).name));
-    return (pool.length ? pool : fallback)[Math.floor(Math.random() * (pool.length ? pool.length : fallback.length))];
-  };
-  const performSummon = (count: 1 | 11) => {
-    if (summonPhase !== "idle") return;
-    const cost = count === 11 ? 1000 : SUMMON_GEM_COST;
-    if (gems < cost) return;
-    let nextLegendPity = legendPity;
-    let nextMythPity = mythPity;
-    const items: SummonStorageItem[] = Array.from({ length: count }, (_, index) => {
-      nextLegendPity += 1;
-      nextMythPity += 1;
-      const pityResult = applySummonPity(nextLegendPity, nextMythPity, summonGrade(count === 11 && index === count - 1));
-      const grade = pityResult.grade;
-      nextLegendPity = pityResult.legendPity;
-      nextMythPity = pityResult.mythPity;
-      const hero = rollHero(grade);
-      return { uid: summonUidRef.current++, heroId: hero.id, grade };
-    });
-    setLegendPity(nextLegendPity); setMythPity(nextMythPity);
-    window.localStorage.setItem("btw-legend-pity", String(nextLegendPity));
-    window.localStorage.setItem("btw-myth-pity", String(nextMythPity));
-    const nextStorage = [...items, ...summonStorage];
-    setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-    const nextGems = gems - cost;
-    setGems(nextGems);
-    window.localStorage.setItem("btw-gems", String(nextGems));
-    setSummonSequence(items);
-    setLastSummonResults(items);
-    setSummonSummaryOpen(false);
-    setSummonRevealIndex(0);
-    setSummonMessage("");
-    setSummonPhase("throw");
-    window.setTimeout(() => setSummonPhase("impact"), 650);
-    window.setTimeout(() => setSummonPhase("crack"), 1200);
-    window.setTimeout(() => setSummonPhase("reveal"), 1850);
-  };
-  const nextSummonReveal = () => {
-    if (summonRevealIndex < summonSequence.length - 1) {
-      setSummonRevealIndex((index) => index + 1);
-      return;
-    }
-    setSummonPhase("idle");
-    setSummonSequence([]);
-    setSummonSummaryOpen(true);
-    setSummonMessage("소환 완료 · 모든 결과가 저장소로 이동했습니다.");
-  };
-  const skipSummonReveal = () => {
-    setSummonPhase("idle");
-    setSummonSequence([]);
-    setSummonSummaryOpen(true);
-    setSummonMessage("연출 스킵 · 모든 결과가 저장소로 이동했습니다.");
-  };
-  const useStoredHero = (uid: number) => {
-    const item = summonStorage.find((entry) => entry.uid === uid);
-    if (!item || ownedHeroes.includes(item.heroId)) return;
-    const nextOwned = [...ownedHeroes, item.heroId];
-    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
-    setOwnedHeroes(nextOwned); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const soulStoredHero = (uid: number) => {
-    const item = summonStorage.find((entry) => entry.uid === uid);
-    if (!item || !ownedHeroes.includes(item.heroId)) return;
-    const nextHeroSouls = { ...heroSouls, [item.heroId]: Math.min(30, (heroSouls[item.heroId] ?? 0) + 1) };
-    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
-    setHeroSouls(nextHeroSouls); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-hero-souls", JSON.stringify(nextHeroSouls));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const shardStoredHero = (uid: number) => {
-    const item = summonStorage.find((entry) => entry.uid === uid);
-    if (!item) return;
-    const nextShards = soulShards + SHARD_VALUE[item.grade];
-    const nextTranscend = transcendShards + (item.grade === "신화" ? 1 : item.grade === "초월" ? 5 : 0);
-    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
-    setSoulShards(nextShards); setTranscendShards(nextTranscend); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-soul-shards", String(nextShards));
-    window.localStorage.setItem("btw-transcend-shards", String(nextTranscend));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const bulkUseStoredHeroes = () => {
-    const uniqueIds = [...new Set(summonStorage.map((item) => item.heroId).filter((id) => !ownedHeroes.includes(id)))];
-    if (!uniqueIds.length) return;
-    const nextOwned = [...ownedHeroes, ...uniqueIds];
-    const usedOnce = new Set<string>();
-    const nextStorage = summonStorage.filter((item) => {
-      if (!uniqueIds.includes(item.heroId) || usedOnce.has(item.heroId)) return true;
-      usedOnce.add(item.heroId); return false;
-    });
-    setOwnedHeroes(nextOwned); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const bulkSoulStoredHeroes = (maxGrade: "일반" | "희귀") => {
-    const allowed = maxGrade === "일반" ? new Set<SummonGrade>(["일반"]) : new Set<SummonGrade>(["일반", "희귀"]);
-    const capacity = { ...heroSouls };
-    const targetIds = new Set<number>();
-    summonStorage.forEach((item) => {
-      if (!allowed.has(item.grade) || !ownedHeroes.includes(item.heroId) || (capacity[item.heroId] ?? 0) >= 30) return;
-      capacity[item.heroId] = (capacity[item.heroId] ?? 0) + 1;
-      targetIds.add(item.uid);
-    });
-    if (!targetIds.size) return;
-    const nextStorage = summonStorage.filter((item) => !targetIds.has(item.uid));
-    setHeroSouls(capacity); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-hero-souls", JSON.stringify(capacity));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const bulkShardStoredHeroes = (maxGrade: "일반" | "희귀") => {
-    const allowed = maxGrade === "일반" ? new Set<SummonGrade>(["일반"]) : new Set<SummonGrade>(["일반", "희귀"]);
-    const targets = summonStorage.filter((item) => allowed.has(item.grade));
-    if (!targets.length) return;
-    const gain = targets.reduce((sum, item) => sum + SHARD_VALUE[item.grade], 0);
-    const ids = new Set(targets.map((item) => item.uid));
-    const nextStorage = summonStorage.filter((item) => !ids.has(item.uid));
-    const nextShards = soulShards + gain;
-    setSoulShards(nextShards); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-soul-shards", String(nextShards));
-    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };
-  const buyHeroSoulWithShards = (heroId: string) => {
-    const cost = 100;
-    if (!ownedHeroes.includes(heroId) || soulShards < cost || (heroSouls[heroId] ?? 0) >= 30) return;
-    const nextSouls = { ...heroSouls, [heroId]: (heroSouls[heroId] ?? 0) + 1 };
-    const nextShards = soulShards - cost;
-    setHeroSouls(nextSouls); setSoulShards(nextShards);
-    window.localStorage.setItem("btw-hero-souls", JSON.stringify(nextSouls));
-    window.localStorage.setItem("btw-soul-shards", String(nextShards));
-  };
-  const fusionRecipes = [
-    { id: "unknown-01", name: "??? · 봉인된 왕", icon: "👑", materials: [DECK_IDS[18], DECK_IDS[17]].filter(Boolean), shardCost: 10 },
-    { id: "unknown-02", name: "??? · 경계의 사신", icon: "☠️", materials: [DECK_IDS[19], DECK_IDS[16]].filter(Boolean), shardCost: 10 }
-  ];
-  const performFusion = (recipeId: string) => {
-    const recipe = fusionRecipes.find((entry) => entry.id === recipeId);
-    if (!recipe || fusionRecords.includes(recipeId) || transcendShards < recipe.shardCost || !recipe.materials.every((id) => ownedHeroes.includes(id))) return;
-    const nextRecords = [...fusionRecords, recipeId];
-    const nextShards = transcendShards - recipe.shardCost;
-    setFusionRecords(nextRecords); setTranscendShards(nextShards);
-    window.localStorage.setItem("btw-fusion-records", JSON.stringify(nextRecords));
-    window.localStorage.setItem("btw-transcend-shards", String(nextShards));
-  };
+  const {
+    performSummon, nextSummonReveal, skipSummonReveal, useStoredHero, soulStoredHero, shardStoredHero,
+    bulkUseStoredHeroes, bulkSoulStoredHeroes, bulkShardStoredHeroes, buyHeroSoulWithShards,
+    fusionRecipes, performFusion
+  } = useSummonController({
+    heroes: HEROES, deckIds: DECK_IDS, gems, setGems, legendPity, setLegendPity, mythPity, setMythPity,
+    storage: summonStorage, setStorage: setSummonStorage, owned: ownedHeroes, setOwned: setOwnedHeroes,
+    heroSouls, setHeroSouls, soulShards, setSoulShards, transcendShards, setTranscendShards,
+    fusionRecords, setFusionRecords, phase: summonPhase, setPhase: setSummonPhase,
+    sequence: summonSequence, setSequence: setSummonSequence, revealIndex: summonRevealIndex,
+    setRevealIndex: setSummonRevealIndex, setSummaryOpen: setSummonSummaryOpen,
+    setResults: setLastSummonResults, setMessage: setSummonMessage, uidRef: summonUidRef,
+    getGrade: getHeroGrade
+  });
 
   const toggleDeckHero = (id: string) => {
     if (!ownedHeroes.includes(id)) return;
