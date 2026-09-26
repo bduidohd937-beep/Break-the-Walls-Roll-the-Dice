@@ -10,6 +10,8 @@ import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat
 import { BattleUnit } from "./components/BattleUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
 import { GatheringPanel } from "./components/GatheringPanel";
+import { HeroesPanel } from "./components/HeroesPanel";
+import { SummonPanel } from "./components/SummonPanel";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
@@ -1074,94 +1076,25 @@ function App() {
             </div>
           )}
 
-          {mainTab === "heroes" && (() => {
-            const selectedHero = HEROES.find((hero) => hero.id === selectedHeroId) ?? HEROES[0];
-            const owned = ownedHeroes.includes(selectedHero.id);
-            const level = getUnitLevel(selectedHero.id);
-            const multiplier = getLevelMultiplier(selectedHero.id, level);
-            const nextMultiplier = getLevelMultiplier(selectedHero.id, Math.min(10, level + 1));
-            const currentPower = getHeroPower(selectedHero, level);
-            const nextPower = getHeroPower(selectedHero, Math.min(10, level + 1));
-            const soulBonus = getSoulBonuses(selectedHero.id);
-            const upgradeCost = getUpgradeCost(selectedHero.id);
-            const grade = getHeroGrade(selectedHero.id);
-            const soulPlus = heroSouls[selectedHero.id] ?? 0;
-            const soulMilestones = [5, 10, 15, 20, 25, 30];
-            const nextSoulMilestone = soulMilestones.find((value) => value > soulPlus) ?? 30;
-            return (
-              <div className="hero-center">
-                <div className="hero-mode-tabs"><button className={heroMode === "formation" ? "active" : ""} onClick={() => setHeroMode("formation")}>⚔️ 영웅 편성</button><button className={heroMode === "upgrade" ? "active" : ""} onClick={() => setHeroMode("upgrade")}>⬆️ 영웅 강화</button></div>
-                {heroMode === "formation" ? <>
-                  <div className="formation-help">보유 영웅을 아래 출전 슬롯으로 드래그하세요. 슬롯의 영웅을 누르면 편성에서 빠집니다.</div>
-                  <div className="formation-roster">{HEROES.filter((hero) => ownedHeroes.includes(hero.id)).map((hero) => <div key={hero.id} className={`formation-hero ${deckIds.includes(hero.id) ? "in-deck" : ""}`} draggable onDragStart={() => setDragHeroId(hero.id)} onDragEnd={() => setDragHeroId(null)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{getHeroGrade(hero.id).name} · Lv.{getUnitLevel(hero.id)}</small></div>)}</div>
-                  <div className="formation-pager" onTouchStart={(event) => { formationTouchY.current = event.touches[0]?.clientY ?? null; }} onTouchEnd={(event) => { if (formationTouchY.current == null) return; const endY = event.changedTouches[0]?.clientY ?? formationTouchY.current; const delta = endY - formationTouchY.current; if (delta < -35) setFormationPage(1); if (delta > 35) setFormationPage(0); formationTouchY.current = null; }}>
-                    <button className="formation-arrow" disabled={formationPage === 0} onClick={() => setFormationPage(0)}>↑</button>
-                    <div className="formation-page-label">{formationPage === 0 ? "출전 1 · 슬롯 1~5" : "출전 2 · 슬롯 6~10"}</div>
-                    <div className="formation-slots five">{Array.from({ length: 5 }, (_, localIndex) => { const index = formationPage * 5 + localIndex; const id = deckIds[index]; const hero = HEROES.find((unit) => unit.id === id); return <div key={index} className={`formation-slot ${hero ? "filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragHeroId) setDeckSlot(index, dragHeroId); setDragHeroId(null); }} onClick={() => hero && removeDeckSlot(index)}><em>{index + 1}</em>{hero ? <><span>{hero.sprite}</span><b>{hero.name}</b></> : <small>DROP</small>}</div>; })}</div>
-                    <button className="formation-arrow" disabled={formationPage === 1} onClick={() => setFormationPage(1)}>↓</button>
-                    <div className="formation-dots"><i className={formationPage === 0 ? "active" : ""}/><i className={formationPage === 1 ? "active" : ""}/></div>
-                  </div>
-                </> : <div className="hero-management upgrade-only">
-                  <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{HEROES.map((hero) => { const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `${getHeroGrade(hero.id).name} · Lv.${getUnitLevel(hero.id)} · 영혼 +${heroSouls[hero.id] ?? 0}` : "🔒 미보유"}</small></button>; })}</div></div>
-                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned && <div className="hero-profile-strip"><span>{ELEMENT_LABEL[selectedHero.element]}</span><span>{selectedHero.rangeType === "ranged" ? "원거리" : "근거리"} · 사거리 {selectedHero.range}</span><span>이동 {selectedHero.speed}</span><span>출전 {selectedHero.cost}G</span><span>쿨 {selectedHero.cooldown}s</span></div>}{owned ? <><div className="hero-power-card"><small>COMBAT POWER</small><b>{currentPower.toLocaleString()}</b>{level < 10 && <span>다음 Lv.{level + 1} → {nextPower.toLocaleString()}</span>}</div><div className="hero-trait-card"><div><small>COMBAT TRAIT</small><b>{getHeroTrait(selectedHero).name}</b></div><p>{getHeroTrait(selectedHero).text}</p><span>{selectedHero.attackType === "splash" ? "광역" : "단일"} · 공격주기 {(selectedHero.attackInterval * soulBonus.speed).toFixed(2)}초</span></div><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier * soulBonus.hp)}</b>{level < 10 && <small>→ {Math.round(selectedHero.hp * nextMultiplier * soulBonus.hp)}</small>}</div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier * soulBonus.atk)}</b>{level < 10 && <small>→ {Math.round(selectedHero.atk * nextMultiplier * soulBonus.atk)}</small>}</div><div><span>공격속도</span><b>{(selectedHero.attackInterval * soulBonus.speed).toFixed(2)}s</b><small>영혼 성장 적용</small></div><div><span>등급 성장</span><b>Lv당 +{Math.round(getGradeGrowth(selectedHero.id) * 100)}%</b><small>{grade.name}</small></div></div><div className="hero-soul-panel"><div className="hero-soul-head"><span>영혼 성장</span><b>+{soulPlus}/30</b></div><div className="hero-soul-track"><i style={{width:`${(soulPlus / 30) * 100}%`}}/></div><div className="hero-soul-milestones">{soulMilestones.map((value) => <div key={value} className={soulPlus >= value ? "reached" : ""}><b>+{value}</b><small>{value === 5 ? "HP +8%" : value === 10 ? "ATK +8%" : value === 15 ? "공속 +8%" : value === 20 ? "HP +12%" : value === 25 ? "ATK +12%" : "HP/ATK +10% · 공속 +5%"}</small></div>)}</div><div className="hero-soul-next">{soulPlus >= 30 ? "영혼 성장 MAX" : `다음 마일스톤 +${nextSoulMilestone} · 중복 영웅 또는 영혼 파편으로 성장할 수 있습니다.`}</div>{soulPlus < 30 && <button className="soul-shard-buy" disabled={soulShards < 100} onClick={() => buyHeroSoulWithShards(selectedHero.id)}>🧩 영혼 파편 100 → {selectedHero.name} 영혼 +1</button>}</div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 성장률 적용 · Lv당 HP / ATK +{Math.round(getGradeGrowth(selectedHero.id) * 100)}% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
-                </div>}
-              </div>
-            );
-          })()}
+          {mainTab === "heroes" && <HeroesPanel
+            heroes={HEROES} ownedHeroes={ownedHeroes} deckIds={deckIds} deckSlotCount={deckSlotCount}
+            heroMode={heroMode} setHeroMode={setHeroMode} formationPage={formationPage} setFormationPage={setFormationPage}
+            dragHeroId={dragHeroId} setDragHeroId={setDragHeroId} touchY={formationTouchY} setDeckSlot={setDeckSlot} removeDeckSlot={removeDeckSlot}
+            selectedHeroId={selectedHeroId} setSelectedHeroId={setSelectedHeroId} kingdomGold={kingdomGold} soulShards={soulShards}
+            heroSouls={heroSouls} getLevel={getUnitLevel} getMultiplier={getLevelMultiplier} getPower={getHeroPower}
+            getSoulBonus={getSoulBonuses} getUpgradeCost={getUpgradeCost} getGrade={getHeroGrade} getGrowth={getGradeGrowth}
+            getTrait={getHeroTrait} upgradeUnit={upgradeUnit} buySoul={buyHeroSoulWithShards}
+          />}
 
-          {mainTab === "summon" && (
-            <div className="summon-panel hub-summon">
-              <div className="deck-builder-title">🎲 성벽 소환</div>
-              {summonPhase !== "idle" && (() => {
-                const item = summonSequence[summonRevealIndex];
-                const hero = item ? HEROES.find((unit) => unit.id === item.heroId) : undefined;
-                const highGrade = item ? ["전설", "신화", "초월"].includes(item.grade) : false;
-                const omenGrade = item?.grade ?? "일반";
-                const fakeout = item ? ["전설", "신화", "초월"].includes(item.grade) : false;
-                return <div className={`summon-cinematic phase-${summonPhase} grade-scene-${omenGrade} ${highGrade ? "high-grade" : ""} ${fakeout ? "summon-fakeout" : ""}`}>
-                  <button className="summon-skip" onClick={skipSummonReveal}>SKIP</button>
-                  <div className="summon-scene">
-                    <div className="summon-moon">✦</div>
-                    <div className="summon-die">🎲</div>
-                    <div className="summon-wall"><div className="wall-top">▥▥▥</div><div className="wall-body">▦▦▦<i>⚡</i>▦▦▦</div></div>
-                    <div className="summon-impact-ring"/>
-                    <div className="summon-omen">{summonPhase === "crack" && item && <><span>◆</span><b>{["일반","희귀"].includes(item.grade) ? "..." : item.grade === "영웅" ? "강한 기척" : "성벽이 버티지 못한다"}</b></>}</div>
-                    {fakeout && summonPhase === "crack" && <div className="second-die">🎲</div>}
-                    {summonPhase === "reveal" && hero && item && <div className={`hero-reveal grade-${item.grade}`} onClick={nextSummonReveal}>
-                      <div className="reveal-rays"/>
-                      <small>{summonRevealIndex + 1} / {summonSequence.length}</small>
-                      <div className="reveal-grade">{item.grade}</div>
-                      <div className="reveal-sprite">{hero.sprite}</div>
-                      <h2>{hero.name}</h2>
-                      <p>{hero.role}</p>
-                      <b>{summonRevealIndex < summonSequence.length - 1 ? "클릭하여 다음 영웅 ▶" : "클릭하여 결과 확인"}</b>
-                    </div>}
-                  </div>
-                  {summonPhase !== "reveal" && <div className="summon-cinematic-text">{summonPhase === "throw" ? "운명의 주사위를 던진다" : summonPhase === "impact" ? "성벽과 운명이 충돌한다" : "균열 너머에서 기척이 느껴진다..."}</div>}
-                </div>;
-              })()}
+          {mainTab === "summon" && <SummonPanel
+            heroes={HEROES} phase={summonPhase} sequence={summonSequence} revealIndex={summonRevealIndex}
+            summaryOpen={summonSummaryOpen} results={lastSummonResults} gems={gems} soulShards={soulShards} transcendShards={transcendShards}
+            legendPity={legendPity} mythPity={mythPity} message={summonMessage} storageCount={summonStorage.length}
+            fusionCount={fusionRecords.length} fusionTotal={fusionRecipes.length} ownedCount={ownedHeroes.length}
+            onSkip={skipSummonReveal} onNext={nextSummonReveal} onCloseSummary={() => setSummonSummaryOpen(false)}
+            onSummon={performSummon} onStorage={() => setMainTab("storage")} onFusion={() => setMainTab("fusion")}
+          />}
 
-              {summonSummaryOpen && lastSummonResults.length > 0 && <div className="summon-summary-overlay">
-                <div className="summon-summary-box">
-                  <div className="summon-summary-title"><div><small>SUMMON RESULT</small><h2>{lastSummonResults.length === 11 ? "10+1 소환 결과" : "소환 결과"}</h2></div><button onClick={() => setSummonSummaryOpen(false)}>✕</button></div>
-                  <div className="summon-summary-grid">{lastSummonResults.map((result) => { const resultHero = HEROES.find((hero) => hero.id === result.heroId); return resultHero ? <div key={result.uid} className={`summary-card grade-${result.grade}`}><span>{resultHero.sprite}</span><b>{resultHero.name}</b><small>{result.grade}</small></div> : null; })}</div>
-                  <button className="summary-confirm" onClick={() => setSummonSummaryOpen(false)}>보관소 확인</button>
-                </div>
-              </div>}
-              <p>소환 결과는 바로 영웅이 되지 않고 저장소로 이동합니다. 사용할 영웅만 영입하거나 영혼으로 변환하세요.</p>
-              <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 🧩 영혼 파편 <b>{soulShards.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
-              <div className="summon-actions">
-                <button className="summon-btn" disabled={gems < SUMMON_GEM_COST} onClick={() => performSummon(1)}>🎲 1회 소환 · 100 💎</button>
-                <button className="summon-btn multi" disabled={gems < 1000} onClick={() => performSummon(11)}>🎲 10+1 소환 · 1000 💎<small>11명 소환 · 마지막 1명 영웅 이상 보장</small></button>
-              </div>
-              <div className="summon-rates">일반 65% · 희귀 25% · 영웅 7% · 전설 2.5% · 신화 0.45% · 초월 0.05%</div>
-              <div className="summon-pity"><span>전설 이상 천장 <b>{legendPity}/100</b></span><span>신화 이상 천장 <b>{mythPity}/500</b></span></div>
-              {summonMessage && <div className="summon-result">{summonMessage}</div>}
-              <button className="open-storage-btn" onClick={() => setMainTab("storage")}>📦 저장소 열기 <b>{summonStorage.length}</b></button>
-              <button className="open-storage-btn fusion-open" onClick={() => setMainTab("fusion")}>⚗️ 영웅 합성소 <b>{fusionRecords.length}/{fusionRecipes.length}</b></button>
-              <div className="owned-count">실사용 보유 영웅 {ownedHeroes.length}/{HEROES.length}</div>
-            </div>
-          )}
           {mainTab === "storage" && (
             <div className="summon-panel storage-screen">
               <div className="storage-screen-head"><button onClick={() => setMainTab("summon")}>← 소환으로</button><div><small>SUMMON STORAGE</small><h2>📦 영웅 저장소</h2></div><b>{summonStorage.length}명</b></div>
