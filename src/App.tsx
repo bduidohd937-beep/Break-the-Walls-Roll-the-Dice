@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, WAVE_META, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damage";
@@ -11,9 +11,6 @@ import { BattleUnit } from "./components/BattleUnit";
 function App() {
   const [battleGold, setBattleGold] = useState(500);
   const [waveIndex, setWaveIndex] = useState(0);
-  const [waveTimer, setWaveTimer] = useState(0);
-  const [spawnIndex, setSpawnIndex] = useState(0);
-  const [spawnTimer, setSpawnTimer] = useState(1.2);
   const [heroes, setHeroes] = useState<Unit[]>([]);
   const [enemies, setEnemies] = useState<Unit[]>([]);
   const [castleHp, setCastleHp] = useState(1000);
@@ -110,13 +107,21 @@ function App() {
         };
       });
 
-      // Spawn the fixed wave sequence.
+      // Spawn the current wave with gentle per-wave scaling.
       const wave = WAVES[waveRef.current];
+      const waveMeta = WAVE_META[waveRef.current];
       const totalInWave = wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
       if (wave && spawnRef.current < totalInWave && spawnTimerRef.current <= 0) {
         const sequence = wave.flatMap((group) => Array.from({ length: group.count }, () => group));
         const group = sequence[spawnRef.current];
-        const enemyDef = ENEMY_MAP[group.enemy];
+        const baseEnemy = ENEMY_MAP[group.enemy];
+        const hpScale = 1 + waveRef.current * WAVE_HP_SCALE + (waveMeta?.boss ? 0.35 : 0);
+        const atkScale = 1 + waveRef.current * WAVE_ATK_SCALE + (waveMeta?.boss ? 0.15 : 0);
+        const enemyDef = {
+          ...baseEnemy,
+          hp: Math.round(baseEnemy.hp * hpScale),
+          atk: Math.round(baseEnemy.atk * atkScale),
+        };
         const uid = 1000 + uidRef.current++;
         nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
         spawnRef.current += 1;
@@ -256,15 +261,17 @@ function App() {
       setEnemies(nextEnemies);
 
       const waveCleared = spawnRef.current >= totalInWave && nextEnemies.length === 0;
-      if (waveCleared) {
-        if (waveRef.current < WAVES.length - 1) {
-          waveRef.current += 1;
-          spawnRef.current = 0;
-          spawnTimerRef.current = 1.4;
-          setWaveIndex(waveRef.current);
-          setSpawnIndex(0);
-          setNotice(`WAVE ${waveRef.current + 1} 진입`);
-        }
+      if (waveCleared && waveRef.current < WAVES.length - 1) {
+        const reward = WAVE_META[waveRef.current]?.reward ?? 0;
+        goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + reward);
+        setBattleGold(Math.floor(goldRef.current));
+        waveRef.current += 1;
+        spawnRef.current = 0;
+        spawnTimerRef.current = 1.4;
+        setWaveIndex(waveRef.current);
+        setNotice(`WAVE ${waveRef.current + 1} · ${WAVE_META[waveRef.current]?.name ?? "다음 전투"}`);
+      } else if (waveCleared && waveRef.current === WAVES.length - 1) {
+        setNotice("FINAL WAVE CLEAR · 적 성을 파괴하면 스테이지 클리어!");
       }
 
       if (enemyCastleRef.current <= 0) {
@@ -289,9 +296,6 @@ function App() {
     uidRef.current = 1;
     setBattleGold(500);
     setWaveIndex(0);
-    setWaveTimer(0);
-    setSpawnIndex(0);
-    setSpawnTimer(1.2);
     setHeroes([]);
     setEnemies([]);
     setCastleHp(1000);
@@ -300,6 +304,11 @@ function App() {
     setDeployCooldowns({});
     setNotice("전투 시작!");
   };
+
+  const currentWave = WAVES[waveIndex];
+  const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
+  const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
+  const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
 
   return (
     <main className="game-shell">
@@ -328,7 +337,11 @@ function App() {
             {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
           </div>
 
-          <div className="wave-banner">{notice}</div>
+          <div className="wave-banner">
+            <div className="wave-title">WAVE {waveIndex + 1}/{WAVES.length} · {WAVE_META[waveIndex]?.name}</div>
+            <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
+            <div className="wave-notice">{notice}</div>
+          </div>
         </div>
 
         <div className="deck-panel">
