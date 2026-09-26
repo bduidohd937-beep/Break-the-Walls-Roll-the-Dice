@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
