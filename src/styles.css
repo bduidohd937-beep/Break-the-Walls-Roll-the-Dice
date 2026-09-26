@@ -189,3 +189,12 @@ button { font: inherit; }
 .deck-slot.filled { border-style:solid; color:#ffd76c; }
 .hero-card-wrap { display:flex; flex-direction:column; min-width:0; }
 .hero-card-wrap .upgrade-btn { flex:0 0 auto; }
+
+.management-buttons { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.summon-open { width:100%; margin:10px 0; padding:10px 12px; border:1px solid #765b2a; border-radius:8px; background:#2b2410; color:#ffd76c; font-weight:900; cursor:pointer; }
+.summon-panel { margin:8px 0 14px; padding:14px; border:1px solid #765b2a; border-radius:10px; background:#17130a; text-align:center; }
+.summon-panel p { margin:5px 0 10px; color:#aeb9be; font-size:10px; }
+.summon-btn { width:100%; padding:12px; border:1px solid #a27a32; border-radius:8px; background:#3a2b10; color:#ffd76c; font-size:13px; font-weight:1000; cursor:pointer; }
+.summon-btn:disabled { opacity:.35; cursor:not-allowed; }
+.summon-result { margin-top:10px; padding:8px; border-radius:7px; background:#2a2110; color:#fff0ad; font-weight:1000; }
+.owned-count { margin-top:7px; color:#8fa6b2; font-size:9px; font-weight:900; }
