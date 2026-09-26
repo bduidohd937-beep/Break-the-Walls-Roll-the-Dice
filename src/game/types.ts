@@ -1,6 +1,7 @@
 export type ElementType = "neutral" | "dark" | "fire";
 export type Team = "hero" | "enemy";
 export type AttackType = "single" | "splash";
+export type RangeType = "melee" | "ranged";
 export type AbilityType = "guard" | "crit" | "regen" | "execute";
 
 export type UnitDef = {
@@ -12,6 +13,7 @@ export type UnitDef = {
   atk: number;
   speed: number;
   range: number;
+  rangeType: RangeType;
   attackInterval: number;
   cost: number;
   cooldown: number;
