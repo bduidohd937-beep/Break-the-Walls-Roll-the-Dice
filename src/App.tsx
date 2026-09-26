@@ -16,6 +16,9 @@ function App() {
     return clamp(Math.floor(saved) || 1, 1, STAGES.length);
   });
   const [kingdomGold, setKingdomGold] = useState(() => Number(window.localStorage.getItem("btw-kingdom-gold") ?? "0"));
+  const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-unit-levels") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+  });
   const [clearedStages, setClearedStages] = useState<number[]>(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem("btw-cleared-stages") ?? "[]");
@@ -41,13 +44,34 @@ function App() {
     return DECK_IDS.slice(start, start + 5).map((id) => HEROES.find((hero) => hero.id === id)!);
   }, [deckPage]);
 
+  const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
+  const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : 150 * getUnitLevel(id);
+
+  const upgradeUnit = (id: string) => {
+    const level = getUnitLevel(id);
+    const cost = getUpgradeCost(id);
+    if (level >= 10 || kingdomGold < cost) return;
+    const next = { ...unitLevels, [id]: level + 1 };
+    setUnitLevels(next);
+    setKingdomGold((gold) => {
+      const nextGold = gold - cost;
+      window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
+      return nextGold;
+    });
+    window.localStorage.setItem("btw-unit-levels", JSON.stringify(next));
+    setNotice(`${HEROES.find((hero) => hero.id === id)?.name ?? id} 강화 Lv.${level + 1}!`);
+  };
+
   const deploy = useCallback((def: UnitDef) => {
     if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
     const uid = nextUid;
+    const level = getUnitLevel(def.id);
+    const statMultiplier = 1 + (level - 1) * 0.08;
+    const upgradedDef: UnitDef = { ...def, hp: Math.round(def.hp * statMultiplier), atk: Math.round(def.atk * statMultiplier) };
     setNextUid((v) => v + 1);
     setBattleGold((g) => g - def.cost);
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
-    setHeroes((list) => [...list, makeUnit(def, "hero", 9 + Math.random() * 7, uid)]);
+    setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
   }, [battleGold, battleState, heroes, nextUid, deployCooldowns]);
 
@@ -427,7 +451,7 @@ function App() {
               return (
                 <button key={hero.id} className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
                   <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
-                  <div className="hero-name">{hero.name}</div>
+                  <div className="hero-name">{hero.name} <small>Lv.{getUnitLevel(hero.id)}</small></div>
                   <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
                   <div className="hero-combat-type">
                     <span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span>
@@ -442,6 +466,9 @@ function App() {
                     {!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}
                   </div>
                   <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
+                  <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={(event) => { event.stopPropagation(); upgradeUnit(hero.id); }}>
+                    {getUpgradeCost(hero.id) === 0 ? "MAX" : `강화 👑${getUpgradeCost(hero.id)}`}
+                  </button>
                 </button>
               );
             })}
