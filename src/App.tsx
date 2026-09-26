@@ -17,13 +17,14 @@ import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
 import { type FacilityKey } from "./game/systems/kingdom";
-import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
-import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
+import { GATHER_REGIONS, type GatherRegionKey } from "./game/systems/gathering";
+import { getHeroGradeByIndex, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
 import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
 import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
+import { useGatheringController } from "./game/controllers/useGatheringController";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -148,59 +149,6 @@ function App() {
     kingdomLevel, setKingdomLevel, kingdomGold, setKingdomGold, facilityLevels, setFacilityLevels
   });
 
-  const saveResources = (next: { wood: number; stone: number }) => {
-    setResources(next);
-    saveJson(STORAGE_KEYS.resources, next);
-  };
-  const gatherRegions = GATHER_REGIONS;
-  const activeGatherRegion = gatherRegions[gatherRegion as GatherRegionKey];
-  const gatherRegionScale = activeGatherRegion.scale;
-  const isGatherRegionUnlocked = (key: GatherRegionKey) => gatherRegions[key].unlockStage === 0 || clearedStages.includes(gatherRegions[key].unlockStage);
-  const getGatherAttackDamage = (type: "wood" | "stone") => {
-    const heroId = workers[type];
-    const hero = heroId ? HEROES.find((unit) => unit.id === heroId) : undefined;
-    return calculateGatherAttackDamage(type, hero?.atk, hero ? getLevelMultiplier(hero.id) : 1);
-  };
-  const gatherResource = (type: "wood" | "stone") => {
-    setGatherHit(type);
-    window.setTimeout(() => setGatherHit((current) => current === type ? null : current), 140);
-    setGatherHp((current) => {
-      const damage = getGatherAttackDamage(type);
-      const scaledMaxHp = gatherMaxHp[type] * gatherRegionScale;
-      const effectiveHp = Math.min(current[type], scaledMaxHp);
-      const nextHp = Math.max(0, effectiveHp - damage);
-      if (nextHp > 0) return { ...current, [type]: nextHp };
-      setResources((stored) => {
-        const nextResources = { ...stored, [type]: stored[type] + gatherReward[type] * gatherRegionScale };
-        window.localStorage.setItem("btw-resources", JSON.stringify(nextResources));
-        return nextResources;
-      });
-      return { ...current, [type]: gatherMaxHp[type] * gatherRegionScale };
-    });
-  };
-  const sellResource = (type: "wood" | "stone") => {
-    const amount = resources[type];
-    if (amount <= 0) return;
-    const unitPrice = getResourceSellPrice(type, kingdomSellBonus);
-    const next = { ...resources, [type]: 0 };
-    saveResources(next);
-    setKingdomGold((gold) => {
-      const value = gold + Math.round(amount * unitPrice);
-      window.localStorage.setItem("btw-kingdom-gold", String(value));
-      return value;
-    });
-  };
-  const assignWorker = (type: "wood" | "stone", heroId: string) => {
-    const next = { ...workers };
-    for (const key of ["wood", "stone"] as const) if (next[key] === heroId) delete next[key];
-    if (workers[type] === heroId) delete next[type]; else next[type] = heroId;
-    setWorkers(next);
-    saveJson(STORAGE_KEYS.workers, next);
-    const now = Date.now();
-    gatherLastSeenRef.current = now;
-    saveNumber(STORAGE_KEYS.gatherLastSeen, now);
-  };
-
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
   const getHeroGrade = (id: string) => getHeroGradeByIndex(DECK_IDS.indexOf(id));
   const getGradeGrowth = (id: string) => {
@@ -230,6 +178,16 @@ function App() {
   };
 
   const getSoulBonuses = (id: string) => calculateSoulBonuses(heroSouls[id] ?? 0);
+
+  const {
+    gatherRegions, activeGatherRegion, gatherRegionScale, isGatherRegionUnlocked,
+    getGatherEfficiency, getAutoGatherAmount, getGatherAttackDamage, gatherResource, sellResource, assignWorker
+  } = useGatheringController({
+    heroes: HEROES, clearedStages, gatherRegion, resources, setResources, workers, setWorkers,
+    gatherHp, setGatherHp, setGatherHit, kingdomSellBonus, kingdomProductionBonus,
+    facilityLevels, setKingdomGold, gatherLastSeenRef, getUnitLevel, getLevelMultiplier, getHeroGrade,
+    gatherMaxHp, gatherReward
+  });
 
 
   const upgradeUnit = (id: string) => {
