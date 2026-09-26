@@ -628,3 +628,19 @@ button { font: inherit; }
 .formation-dots i{width:18px;height:3px;background:#294151}
 .formation-dots i.active{background:#d6a94c}
 @media(max-width:700px){.formation-slots.five{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.formation-slots.five .formation-slot{min-height:64px}.formation-slots.five .formation-slot span{font-size:22px}.formation-slots.five .formation-slot b{font-size:6px}}
+
+
+/* Summon phase 1 */
+.summon-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.summon-btn.multi{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.summon-btn.multi small{font-size:7px;opacity:.72}
+.summon-rates{padding:9px;border:1px solid #293d4a;background:#08131b;color:#a9bac4;font-size:8px;text-align:center;line-height:1.7}
+.summon-storage-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid #263b48}
+.summon-storage-head b{color:#f2d184}.summon-storage-head span{font-size:8px;color:#91a6b2}
+.summon-storage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:330px;overflow:auto}
+.storage-card{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:1px solid #263d4c;background:#0a1720}
+.storage-hero{display:flex;align-items:center;gap:8px;min-width:0}.storage-hero>span{font-size:28px}.storage-hero div{display:flex;flex-direction:column;min-width:0}.storage-hero small{font-size:7px;color:#d6a94c}.storage-hero b{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.storage-actions{display:flex;gap:4px;flex-shrink:0}.storage-actions button{padding:6px 7px;border:1px solid #355064;background:#102532;color:#dbe9ef;font-size:7px;font-weight:900}
+.storage-actions button:last-child{border-color:#5a405c;background:#251728;color:#e8c7eb}
+.storage-empty{grid-column:1/-1;padding:24px;text-align:center;border:1px dashed #29404e;color:#78909d;font-size:8px}
+@media(max-width:700px){.summon-actions,.summon-storage{grid-template-columns:1fr}.summon-storage{max-height:300px}}
