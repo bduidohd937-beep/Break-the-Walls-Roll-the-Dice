@@ -9,7 +9,8 @@ import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damag
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
-type DamagePopup = { id: number; x: number; value: number; critical: boolean; };\ntype DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
+type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
+type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
@@ -37,8 +38,10 @@ function App() {
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
-  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);\n  const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
-  const popupUidRef = useRef(1);\n  const deathUidRef = useRef(1);
+  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
+  const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
+  const popupUidRef = useRef(1);
+  const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
@@ -118,7 +121,8 @@ function App() {
     const interval = window.setInterval(() => {
       const dt = 0.05 * gameSpeed;
       setCastleHit(null);
-      setDamagePopups((popups) => popups.slice(-24));\n      setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
+      setDamagePopups((popups) => popups.slice(-24));
+      setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
 
       goldRef.current = Math.min(99999, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -301,7 +305,11 @@ function App() {
       }
 
       // Remove defeated units before collision and wave checks.
-      const defeatedUnits = [...nextHeroes.filter((u) => u.currentHp <= 0), ...nextEnemies.filter((u) => u.currentHp <= 0)];\n      if (defeatedUnits.length > 0) {\n        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: 0.42 }))].slice(-20));\n      }\n      const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
+      const defeatedUnits = [...nextHeroes.filter((u) => u.currentHp <= 0), ...nextEnemies.filter((u) => u.currentHp <= 0)];
+      if (defeatedUnits.length > 0) {
+        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: 0.42 }))].slice(-20));
+      }
+      const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {
         goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
         setBattleGold(Math.floor(goldRef.current));
