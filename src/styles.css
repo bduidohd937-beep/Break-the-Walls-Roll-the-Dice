@@ -736,3 +736,7 @@ button { font: inherit; }
 /* Persistent gathering / offline settlement */
 .offline-gather-result{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;margin:8px 0 12px;padding:10px;border:1px solid #536948;background:#101b12}.offline-gather-result div{display:flex;flex-direction:column;gap:3px}.offline-gather-result b{font-size:9px;color:#dce8d6}.offline-gather-result span,.offline-gather-result small{font-size:6px;color:#879b82}.offline-gather-result strong{font-size:10px;color:#b9d77b}.offline-gather-result button{padding:7px 10px;border:1px solid #506345;background:#172418;color:#d9e7d3;font-weight:900}
 @media(max-width:700px){.offline-gather-result{grid-template-columns:1fr auto}.offline-gather-result small{grid-column:1}.offline-gather-result button{grid-column:2;grid-row:1/3}}
+
+
+/* Gathering worker efficiency */
+.worker-fighter b{display:block;margin-top:2px;padding:2px 4px;border:1px solid #536947;background:#101b12;color:#b9d77b;font-size:6px}.worker-list button small{line-height:1.35}
