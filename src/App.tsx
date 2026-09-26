@@ -154,14 +154,24 @@ function App() {
         } else if (hero.attackTimer <= 0) {
           const advantage = hero.element === "fire" && target.element === "dark" ? 1.25 : 1;
           const damage = hero.atk * advantage;
-          const targetIndex = nextEnemies.findIndex((e) => e.uid === target.uid);
-          if (targetIndex >= 0) {
+          const splashRadius = hero.splashRadius ?? 0;
+          const hitTargets = hero.attackType === "splash"
+            ? nextEnemies
+                .filter((enemy) => enemy.currentHp > 0 && Math.abs(enemy.x - target.x) <= splashRadius)
+                .map((enemy) => enemy.uid)
+            : [target.uid];
+
+          for (const targetUid of hitTargets) {
+            const targetIndex = nextEnemies.findIndex((enemy) => enemy.uid === targetUid);
+            if (targetIndex < 0) continue;
+
             const hitTarget = applyKnockback(
               nextEnemies[targetIndex],
               nextEnemies[targetIndex].currentHp - damage,
               "hero",
               hero.atk,
             );
+
             nextEnemies[targetIndex] = hero.effect === "burn"
               ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
               : { ...hitTarget, attackFlash: 0.08 };
