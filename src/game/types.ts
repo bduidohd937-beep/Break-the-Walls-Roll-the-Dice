@@ -53,6 +53,15 @@ export type WaveMeta = {
 };
 
 export type StageType = "normal" | "elite" | "boss";
+export type BossMechanic = {
+  auraAtk?: number;
+  summonEnemy?: WaveGroup["enemy"];
+  summonInterval?: number;
+  deathEnrage?: number;
+  fieldDamagePerSecond?: number;
+  enemyAttackSpeedPerStack?: number;
+  phaseElements?: string[];
+};
 
 export type StageDef = {
   id: number;
@@ -69,4 +78,5 @@ export type StageDef = {
   mechanic?: string;
   bossName?: string;
   implemented?: boolean;
+  bossMechanic?: BossMechanic;
 };
