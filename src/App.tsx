@@ -125,6 +125,10 @@ function App() {
       setCastleHit(null);
       setDamagePopups((popups) => popups.slice(-24));
       setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
+      if (comboTimerRef.current > 0) {
+        comboTimerRef.current = Math.max(0, comboTimerRef.current - dt);
+        if (comboTimerRef.current === 0) setKillCombo(0);
+      }
 
       goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -315,6 +319,8 @@ function App() {
       if (defeatedEnemies > 0) {
         goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
         setBattleGold(Math.floor(goldRef.current));
+        comboTimerRef.current = 2.2;
+        setKillCombo((combo) => combo + defeatedEnemies);
       }
 
       nextHeroes = nextHeroes
@@ -399,6 +405,8 @@ function App() {
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
+    comboTimerRef.current = 0;
+    setKillCombo(0);
     setStageIndex(nextStageIndex);
     setBattleGold(500);
     setWaveIndex(0);
@@ -547,8 +555,8 @@ function App() {
           </div>
 
           {currentStage.waveMeta[waveIndex]?.boss && (
-            <div className="boss-bar">
-              <div className="boss-title">🔥 BOSS · 화염의 거인 {bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5 ? "· ENRAGED" : ""}</div>
+            <div className={`boss-bar ${bossPhaseTwo ? "enraged" : ""}`}>
+              <div className="boss-title">🔥 BOSS · 화염의 거인 {bossPhaseTwo ? "· ENRAGED" : ""}</div>
               <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
               <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
             </div>
@@ -558,6 +566,7 @@ function App() {
             <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
             <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
             <div className="wave-notice">{notice}</div>
+            {killCombo >= 2 && <div className="combo-banner">⚔️ {killCombo} KILL COMBO</div>}
           </div>
         </div>
 
