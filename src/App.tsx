@@ -416,7 +416,7 @@ function App() {
     }, 50);
 
     return () => window.clearInterval(interval);
-  }, [battleState, gameSpeed]);
+  }, [battleState, gameSpeed, battleGoldMax, goldPerSecond]);
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= unlockedStage) return;
