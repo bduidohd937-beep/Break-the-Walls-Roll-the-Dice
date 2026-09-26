@@ -55,4 +55,5 @@ export type StageDef = {
   waves: Wave[];
   waveMeta: WaveMeta[];
   enemyCastleHp: number;
+  clearReward: number;
 };
