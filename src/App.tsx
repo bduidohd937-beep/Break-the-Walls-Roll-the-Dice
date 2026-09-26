@@ -23,6 +23,8 @@ function App() {
   const [nextUid, setNextUid] = useState(1);
   const lastFrame = useRef(performance.now());
 
+  const isRanged = (unit: Unit) => unit.range >= 100;
+
   const visibleDeck = useMemo(() => {
     const start = deckPage * 5;
     return DECK_IDS.slice(start, start + 5).map((id) => HEROES.find((hero) => hero.id === id)!);
@@ -102,6 +104,8 @@ function App() {
         if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
 
         const target = nextEnemies
+          .filter((e) => e.currentHp > 0 && e.x >= hero.x)
+          .sort((a, b) => a.x - b.x)[0] ?? nextEnemies
           .filter((e) => e.currentHp > 0)
           .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
 
@@ -148,6 +152,8 @@ function App() {
         if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
 
         const target = nextHeroes
+          .filter((h) => h.currentHp > 0 && h.x <= enemy.x)
+          .sort((a, b) => b.x - a.x)[0] ?? nextHeroes
           .filter((h) => h.currentHp > 0)
           .sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
 
