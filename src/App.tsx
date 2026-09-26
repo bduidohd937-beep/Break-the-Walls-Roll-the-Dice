@@ -8,6 +8,8 @@ import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damage";
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
+import { KingdomPanel } from "./components/KingdomPanel";
+import { GatheringPanel } from "./components/GatheringPanel";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
@@ -1034,69 +1036,25 @@ function App() {
             <span>🏆 <b>{clearedStages.length}/{STAGES.length}</b></span>
           </div>
 
-          {mainTab === "home" && (
-            <div className="kingdom-home">
-              <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
-              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {nextProgressionGoal ? nextProgressionGoal.text : "현재 준비된 진행 목표 완료"}</small></div>
-              <div className="progression-board">
-                <div className="progression-head"><div><span>ADVENTURE GOALS</span><b>왕국 성장 목표</b></div><strong>{claimedGoalCount}/{progressionGoals.length}</strong></div>
-                <div className="progression-meter"><span style={{ width: `${(completedGoalCount / progressionGoals.length) * 100}%` }} /></div>
-                <div className="progression-list">
-                  {progressionGoals.map((goal) => {
-                    const claimed = claimedGoals.includes(goal.id);
-                    return <div key={goal.id} className={`progression-goal ${goal.done ? "done" : ""} ${claimed ? "claimed" : ""}`}>
-                      <span className="goal-icon">{goal.icon}</span>
-                      <div><b>{goal.title}</b><small>{goal.text}</small><em>{goal.gold > 0 ? `🪙 ${goal.gold.toLocaleString()}` : ""}{goal.gold > 0 && goal.gems > 0 ? " · " : ""}{goal.gems > 0 ? `💎 ${goal.gems}` : ""}</em></div>
-                      <button disabled={!goal.done || claimed} onClick={() => claimGoalReward(goal)}>{claimed ? "수령 완료" : goal.done ? "보상 수령" : "진행 중"}</button>
-                    </div>;
-                  })}
-                </div>
-              </div>
-              <div className="kingdom-unlock-road"><div className="kingdom-unlock-head"><b>왕국 성장 로드</b><span>{nextKingdomUnlock ? `NEXT · Lv.${nextKingdomUnlock.level}` : "CURRENT MAX"}</span></div><div className="kingdom-unlock-list">{kingdomUnlocks.map((entry) => <div key={entry.level} className={kingdomLevel >= entry.level ? "unlocked" : entry.level === nextKingdomUnlock?.level ? "next" : ""}><span>{entry.icon}</span><b>Lv.{entry.level}</b><small>{entry.title}</small><p>{entry.text}</p></div>)}</div></div>
-              <div className="facility-grid">
-                <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
-                {(Object.keys(facilityDefs) as FacilityKey[]).map((key) => { const facility = facilityDefs[key]; const unlocked = kingdomLevel >= facility.unlock; return <div key={key} className={`facility-card ${!unlocked ? "facility-locked" : ""}`}><span>{facility.icon}</span><div><b>{facility.name} Lv.{facilityLevels[key]}</b><small>{unlocked ? facility.text(facilityLevels[key]) : `왕성 Lv.${facility.unlock}에서 해금`}</small></div><button disabled={!unlocked || kingdomGold < facilityUpgradeCost(key)} onClick={() => upgradeFacility(key)}>{unlocked ? `강화 · ${facilityUpgradeCost(key)} 🪙` : "잠김"}</button></div>; })}
-              </div>
-              <button className="home-battle-cta" onClick={() => setMainTab("battle")}>⚔️ 전투 출격</button>
-            </div>
-          )}
+          {mainTab === "home" && <KingdomPanel
+            kingdomLevel={kingdomLevel} kingdomGold={kingdomGold} kingdomProductionBonus={kingdomProductionBonus} kingdomSellBonus={kingdomSellBonus}
+            unlockedStage={unlockedStage} stageCount={STAGES.length} currentStageName={STAGES[Math.min(unlockedStage, STAGES.length)-1]?.name}
+            ownedHeroCount={ownedHeroes.length} heroCount={HEROES.length} deckCount={deckIds.length} deckSlotCount={deckSlotCount}
+            progressionGoals={progressionGoals} claimedGoals={claimedGoals} completedGoalCount={completedGoalCount} claimedGoalCount={claimedGoalCount}
+            nextGoalText={nextProgressionGoal?.text ?? "현재 준비된 진행 목표 완료"} kingdomUnlocks={kingdomUnlocks}
+            nextKingdomUnlock={nextKingdomUnlock} kingdomMilestone={kingdomMilestone} facilityDefs={facilityDefs} facilityLevels={facilityLevels}
+            kingdomUpgradeCost={kingdomUpgradeCost} facilityUpgradeCost={facilityUpgradeCost} onClaimGoal={claimGoalReward}
+            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => setMainTab("battle")}
+          />}
 
-          {mainTab === "gather" && (
-            <div className="gather-hub">
-              <div className="resource-storage"><span>📦 보관함</span><b>🌲 {resources.wood} 나무</b><b>🪨 {resources.stone} 돌</b></div>
-              {offlineGather && <div className="offline-gather-result"><div><b>🌙 오프라인 채집 정산</b><span>최대 8시간까지 자동 생산이 누적됩니다.</span></div><strong>{offlineGather.wood > 0 ? `🌲 +${offlineGather.wood}` : ""} {offlineGather.stone > 0 ? `🪨 +${offlineGather.stone}` : ""}</strong><small>{Math.floor(offlineGather.seconds / 60)}분 생산</small><button onClick={() => setOfflineGather(null)}>확인</button></div>}
-              <div className="gather-region-progress">
-                <b>🗺️ 채집 지역</b>
-                {(Object.keys(gatherRegions) as GatherRegionKey[]).map((key) => { const region = gatherRegions[key]; const unlocked = isGatherRegionUnlocked(key); return <button key={key} disabled={!unlocked} className={gatherRegion === key ? "active" : ""} onClick={() => { setGatherRegion(key); setGatherHp({ wood: gatherMaxHp.wood * region.scale, stone: gatherMaxHp.stone * region.scale }); }}>{region.icon} {region.name}<br/><small>{unlocked ? `HP ×${region.scale} · 보상 ×${region.scale}` : `STAGE ${region.unlockStage} 필요`}</small></button>; })}
-              </div>
-              <div className="region-bonus">{activeGatherRegion.icon} {activeGatherRegion.name} · {activeGatherRegion.description}</div>
-              <div className="gather-grid">
-                {(["wood", "stone"] as const).map((type) => {
-                  const isWood = type === "wood";
-                  const assigned = workers[type] ? HEROES.find((hero) => hero.id === workers[type]) : undefined;
-                  const scaledMaxHp = gatherMaxHp[type] * gatherRegionScale;
-                  const hpPercent = (gatherHp[type] / scaledMaxHp) * 100;
-                  return <div className={`gather-site resource-battle ${gatherHit === type ? "resource-hit" : ""}`} key={type}>
-                    <h2>{isWood ? "🌲 왕국 숲" : "🪨 채석장"}</h2>
-                    <p>{isWood ? "거목을 쓰러뜨려 목재를 획득하세요." : "광맥을 파괴해 석재를 획득하세요."}</p>
-                    <div className="resource-arena">
-                      {assigned && <div className="worker-fighter"><span>{assigned.sprite}</span><small>{assigned.name}</small><b>효율 ×{getGatherEfficiency(assigned.id).toFixed(2)}</b><i>{isWood ? "🪓" : "⛏️"}</i></div>}
-                      <button className="resource-target" onClick={() => gatherResource(type)} aria-label={isWood ? "나무 공격" : "돌 공격"}>
-                        <span className="resource-object">{isWood ? "🌳" : "🪨"}</span>
-                        <span className="resource-impact">{isWood ? "🪵" : "✦"}</span>
-                      </button>
-                    </div>
-                    <div className="resource-hp"><span style={{ width: `${hpPercent}%` }} /></div>
-                    <div className="resource-hp-label">{gatherHp[type]} / {scaledMaxHp} HP · 공격 피해 {getGatherAttackDamage(type)} · 파괴 보상 +{gatherReward[type] * gatherRegionScale}</div>
-                    <button className="gather-action" onClick={() => gatherResource(type)}>{assigned ? `${assigned.sprite} ${assigned.name} 공격` : isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
-                    <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{Math.round(resources[type] * (isWood ? 5 : 8) * kingdomSellBonus)} 🪙</button>
-                    <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 생산 +${getAutoGatherAmount(type)}/3초 · 효율 ×${getGatherEfficiency(assigned.id).toFixed(2)}` : "영웅을 배치하면 자동 생산"}</span></div>
-                    <div className="worker-list">{ownedHeroes.map((id) => { const hero = HEROES.find((unit) => unit.id === id); if (!hero) return null; const busyElsewhere = Object.entries(workers).some(([key, value]) => key !== type && value === id); return <button key={id} disabled={busyElsewhere} className={workers[type] === id ? "assigned" : ""} onClick={() => assignWorker(type, id)}>{hero.sprite}<small>{hero.name}<br/>×{getGatherEfficiency(hero.id).toFixed(2)}</small></button>; })}</div>
-                  </div>;
-                })}
-              </div>
-            </div>
-          )}
+          {mainTab === "gather" && <GatheringPanel
+            resources={resources} offlineGather={offlineGather} onDismissOffline={() => setOfflineGather(null)}
+            gatherRegion={gatherRegion} onRegion={(key) => { setGatherRegion(key); const region = gatherRegions[key]; setGatherHp({ wood: gatherMaxHp.wood * region.scale, stone: gatherMaxHp.stone * region.scale }); }}
+            isRegionUnlocked={isGatherRegionUnlocked} gatherHp={gatherHp} gatherMaxHp={gatherMaxHp} gatherReward={gatherReward} gatherHit={gatherHit}
+            workers={workers} heroes={HEROES} ownedHeroes={ownedHeroes} kingdomSellBonus={kingdomSellBonus}
+            getEfficiency={getGatherEfficiency} getAttackDamage={getGatherAttackDamage} getAutoAmount={getAutoGatherAmount}
+            onGather={gatherResource} onSell={sellResource} onAssign={assignWorker}
+          />}
 
           {mainTab === "battle" && (
             <div className="stage-grid">
