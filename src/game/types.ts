@@ -44,7 +44,8 @@ export type Unit = UnitDef & {
   burnDamage: number;
 };
 
-export type WaveGroup = { enemy: "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin"; count: number; gap?: number };
+export type EnemyKey = "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin" | "morgar" | "ignis" | "voltras" | "arcanon";
+export type WaveGroup = { enemy: EnemyKey; count: number; gap?: number };
 export type Wave = WaveGroup[];
 export type WaveMeta = {
   name: string;
