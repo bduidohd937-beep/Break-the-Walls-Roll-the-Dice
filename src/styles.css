@@ -198,3 +198,6 @@ button { font: inherit; }
 .summon-btn:disabled { opacity:.35; cursor:not-allowed; }
 .summon-result { margin-top:10px; padding:8px; border-radius:7px; background:#2a2110; color:#fff0ad; font-weight:1000; }
 .owned-count { margin-top:7px; color:#8fa6b2; font-size:9px; font-weight:900; }
+
+.summon-gem-balance { margin: 6px auto 10px; padding: 7px 10px; width: fit-content; border: 1px solid #765b2a; border-radius: 7px; background: #241c0d; color: #aeb9be; font-size: 10px; font-weight: 900; }
+.summon-gem-balance b { color: #8fdcff; }
