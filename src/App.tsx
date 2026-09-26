@@ -82,6 +82,8 @@ const ELEMENT_CLASS: Record<ElementType, string> = {
   fire: "el-fire",
 };
 
+const BATTLE_GOLD_MAX = 9999;
+const MOVE_SPEED_MULTIPLIER = 1.8;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
@@ -198,7 +200,7 @@ function App() {
           .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
 
         if (!target) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           if (hero.x >= 84 && hero.attackTimer <= 0) {
             const damage = hero.atk * 1.8;
             enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
@@ -211,7 +213,7 @@ function App() {
 
         const distance = Math.abs(target.x - hero.x);
         if (distance > hero.range / 10) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (hero.attackTimer <= 0) {
           const advantage = hero.element === "fire" && target.element === "dark" ? 1.25 : 1;
           const damage = hero.atk * advantage;
@@ -224,7 +226,7 @@ function App() {
               attackFlash: 0.08,
             };
           }
-          goldRef.current += 20;
+          goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + 20);
           setBattleGold(Math.floor(goldRef.current));
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
@@ -245,14 +247,14 @@ function App() {
             castleRef.current = Math.max(0, castleRef.current - enemy.atk * dt);
             setCastleHp(castleRef.current);
           } else {
-            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
           continue;
         }
 
         const distance = Math.abs(target.x - enemy.x);
         if (distance > enemy.range / 10) {
-          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
           if (targetIndex >= 0) {
