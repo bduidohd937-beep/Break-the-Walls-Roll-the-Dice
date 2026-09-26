@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
@@ -30,7 +31,7 @@ function App() {
   const [enemies, setEnemies] = useState<Unit[]>([]);
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
-  const [battleState, setBattleState] = useState<"playing" | "victory" | "defeat">("playing");
+  const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckPage, setDeckPage] = useState(0);
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
@@ -323,6 +324,11 @@ function App() {
     return () => window.clearInterval(interval);
   }, [battleState, gameSpeed]);
 
+  const selectStage = (nextStageIndex: number) => {
+    if (nextStageIndex < 0 || nextStageIndex >= unlockedStage) return;
+    reset(nextStageIndex);
+  };
+
   const reset = (nextStageIndex = stageIndex) => {
     const nextStage = STAGES[nextStageIndex] ?? STAGES[0];
     stageRef.current = nextStageIndex;
@@ -352,12 +358,42 @@ function App() {
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
 
+  if (battleState === "stageSelect") {
+    return (
+      <main className="stage-select-shell">
+        <section className="stage-select-card">
+          <div className="stage-select-kicker">BREAK THE WALLS</div>
+          <h1>STAGE SELECT</h1>
+          <p className="stage-select-sub">해금된 전장을 선택하고 성을 돌파하세요.</p>
+          <div className="stage-select-stats">
+            <span>👑 Kingdom Gold <b>{kingdomGold.toLocaleString()}</b></span>
+            <span>🏆 Clear <b>{clearedStages.length}/{STAGES.length}</b></span>
+          </div>
+          <div className="stage-grid">
+            {STAGES.map((stage) => {
+              const unlocked = stage.id <= unlockedStage;
+              const cleared = clearedStages.includes(stage.id);
+              return (
+                <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
+                  <div className="stage-card-top"><span>STAGE {stage.id}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
+                  <h2>{stage.name}</h2>
+                  <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
+                  <div className="stage-card-reward">FIRST CLEAR · +{stage.clearReward} 👑</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="game-shell">
       <header className="topbar">
         <div>
           <div className="game-title">BREAK THE WALLS</div>
-          <div className="sub-title">퓨어 월드 · STAGE ${currentStage.id} · ${currentStage.name}</div>
+          <div className="sub-title">퓨어 월드 · STAGE {currentStage.id} · {currentStage.name}</div>
         </div>
         <div className="top-stats">
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
