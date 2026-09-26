@@ -29,6 +29,7 @@ type Unit = UnitDef & {
   cooldownTimer: number;
   hitFlash: number;
   attackFlash: number;
+  knockbackCount: number;
   alive: boolean;
 };
 
@@ -84,6 +85,8 @@ const ELEMENT_CLASS: Record<ElementType, string> = {
 
 const BATTLE_GOLD_MAX = 9999;
 const MOVE_SPEED_MULTIPLIER = 1.8;
+const KNOCKBACK_DISTANCE = 7;
+const KNOCKBACK_MAX_COUNT = 3;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
@@ -97,6 +100,7 @@ function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
     cooldownTimer: 0,
     hitFlash: 0,
     attackFlash: 0,
+    knockbackCount: 0,
     alive: true,
   };
 }
@@ -177,6 +181,42 @@ function App() {
         attackFlash: Math.max(0, u.attackFlash - dt),
       }));
 
+      const applyKnockback = (
+        target: Unit,
+        nextHp: number,
+        attackerTeam: Team,
+        attackerAtk: number,
+      ): Unit => {
+        const previousHp = target.currentHp;
+        const threshold = target.hp / (KNOCKBACK_MAX_COUNT + 1);
+        const previousStep = Math.floor((target.hp - previousHp) / threshold);
+        const nextStep = Math.floor((target.hp - Math.max(0, nextHp)) / threshold);
+        const shouldKnockback =
+          nextHp > 0 &&
+          nextStep > previousStep &&
+          target.knockbackCount < KNOCKBACK_MAX_COUNT;
+
+        if (!shouldKnockback) {
+          return {
+            ...target,
+            currentHp: nextHp,
+            hitFlash: 0.12,
+          };
+        }
+
+        const direction = attackerTeam === "hero" ? 1 : -1;
+        const powerScale = clamp(attackerAtk / 100, 0.7, 1.6);
+        return {
+          ...target,
+          currentHp: nextHp,
+          x: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale, 9, 87),
+          attackTimer: Math.max(target.attackTimer, 0.35),
+          hitFlash: 0.28,
+          attackFlash: 0,
+          knockbackCount: target.knockbackCount + 1,
+        };
+      };
+
       // Spawn the fixed wave sequence.
       const wave = WAVES[waveRef.current];
       const totalInWave = wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
@@ -220,9 +260,12 @@ function App() {
           const targetIndex = nextEnemies.findIndex((e) => e.uid === target.uid);
           if (targetIndex >= 0) {
             nextEnemies[targetIndex] = {
-              ...nextEnemies[targetIndex],
-              currentHp: nextEnemies[targetIndex].currentHp - damage,
-              hitFlash: 0.12,
+              ...applyKnockback(
+                nextEnemies[targetIndex],
+                nextEnemies[targetIndex].currentHp - damage,
+                "hero",
+                hero.atk,
+              ),
               attackFlash: 0.08,
             };
           }
@@ -259,9 +302,12 @@ function App() {
           const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
           if (targetIndex >= 0) {
             nextHeroes[targetIndex] = {
-              ...nextHeroes[targetIndex],
-              currentHp: nextHeroes[targetIndex].currentHp - enemy.atk,
-              hitFlash: 0.14,
+              ...applyKnockback(
+                nextHeroes[targetIndex],
+                nextHeroes[targetIndex].currentHp - enemy.atk,
+                "enemy",
+                enemy.atk,
+              ),
             };
           }
           nextEnemies[i].attackTimer = enemy.attackInterval;
@@ -402,7 +448,10 @@ function BattleUnit({ unit }: { unit: Unit }) {
       title={`${unit.name} · ${ELEMENT_LABEL[unit.element]}`}
     >
       <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>
-      <div className="unit-sprite">{unit.sprite}<span className="unit-aura" /></div>
+      <div className="unit-sprite">
+        {unit.sprite}<span className="unit-aura" />
+        {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}</span>}
+      </div>
       <div className="unit-name">{unit.name}</div>
       {unit.effect === "burn" && unit.attackFlash > 0 && <div className="attack-effect">✦</div>}
     </div>
