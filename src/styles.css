@@ -587,3 +587,13 @@ button { font: inherit; }
 .hero-management.upgrade-only{margin-top:0}
 .hero-detail-actions.single{grid-template-columns:1fr}
 @media(max-width:700px){.formation-roster,.formation-slots{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Gathering region progression */
+.gather-region-progress{display:grid;grid-template-columns:auto repeat(3,1fr);align-items:center;gap:6px;padding:8px;border:1px solid #294151;background:#071119}
+.gather-region-progress>b{color:#ffe49a;font-size:8px}
+.gather-region-progress span{padding:6px;border:1px solid #263d4c;background:#0b1821;color:#7894a5;font-size:7px;text-align:center}
+.gather-region-progress span.unlocked{border-color:#58784c;color:#bfe0ae}
+.gather-region-progress span.locked{opacity:.45}
+.region-bonus{padding:7px;border:1px solid #66572d;background:#29230e;color:#ffe49a;font-size:8px;text-align:center}
+@media(max-width:700px){.gather-region-progress{grid-template-columns:1fr 1fr}.gather-region-progress>b{grid-column:1/-1}}
