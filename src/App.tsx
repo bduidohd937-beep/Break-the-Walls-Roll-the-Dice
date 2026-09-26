@@ -9,7 +9,7 @@ import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damag
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
-type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
+type DamagePopup = { id: number; x: number; value: number; critical: boolean; };\ntype DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
@@ -37,8 +37,8 @@ function App() {
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
-  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
-  const popupUidRef = useRef(1);
+  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);\n  const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
+  const popupUidRef = useRef(1);\n  const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
@@ -118,7 +118,7 @@ function App() {
     const interval = window.setInterval(() => {
       const dt = 0.05 * gameSpeed;
       setCastleHit(null);
-      setDamagePopups((popups) => popups.slice(-24));
+      setDamagePopups((popups) => popups.slice(-24));\n      setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
 
       goldRef.current = Math.min(99999, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -301,7 +301,7 @@ function App() {
       }
 
       // Remove defeated units before collision and wave checks.
-      const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
+      const defeatedUnits = [...nextHeroes.filter((u) => u.currentHp <= 0), ...nextEnemies.filter((u) => u.currentHp <= 0)];\n      if (defeatedUnits.length > 0) {\n        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: 0.42 }))].slice(-20));\n      }\n      const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {
         goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
         setBattleGold(Math.floor(goldRef.current));
@@ -513,7 +513,7 @@ function App() {
             <div className="lane-ground" />
             {heroes.map((u) => <BattleUnit key={u.uid} unit={u} />)}
             {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
-            {damagePopups.map((popup) => (
+            {deathEffects.map((effect) => (\n              <div key={effect.id} style={{ position: "absolute", zIndex: 17, left: `${effect.x}%`, top: effect.team === "hero" ? "42%" : "48%", transform: "translate(-50%,-50%)", fontSize: 25, pointerEvents: "none", opacity: Math.min(1, effect.life * 3) }}>{effect.team === "hero" ? "💥" : "💢"}</div>\n            ))}\n            {damagePopups.map((popup) => (
               <div key={popup.id} className={`damage-popup ${popup.critical ? "critical" : ""}`} style={{ left: `${popup.x}%` }}>-{popup.value}</div>
             ))}
           </div>
