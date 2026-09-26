@@ -4,6 +4,10 @@ export const STAGES: StageDef[] = [
   {
     id: 1,
     name: "성 공략전",
+    region: "왕국 외곽",
+    type: "normal",
+    repeatReward: 120,
+    firstClearGems: 35,
     enemyCastleHp: 1800,
     clearReward: 300,
     waves: [
@@ -24,6 +28,10 @@ export const STAGES: StageDef[] = [
   {
     id: 2,
     name: "오크의 진군",
+    region: "왕국 외곽",
+    type: "normal",
+    repeatReward: 180,
+    firstClearGems: 45,
     enemyCastleHp: 2200,
     clearReward: 500,
     waves: [
@@ -44,6 +52,10 @@ export const STAGES: StageDef[] = [
   {
     id: 3,
     name: "화염의 전장",
+    region: "불타는 평원",
+    type: "elite",
+    repeatReward: 260,
+    firstClearGems: 55,
     enemyCastleHp: 2600,
     clearReward: 800,
     waves: [
@@ -64,6 +76,10 @@ export const STAGES: StageDef[] = [
   {
     id: 4,
     name: "그림자 협곡",
+    region: "그림자 협곡",
+    type: "elite",
+    repeatReward: 340,
+    firstClearGems: 65,
     enemyCastleHp: 3100,
     clearReward: 1100,
     waves: [
@@ -84,6 +100,10 @@ export const STAGES: StageDef[] = [
   {
     id: 5,
     name: "왕국 최후방어선",
+    region: "왕국 최후방어선",
+    type: "boss",
+    repeatReward: 500,
+    firstClearGems: 80,
     enemyCastleHp: 3700,
     clearReward: 1500,
     waves: [
