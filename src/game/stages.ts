@@ -61,6 +61,46 @@ export const STAGES: StageDef[] = [
       { name: "화염의 군단", reward: 450, boss: true },
     ],
   },
+  {
+    id: 4,
+    name: "그림자 협곡",
+    enemyCastleHp: 3100,
+    clearReward: 1100,
+    waves: [
+      [{ enemy: "goblin", count: 8, gap: 0.5 }, { enemy: "archer", count: 2, gap: 1.2 }],
+      [{ enemy: "orc", count: 6, gap: 0.65 }, { enemy: "archer", count: 3, gap: 0.9 }],
+      [{ enemy: "assassin", count: 4, gap: 0.8 }, { enemy: "darkKnight", count: 2, gap: 1.4 }],
+      [{ enemy: "archer", count: 5, gap: 0.65 }, { enemy: "fireMage", count: 3, gap: 1 }],
+      [{ enemy: "darkKnight", count: 4, gap: 0.7 }, { enemy: "assassin", count: 4, gap: 0.8 }, { enemy: "fireOgre", count: 1, gap: 2 }],
+    ],
+    waveMeta: [
+      { name: "협곡의 궁수", reward: 180 },
+      { name: "검은 매복", reward: 220 },
+      { name: "암살자 부대", reward: 280 },
+      { name: "불꽃 사술단", reward: 340 },
+      { name: "그림자 거인", reward: 550, boss: true },
+    ],
+  },
+  {
+    id: 5,
+    name: "왕국 최후방어선",
+    enemyCastleHp: 3700,
+    clearReward: 1500,
+    waves: [
+      [{ enemy: "orc", count: 8, gap: 0.55 }, { enemy: "archer", count: 3, gap: 0.8 }],
+      [{ enemy: "fireMage", count: 5, gap: 0.75 }, { enemy: "assassin", count: 2, gap: 1.1 }],
+      [{ enemy: "darkKnight", count: 5, gap: 0.7 }, { enemy: "archer", count: 4, gap: 0.75 }],
+      [{ enemy: "fireMage", count: 4, gap: 0.7 }, { enemy: "assassin", count: 5, gap: 0.65 }],
+      [{ enemy: "darkKnight", count: 6, gap: 0.55 }, { enemy: "fireMage", count: 4, gap: 0.8 }, { enemy: "fireOgre", count: 2, gap: 1.8 }],
+    ],
+    waveMeta: [
+      { name: "최후방어선", reward: 220 },
+      { name: "불꽃의 마법진", reward: 280 },
+      { name: "왕국 정예병", reward: 340 },
+      { name: "죽음의 매복", reward: 420 },
+      { name: "왕국의 최종전", reward: 700, boss: true },
+    ],
+  },
 ];
 
 export const STAGE_HP_SCALE = 0.1;
