@@ -3,6 +3,7 @@ import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { STAGES } from "./game/stages";
+import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
 import { GatheringPanel } from "./components/GatheringPanel";
 import { HeroesPanel } from "./components/HeroesPanel";
@@ -160,18 +161,6 @@ function App() {
     const interval = Math.max(0.25, def.attackInterval * soul.speed);
     return Math.round(hp * 0.35 + (atk / interval) * 12);
   };
-  const getGatherEfficiency = (heroId?: string) => {
-    if (!heroId) return 1;
-    const grade = getHeroGrade(heroId).name;
-    return calculateGatherEfficiency(getUnitLevel(heroId), GATHER_GRADE_BONUS[grade] ?? 1);
-  };
-  const getAutoGatherAmount = (type: "wood" | "stone") => {
-    const heroId = workers[type];
-    if (!heroId) return 0;
-    const facilityLevel = type === "wood" ? facilityLevels.lumber : facilityLevels.quarry;
-    return calculateAutoGatherAmount(facilityLevel, kingdomProductionBonus, getGatherEfficiency(heroId));
-  };
-
   const getSoulBonuses = (id: string) => calculateSoulBonuses(heroSouls[id] ?? 0);
 
   const {
