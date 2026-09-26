@@ -122,7 +122,16 @@ function App() {
   const kingdomUpgradeCost = 400 * kingdomLevel;
   const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
   const kingdomSellBonus = 1 + Math.floor((kingdomLevel - 1) / 3) * 0.1;
-  const kingdomMilestone = kingdomLevel < 2 ? "Lv.2 · 자동채집 생산 +25%" : kingdomLevel < 3 ? "Lv.3 · 자원 판매가 +10%" : kingdomLevel < 4 ? "Lv.4 · 자동채집 생산 +25%" : kingdomLevel < 6 ? "Lv.6 · 생산/판매 보너스 강화" : "왕국 성장 보너스 적용 중";
+  const kingdomUnlocks = [
+    { level: 1, icon: "🪚", title: "기초 생산", text: "벌목장 · 채석장 운영" },
+    { level: 2, icon: "🏦", title: "왕국 금고", text: "전투 시작 골드와 최대 골드 확장" },
+    { level: 3, icon: "🏋️", title: "훈련소", text: "출전 영웅 HP / ATK 강화" },
+    { level: 4, icon: "🌲", title: "생산 확장", text: "자동채집 생산 보너스 강화" },
+    { level: 5, icon: "⚗️", title: "고급 성장", text: "합성·성장 시설 확장 기반" },
+    { level: 6, icon: "👑", title: "왕국 2단계", text: "생산·판매 보너스 상위 단계" }
+  ];
+  const nextKingdomUnlock = kingdomUnlocks.find((entry) => entry.level > kingdomLevel);
+  const kingdomMilestone = nextKingdomUnlock ? `Lv.${nextKingdomUnlock.level} · ${nextKingdomUnlock.title}` : "현재 준비된 왕국 해금 완료";
   const facilityDefs = {
     lumber: { name: "벌목장", icon: "🪚", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 목재 자동채집 +${lv} / 3초` },
     quarry: { name: "채석장", icon: "⛏️", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 석재 자동채집 +${lv} / 3초` },
@@ -895,6 +904,7 @@ function App() {
             <div className="kingdom-home">
               <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
               <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {clearedStages.length < 2 ? "STAGE 2 클리어 → 고대 숲" : clearedStages.length < 4 ? "STAGE 4 클리어 → 수정 광산" : "왕성·시설 강화 후 다음 전선 준비"}</small></div>
+              <div className="kingdom-unlock-road"><div className="kingdom-unlock-head"><b>왕국 성장 로드</b><span>{nextKingdomUnlock ? `NEXT · Lv.${nextKingdomUnlock.level}` : "CURRENT MAX"}</span></div><div className="kingdom-unlock-list">{kingdomUnlocks.map((entry) => <div key={entry.level} className={kingdomLevel >= entry.level ? "unlocked" : entry.level === nextKingdomUnlock?.level ? "next" : ""}><span>{entry.icon}</span><b>Lv.{entry.level}</b><small>{entry.title}</small><p>{entry.text}</p></div>)}</div></div>
               <div className="facility-grid">
                 <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
                 {(Object.keys(facilityDefs) as FacilityKey[]).map((key) => { const facility = facilityDefs[key]; const unlocked = kingdomLevel >= facility.unlock; return <div key={key} className={`facility-card ${!unlocked ? "facility-locked" : ""}`}><span>{facility.icon}</span><div><b>{facility.name} Lv.{facilityLevels[key]}</b><small>{unlocked ? facility.text(facilityLevels[key]) : `왕성 Lv.${facility.unlock}에서 해금`}</small></div><button disabled={!unlocked || kingdomGold < facilityUpgradeCost(key)} onClick={() => upgradeFacility(key)}>{unlocked ? `강화 · ${facilityUpgradeCost(key)} 🪙` : "잠김"}</button></div>; })}
