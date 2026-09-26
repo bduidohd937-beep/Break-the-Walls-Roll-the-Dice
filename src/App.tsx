@@ -134,89 +134,182 @@ function App() {
     setNotice(`${def.name} 출전!`);
   }, [battleGold, battleState, heroes, nextUid]);
 
+  const heroesRef = useRef<Unit[]>([]);
+  const enemiesRef = useRef<Unit[]>([]);
+  const goldRef = useRef(500);
+  const castleRef = useRef(1000);
+  const enemyCastleRef = useRef(1800);
+  const waveRef = useRef(0);
+  const spawnRef = useRef(0);
+  const spawnTimerRef = useRef(1.2);
+  const uidRef = useRef(1);
+
+  useEffect(() => { heroesRef.current = heroes; }, [heroes]);
+  useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
+  useEffect(() => { goldRef.current = battleGold; }, [battleGold]);
+  useEffect(() => { castleRef.current = castleHp; }, [castleHp]);
+  useEffect(() => { enemyCastleRef.current = enemyCastleHp; }, [enemyCastleHp]);
+
   useEffect(() => {
     if (battleState !== "playing") return;
-    let raf = 0;
 
-    const tick = (now: number) => {
-      const dt = Math.min((now - lastFrame.current) / 1000, 0.05);
-      lastFrame.current = now;
+    const interval = window.setInterval(() => {
+      const dt = 0.05;
 
-      setBattleGold((g) => Math.min(99999, g + dt * 5));
-      setWaveTimer((t) => t + dt);
-      setSpawnTimer((t) => t - dt);
+      goldRef.current = Math.min(99999, goldRef.current + dt * 5);
+      setBattleGold(goldRef.current);
 
-      setHeroes((prev) => prev.map((u) => ({ ...u, attackTimer: Math.max(0, u.attackTimer - dt), hitFlash: Math.max(0, u.hitFlash - dt), attackFlash: Math.max(0, u.attackFlash - dt), cooldownTimer: Math.max(0, u.cooldownTimer - dt) })));
-      setEnemies((prev) => prev.map((u) => ({ ...u, attackTimer: Math.max(0, u.attackTimer - dt), hitFlash: Math.max(0, u.hitFlash - dt), attackFlash: Math.max(0, u.attackFlash - dt) })));
+      spawnTimerRef.current -= dt;
 
-      setHeroes((prev) => {
-        const living = prev.filter((u) => u.alive);
-        return living.map((hero) => {
-          const target = enemies.filter((e) => e.alive).sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
-          if (!target) return { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
-          const dist = Math.abs(target.x - hero.x);
-          if (dist > hero.range / 10) return { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
-          if (hero.attackTimer > 0) return hero;
-          const damage = hero.atk * (hero.element === "fire" && target.element === "dark" ? 1.25 : 1);
-          setEnemies((es) => es.map((e) => e.uid === target.uid ? { ...e, currentHp: e.currentHp - damage, hitFlash: 0.12, attackFlash: 0.08 } : e));
-          setBattleGold((g) => g + 20);
-          return { ...hero, attackTimer: hero.attackInterval, attackFlash: 0.16 };
-        });
-      });
-
-      setEnemies((prev) => prev.filter((u) => u.alive && u.currentHp > 0).map((enemy) => {
-        const target = heroes.filter((h) => h.alive).sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
-        if (!target) {
-          if (enemy.x <= 12) {
-            setCastleHp((hp) => Math.max(0, hp - enemy.atk * dt));
-            return { ...enemy, x: 8 };
-          }
-          return { ...enemy, x: Math.max(8, enemy.x - enemy.speed * dt / 100) };
-        }
-        const dist = Math.abs(target.x - enemy.x);
-        if (dist > enemy.range / 10) return { ...enemy, x: Math.max(8, enemy.x - enemy.speed * dt / 100) };
-        if (enemy.attackTimer > 0) return enemy;
-        setHeroes((hs) => hs.map((h) => h.uid === target.uid ? { ...h, currentHp: h.currentHp - enemy.atk, hitFlash: 0.14 } : h));
-        return { ...enemy, attackTimer: enemy.attackInterval, attackFlash: 0.16 };
+      let nextHeroes = heroesRef.current.map((u) => ({
+        ...u,
+        attackTimer: Math.max(0, u.attackTimer - dt),
+        hitFlash: Math.max(0, u.hitFlash - dt),
+        attackFlash: Math.max(0, u.attackFlash - dt),
       }));
 
-      setEnemies((prev) => prev.filter((e) => e.currentHp > 0));
-      setHeroes((prev) => prev.filter((h) => h.currentHp > 0));
+      let nextEnemies = enemiesRef.current.map((u) => ({
+        ...u,
+        attackTimer: Math.max(0, u.attackTimer - dt),
+        hitFlash: Math.max(0, u.hitFlash - dt),
+        attackFlash: Math.max(0, u.attackFlash - dt),
+      }));
 
-      setSpawnTimer((timer) => {
-        if (timer > 0 || waveIndex >= WAVES.length) return timer;
-        const wave = WAVES[waveIndex];
+      // Spawn the fixed wave sequence.
+      const wave = WAVES[waveRef.current];
+      const totalInWave = wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
+      if (wave && spawnRef.current < totalInWave && spawnTimerRef.current <= 0) {
         const sequence = wave.flatMap((group) => Array.from({ length: group.count }, () => group));
-        if (spawnIndex >= sequence.length) return timer;
-        const group = sequence[spawnIndex];
-        const uid = nextUid + 1000 + spawnIndex + waveIndex * 100;
-        setNextUid((v) => v + 1);
-        setEnemies((list) => [...list, makeUnit(ENEMY_MAP[group.enemy], "enemy", 90 + Math.random() * 5, uid)]);
-        setSpawnIndex((i) => i + 1);
-        return group.gap ?? 0.8;
-      });
+        const group = sequence[spawnRef.current];
+        const enemyDef = ENEMY_MAP[group.enemy];
+        const uid = 1000 + uidRef.current++;
+        nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
+        spawnRef.current += 1;
+        spawnTimerRef.current = group.gap ?? 0.8;
+      }
 
-      if (waveTimer > 1 && spawnIndex >= WAVES[waveIndex]?.reduce((sum, g) => sum + g.count, 0)) {
-        if (enemies.length === 0 && waveIndex < WAVES.length - 1) {
-          setWaveIndex((i) => i + 1);
-          setSpawnIndex(0);
-          setSpawnTimer(1.5);
-          setWaveTimer(0);
-          setNotice(`WAVE ${waveIndex + 2} 진입`);
+      // Heroes move, attack, and hit the enemy castle when the lane is clear.
+      for (let i = 0; i < nextHeroes.length; i++) {
+        const hero = nextHeroes[i];
+        if (hero.currentHp <= 0) continue;
+
+        const target = nextEnemies
+          .filter((e) => e.currentHp > 0)
+          .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
+
+        if (!target) {
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+          if (hero.x >= 84 && hero.attackTimer <= 0) {
+            const damage = hero.atk * 1.8;
+            enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
+            setEnemyCastleHp(enemyCastleRef.current);
+            nextHeroes[i].attackTimer = hero.attackInterval;
+            nextHeroes[i].attackFlash = 0.16;
+          }
+          continue;
+        }
+
+        const distance = Math.abs(target.x - hero.x);
+        if (distance > hero.range / 10) {
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+        } else if (hero.attackTimer <= 0) {
+          const advantage = hero.element === "fire" && target.element === "dark" ? 1.25 : 1;
+          const damage = hero.atk * advantage;
+          const targetIndex = nextEnemies.findIndex((e) => e.uid === target.uid);
+          if (targetIndex >= 0) {
+            nextEnemies[targetIndex] = {
+              ...nextEnemies[targetIndex],
+              currentHp: nextEnemies[targetIndex].currentHp - damage,
+              hitFlash: 0.12,
+              attackFlash: 0.08,
+            };
+          }
+          goldRef.current += 20;
+          setBattleGold(Math.floor(goldRef.current));
+          nextHeroes[i].attackTimer = hero.attackInterval;
+          nextHeroes[i].attackFlash = 0.16;
         }
       }
 
-      if (enemyCastleHp <= 0) setBattleState("victory");
-      if (castleHp <= 0) setBattleState("defeat");
+      // Enemies move, attack heroes, or damage our castle.
+      for (let i = 0; i < nextEnemies.length; i++) {
+        const enemy = nextEnemies[i];
+        if (enemy.currentHp <= 0) continue;
 
-      raf = requestAnimationFrame(tick);
-    };
+        const target = nextHeroes
+          .filter((h) => h.currentHp > 0)
+          .sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [battleState, castleHp, enemyCastleHp, enemies.length, heroes.length, nextUid, spawnIndex, waveIndex, waveTimer]);
+        if (!target) {
+          if (enemy.x <= 13) {
+            castleRef.current = Math.max(0, castleRef.current - enemy.atk * dt);
+            setCastleHp(castleRef.current);
+          } else {
+            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+          }
+          continue;
+        }
+
+        const distance = Math.abs(target.x - enemy.x);
+        if (distance > enemy.range / 10) {
+          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+        } else if (enemy.attackTimer <= 0) {
+          const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
+          if (targetIndex >= 0) {
+            nextHeroes[targetIndex] = {
+              ...nextHeroes[targetIndex],
+              currentHp: nextHeroes[targetIndex].currentHp - enemy.atk,
+              hitFlash: 0.14,
+            };
+          }
+          nextEnemies[i].attackTimer = enemy.attackInterval;
+          nextEnemies[i].attackFlash = 0.16;
+        }
+      }
+
+      const deadEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
+      if (deadEnemies > 0) goldRef.current += deadEnemies * 20;
+
+      nextHeroes = nextHeroes.filter((h) => h.currentHp > 0);
+      nextEnemies = nextEnemies.filter((e) => e.currentHp > 0);
+
+      heroesRef.current = nextHeroes;
+      enemiesRef.current = nextEnemies;
+      setHeroes(nextHeroes);
+      setEnemies(nextEnemies);
+
+      const waveCleared = spawnRef.current >= totalInWave && nextEnemies.length === 0;
+      if (waveCleared) {
+        if (waveRef.current < WAVES.length - 1) {
+          waveRef.current += 1;
+          spawnRef.current = 0;
+          spawnTimerRef.current = 1.4;
+          setWaveIndex(waveRef.current);
+          setSpawnIndex(0);
+          setNotice(`WAVE ${waveRef.current + 1} 진입`);
+        }
+      }
+
+      if (enemyCastleRef.current <= 0) {
+        setEnemyCastleHp(0);
+        setBattleState("victory");
+      } else if (castleRef.current <= 0) {
+        setCastleHp(0);
+        setBattleState("defeat");
+      }
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [battleState]);
 
   const reset = () => {
+    goldRef.current = 500;
+    castleRef.current = 1000;
+    enemyCastleRef.current = 1800;
+    waveRef.current = 0;
+    spawnRef.current = 0;
+    spawnTimerRef.current = 1.2;
+    uidRef.current = 1;
     setBattleGold(500);
     setWaveIndex(0);
     setWaveTimer(0);
