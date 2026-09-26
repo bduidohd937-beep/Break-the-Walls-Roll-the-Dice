@@ -78,6 +78,8 @@ function App() {
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
   const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
   const [dragHeroId, setDragHeroId] = useState<string | null>(null);
+  const [formationPage, setFormationPage] = useState<0 | 1>(0);
+  const formationTouchY = useRef<number | null>(null);
   const [gatherHp, setGatherHp] = useState({ wood: 10, stone: 14 });
   const [gatherHit, setGatherHit] = useState<"wood" | "stone" | null>(null);
   const [gatherRegion, setGatherRegion] = useState<"basic" | "ancient" | "crystal">("basic");
@@ -87,7 +89,7 @@ function App() {
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
-  const deckSlotCount = DECK_IDS.length; // dev account: all 10 deployment slots unlocked
+  const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
   const economyMaxLevel = 8;
   const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
@@ -742,7 +744,13 @@ function App() {
                 {heroMode === "formation" ? <>
                   <div className="formation-help">보유 영웅을 아래 출전 슬롯으로 드래그하세요. 슬롯의 영웅을 누르면 편성에서 빠집니다.</div>
                   <div className="formation-roster">{HEROES.filter((hero) => ownedHeroes.includes(hero.id)).map((hero) => <div key={hero.id} className={`formation-hero ${deckIds.includes(hero.id) ? "in-deck" : ""}`} draggable onDragStart={() => setDragHeroId(hero.id)} onDragEnd={() => setDragHeroId(null)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{getHeroGrade(hero.id).name} · Lv.{getUnitLevel(hero.id)}</small></div>)}</div>
-                  <div className="formation-slots">{Array.from({ length: deckSlotCount }, (_, index) => { const id = deckIds[index]; const hero = HEROES.find((unit) => unit.id === id); return <div key={index} className={`formation-slot ${hero ? "filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragHeroId) setDeckSlot(index, dragHeroId); setDragHeroId(null); }} onClick={() => hero && removeDeckSlot(index)}><em>{index + 1}</em>{hero ? <><span>{hero.sprite}</span><b>{hero.name}</b></> : <small>DROP</small>}</div>; })}</div>
+                  <div className="formation-pager" onTouchStart={(event) => { formationTouchY.current = event.touches[0]?.clientY ?? null; }} onTouchEnd={(event) => { if (formationTouchY.current == null) return; const endY = event.changedTouches[0]?.clientY ?? formationTouchY.current; const delta = endY - formationTouchY.current; if (delta < -35) setFormationPage(1); if (delta > 35) setFormationPage(0); formationTouchY.current = null; }}>
+                    <button className="formation-arrow" disabled={formationPage === 0} onClick={() => setFormationPage(0)}>↑</button>
+                    <div className="formation-page-label">{formationPage === 0 ? "출전 1 · 슬롯 1~5" : "출전 2 · 슬롯 6~10"}</div>
+                    <div className="formation-slots five">{Array.from({ length: 5 }, (_, localIndex) => { const index = formationPage * 5 + localIndex; const id = deckIds[index]; const hero = HEROES.find((unit) => unit.id === id); return <div key={index} className={`formation-slot ${hero ? "filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragHeroId) setDeckSlot(index, dragHeroId); setDragHeroId(null); }} onClick={() => hero && removeDeckSlot(index)}><em>{index + 1}</em>{hero ? <><span>{hero.sprite}</span><b>{hero.name}</b></> : <small>DROP</small>}</div>; })}</div>
+                    <button className="formation-arrow" disabled={formationPage === 1} onClick={() => setFormationPage(1)}>↓</button>
+                    <div className="formation-dots"><i className={formationPage === 0 ? "active" : ""}/><i className={formationPage === 1 ? "active" : ""}/></div>
+                  </div>
                 </> : <div className="hero-management upgrade-only">
                   <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{HEROES.map((hero) => { const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `${getHeroGrade(hero.id).name} · Lv.${getUnitLevel(hero.id)}` : "🔒 미보유"}</small></button>; })}</div></div>
                   <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier)}</b></div><div><span>공격속도</span><b>{selectedHero.attackInterval}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
