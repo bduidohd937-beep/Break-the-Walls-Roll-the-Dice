@@ -13,6 +13,7 @@ type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type SummonGrade = "일반" | "희귀" | "영웅" | "전설" | "신화" | "초월";
 type SummonStorageItem = { uid: number; heroId: string; grade: SummonGrade; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
+const DEV_MODE = true;
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
@@ -714,7 +715,7 @@ function App() {
   }, [battleState, gameSpeed, battleGoldMax, goldPerSecond]);
 
   const selectStage = (nextStageIndex: number) => {
-    if (nextStageIndex < 0 || nextStageIndex >= unlockedStage) return;
+    if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
     reset(nextStageIndex);
   };
 
@@ -1041,7 +1042,7 @@ function App() {
           {mainTab === "battle" && (
             <div className="stage-grid">
               {STAGES.map((stage) => {
-                const unlocked = stage.id <= unlockedStage;
+                const unlocked = DEV_MODE || stage.id <= unlockedStage;
                 const cleared = clearedStages.includes(stage.id);
                 return (
                   <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
