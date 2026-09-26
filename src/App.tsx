@@ -128,11 +128,13 @@ function App() {
   const gatherMaxHp = { wood: 10, stone: 14 };
   const gatherReward = { wood: 4, stone: 3 };
   const [notice, setNotice] = useState("전투 시작!");
-  const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
   const [autoCom, setAutoCom] = useState(false);
+  const [battleDeckPage, setBattleDeckPage] = useState<0 | 1>(0);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const deployCooldownsRef = useRef<Record<string, number>>({});
+  const nextUidRef = useRef(1);
+  const autoTickRef = useRef<() => void>(() => {});
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
   const economyMaxLevel = ECONOMY_MAX_LEVEL;
@@ -200,8 +202,8 @@ function App() {
   };
 
   const deploy = useCallback((def: UnitDef) => {
-    if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
-    const uid = nextUid;
+    if (battleState !== "playing" || goldRef.current < def.cost || (deployCooldownsRef.current[def.id] ?? 0) > 0 || heroesRef.current.length >= 50) return;
+    const uid = nextUidRef.current++;
     const level = getUnitLevel(def.id);
     const statMultiplier = getLevelMultiplier(def.id, level);
     const soulBonus = getSoulBonuses(def.id);
@@ -211,17 +213,17 @@ function App() {
       atk: Math.round(def.atk * statMultiplier * soulBonus.atk * trainingBonus),
       attackInterval: Math.max(0.25, Number((def.attackInterval * soulBonus.speed).toFixed(3)))
     };
-    setNextUid((v) => v + 1);
     goldRef.current = Math.max(0, goldRef.current - def.cost);
     setBattleGold(goldRef.current);
+    deployCooldownsRef.current = { ...deployCooldownsRef.current, [def.id]: def.cooldown };
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
-    setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
+    const deployed = makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid);
+    heroesRef.current = [...heroesRef.current, deployed];
+    setHeroes((list) => [...list, deployed]);
     setNotice(`${def.name} 출전!`);
-  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels, heroSouls, trainingBonus]);
+  }, [battleState, unitLevels, heroSouls, trainingBonus]);
 
-  useEffect(() => {
-    if (!autoCom || battleState !== "playing") return;
-    const timer = window.setInterval(() => {
+  autoTickRef.current = () => {
       const activeCount = heroesRef.current.filter((hero) => hero.currentHp > 0).length;
       const currentGold = goldRef.current;
       const reserveForUpgrade = economyLevel < economyMaxLevel ? economyUpgradeCost : 0;
@@ -239,9 +241,25 @@ function App() {
         });
       const affordable = ready.find((hero) => economyLevel >= economyMaxLevel || currentGold - hero.cost >= Math.min(reserveForUpgrade, 250));
       if (affordable) deploy(affordable);
-    }, 650);
+  };
+  useEffect(() => {
+    if (!autoCom || battleState !== "playing") return;
+    const timer = window.setInterval(() => autoTickRef.current(), 650);
     return () => window.clearInterval(timer);
-  }, [autoCom, battleState, economyLevel, economyUpgradeCost, economyMaxLevel, visibleDeck, deployCooldowns, deploy]);
+  }, [autoCom, battleState]);
+
+  useEffect(() => {
+    if (battleState !== "playing") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((event.target as HTMLElement)?.tagName ?? "")) return;
+      const index = event.code.startsWith("Numpad") ? Number(event.code.slice(6)) : /^Digit[0-9]$/.test(event.code) ? Number(event.code.slice(5)) : NaN;
+      if (!Number.isInteger(index)) return;
+      const hero = visibleDeck[index === 0 ? 9 : index - 1];
+      if (hero) { event.preventDefault(); deploy(hero); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [battleState, visibleDeck, deploy]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -305,6 +323,8 @@ function App() {
     setStageIndex(nextStageIndex);
     setBattleGold(battleStartGold);
     setEconomyLevel(1);
+    setBattleDeckPage(0);
+    nextUidRef.current = 1;
     setWaveIndex(0);
     setHeroes([]);
     setEnemies([]);
@@ -315,6 +335,7 @@ function App() {
     popupUidRef.current = 1;
     setBattleState("playing");
     setDeployCooldowns({});
+    deployCooldownsRef.current = {};
     setNotice(`STAGE ${nextStage.id} · ${nextStage.name} 시작!`);
   };
 
@@ -520,6 +541,7 @@ function App() {
     waveIndex={waveIndex} gameSpeed={gameSpeed} autoCom={autoCom} heroes={heroes} enemies={enemies}
     deathEffects={deathEffects} damagePopups={damagePopups} castleHit={castleHit} bossPhaseTwo={bossPhaseTwo}
     bossDisplayIcon={bossDisplayIcon} bossDisplayName={bossDisplayName} bossHpPercent={bossHpPercent} bossUnit={bossUnit}
+    bossDefeated={Boolean(bossSpawnAnnouncedRef.current && !bossUnit)} battleDeckPage={battleDeckPage} onDeckPage={setBattleDeckPage}
     bossCharge={bossChargeRef.current} bossPhase={bossPhaseRef.current} waveProgress={waveProgress} notice={notice} waveThreat={waveThreat}
     visibleDeck={visibleDeck} deployCooldowns={deployCooldowns} deckCount={deckIds.length} deckSlotCount={deckSlotCount}
     kingdomLevel={kingdomLevel} ownedHeroCount={ownedHeroes.length} heroTotal={HEROES.length} getUnitLevel={getUnitLevel}
