@@ -69,7 +69,7 @@ function App() {
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
-  const deckSlotCount = clamp(4 + kingdomLevel, 5, DECK_IDS.length);
+  const deckSlotCount = DECK_IDS.length; // dev account: all 10 deployment slots unlocked
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
   const economyMaxLevel = 8;
   const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
