@@ -9,6 +9,8 @@ import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damag
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
+type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
+
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
   const [unlockedStage, setUnlockedStage] = useState(() => {
@@ -35,6 +37,8 @@ function App() {
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
+  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
+  const popupUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
@@ -114,6 +118,7 @@ function App() {
     const interval = window.setInterval(() => {
       const dt = 0.05 * gameSpeed;
       setCastleHit(null);
+      setDamagePopups((popups) => popups.slice(-24));
 
       goldRef.current = Math.min(99999, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -232,6 +237,8 @@ function App() {
             nextEnemies[targetIndex] = hero.effect === "burn"
               ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
               : { ...hitTarget, attackFlash: 0.08 };
+            const popupId = popupUidRef.current++;
+            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: hitTarget.x, value: Math.max(1, Math.round(damage)), critical: damage >= hero.atk * 1.9 }]);
           }
           goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + 20);
           setBattleGold(Math.floor(goldRef.current));
@@ -284,6 +291,8 @@ function App() {
               "enemy",
               enemy.atk,
             );
+            const popupId = popupUidRef.current++;
+            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
           }
           nextEnemies[i].attackTimer = enemy.attackInterval;
           nextEnemies[i].attackFlash = 0.16;
@@ -388,6 +397,8 @@ function App() {
     setCastleHp(1000);
     setEnemyCastleHp(nextStage.enemyCastleHp);
     setCastleHit(null);
+    setDamagePopups([]);
+    popupUidRef.current = 1;
     setBattleState("playing");
     setDeployCooldowns({});
     setNotice(`STAGE ${nextStage.id} · ${nextStage.name} 시작!`);
@@ -438,6 +449,8 @@ function App() {
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
+  const bossUnit = currentStage.waveMeta[waveIndex]?.boss ? enemies.find((unit) => unit.id === "fireOgreE") : undefined;
+  const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
 
   if (battleState === "stageSelect") {
     return (
@@ -500,7 +513,18 @@ function App() {
             <div className="lane-ground" />
             {heroes.map((u) => <BattleUnit key={u.uid} unit={u} />)}
             {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
+            {damagePopups.map((popup) => (
+              <div key={popup.id} className={`damage-popup ${popup.critical ? "critical" : ""}`} style={{ left: `${popup.x}%` }}>-{popup.value}</div>
+            ))}
           </div>
+
+          {currentStage.waveMeta[waveIndex]?.boss && (
+            <div className="boss-bar">
+              <div className="boss-title">🔥 BOSS · 화염의 거인</div>
+              <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
+              <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
+            </div>
+          )}
 
           <div className="wave-banner">
             <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
