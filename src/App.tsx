@@ -198,7 +198,7 @@ function App() {
           .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
 
         if (!target) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           if (hero.x >= 84 && hero.attackTimer <= 0) {
             const damage = hero.atk * 1.8;
             enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
@@ -245,7 +245,7 @@ function App() {
             castleRef.current = Math.max(0, castleRef.current - enemy.atk * dt);
             setCastleHp(castleRef.current);
           } else {
-            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
           continue;
         }
