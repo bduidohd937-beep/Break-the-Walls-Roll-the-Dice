@@ -14,6 +14,7 @@ import { HeroesPanel } from "./components/HeroesPanel";
 import { SummonPanel } from "./components/SummonPanel";
 import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
+import { StageSelectPanel } from "./components/StageSelectPanel";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
@@ -1060,23 +1061,7 @@ function App() {
             onGather={gatherResource} onSell={sellResource} onAssign={assignWorker}
           />}
 
-          {mainTab === "battle" && (
-            <div className="stage-grid">
-              {STAGES.map((stage) => {
-                const unlocked = DEV_MODE || stage.id <= unlockedStage;
-                const cleared = clearedStages.includes(stage.id);
-                return (
-                  <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
-                    <div className="stage-card-top"><span>STAGE {stage.id} · {stage.region}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
-                    <div className={`stage-type stage-type-${stage.type}`}>{stage.type === "boss" ? "BOSS" : stage.type === "elite" ? "ELITE" : "NORMAL"}</div>
-                    <h2>{stage.name}</h2>
-                    <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
-                    {stage.bossName && <div className="stage-boss-name">👑 {stage.bossName}</div>}{stage.mechanic && <div className="stage-mechanic">{stage.mechanic}</div>}<div className="stage-card-reward">{cleared ? `REPEAT · +${stage.repeatReward} 🪙` : `FIRST · +${stage.clearReward} 🪙 · +${stage.firstClearGems} 💎`}</div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {mainTab === "battle" && <StageSelectPanel stages={STAGES} unlockedStage={unlockedStage} clearedStages={clearedStages} devMode={DEV_MODE} onSelect={selectStage} />}
 
           {mainTab === "heroes" && <HeroesPanel
             heroes={HEROES} ownedHeroes={ownedHeroes} deckIds={deckIds} deckSlotCount={deckSlotCount}
