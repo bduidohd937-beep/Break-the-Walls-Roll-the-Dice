@@ -175,11 +175,20 @@ function App() {
   const activeGatherRegion = gatherRegions[gatherRegion as GatherRegionKey];
   const gatherRegionScale = activeGatherRegion.scale;
   const isGatherRegionUnlocked = (key: GatherRegionKey) => gatherRegions[key].unlockStage === 0 || clearedStages.includes(gatherRegions[key].unlockStage);
+  const getGatherAttackDamage = (type: "wood" | "stone") => {
+    const heroId = workers[type];
+    const hero = heroId ? HEROES.find((unit) => unit.id === heroId) : undefined;
+    const baseDamage = type === "wood" ? 2 : 3;
+    if (!hero) return baseDamage;
+    const levelScale = getLevelMultiplier(hero.id);
+    const attackContribution = Math.max(1, Math.floor((hero.atk * levelScale) / 55));
+    return baseDamage + attackContribution;
+  };
   const gatherResource = (type: "wood" | "stone") => {
     setGatherHit(type);
     window.setTimeout(() => setGatherHit((current) => current === type ? null : current), 140);
     setGatherHp((current) => {
-      const damage = type === "wood" ? 2 : 3;
+      const damage = getGatherAttackDamage(type);
       const scaledMaxHp = gatherMaxHp[type] * gatherRegionScale;
       const effectiveHp = Math.min(current[type], scaledMaxHp);
       const nextHp = Math.max(0, effectiveHp - damage);
@@ -195,11 +204,11 @@ function App() {
   const sellResource = (type: "wood" | "stone") => {
     const amount = resources[type];
     if (amount <= 0) return;
-    const unitPrice = (type === "wood" ? 5 : 8) * kingdomSellBonus;
+    const unitPrice = Math.round((type === "wood" ? 5 : 8) * kingdomSellBonus);
     const next = { ...resources, [type]: 0 };
     saveResources(next);
     setKingdomGold((gold) => {
-      const value = gold + amount * unitPrice;
+      const value = gold + Math.round(amount * unitPrice);
       window.localStorage.setItem("btw-kingdom-gold", String(value));
       return value;
     });
@@ -990,9 +999,9 @@ function App() {
                       </button>
                     </div>
                     <div className="resource-hp"><span style={{ width: `${hpPercent}%` }} /></div>
-                    <div className="resource-hp-label">{gatherHp[type]} / {scaledMaxHp} HP · 파괴 보상 +{gatherReward[type] * gatherRegionScale}</div>
-                    <button className="gather-action" onClick={() => gatherResource(type)}>{isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
-                    <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{resources[type] * (isWood ? 5 : 8)} 🪙</button>
+                    <div className="resource-hp-label">{gatherHp[type]} / {scaledMaxHp} HP · 공격 피해 {getGatherAttackDamage(type)} · 파괴 보상 +{gatherReward[type] * gatherRegionScale}</div>
+                    <button className="gather-action" onClick={() => gatherResource(type)}>{assigned ? `${assigned.sprite} ${assigned.name} 공격` : isWood ? "🪓 벌목 공격" : "⛏️ 채광 공격"}</button>
+                    <button className="sell-action" disabled={resources[type] <= 0} onClick={() => sellResource(type)}>전부 판매 · +{Math.round(resources[type] * (isWood ? 5 : 8) * kingdomSellBonus)} 🪙</button>
                     <div className="worker-box"><b>자동 채집</b><span>{assigned ? `${assigned.sprite} ${assigned.name} · 자동 생산 +${getAutoGatherAmount(type)}/3초 · 효율 ×${getGatherEfficiency(assigned.id).toFixed(2)}` : "영웅을 배치하면 자동 생산"}</span></div>
                     <div className="worker-list">{ownedHeroes.map((id) => { const hero = HEROES.find((unit) => unit.id === id); if (!hero) return null; const busyElsewhere = Object.entries(workers).some(([key, value]) => key !== type && value === id); return <button key={id} disabled={busyElsewhere} className={workers[type] === id ? "assigned" : ""} onClick={() => assignWorker(type, id)}>{hero.sprite}<small>{hero.name}<br/>×{getGatherEfficiency(hero.id).toFixed(2)}</small></button>; })}</div>
                   </div>;
