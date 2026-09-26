@@ -467,6 +467,7 @@ function App() {
             <p>{battleState === "victory" ? `STAGE ${currentStage.id} 클리어! 다음 전장을 선택할 수 있어요.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
             <div className="result-actions">
               <button onClick={() => reset(stageIndex)}>다시 전투</button>
+              <button onClick={() => setBattleState("stageSelect")}>스테이지 선택</button>
               {battleState === "victory" && stageIndex + 1 < unlockedStage && (
                 <button onClick={() => reset(stageIndex + 1)}>다음 스테이지 ▶</button>
               )}
