@@ -26,6 +26,7 @@ import { STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
+import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
@@ -283,44 +284,15 @@ function App() {
   useEffect(() => { deployCooldownsRef.current = deployCooldowns; }, [deployCooldowns]);
   useEffect(() => { castleRef.current = castleHp; }, [castleHp]);
   useEffect(() => { enemyCastleRef.current = enemyCastleHp; }, [enemyCastleHp]);
-  useEffect(() => {
-    if (battleState !== "stageSelect") return;
-    const now = Date.now();
-    const savedLastSeen = Math.max(0, Number(window.localStorage.getItem("btw-gather-last-seen") ?? now));
-    const offlineSeconds = Math.min(8 * 60 * 60, Math.max(0, Math.floor((now - savedLastSeen) / 1000)));
-    const offlineTicks = Math.floor(offlineSeconds / 3);
-    if (offlineTicks > 0 && (workers.wood || workers.stone)) {
-      const woodGain = workers.wood ? offlineTicks * getAutoGatherAmount("wood") : 0;
-      const stoneGain = workers.stone ? offlineTicks * getAutoGatherAmount("stone") : 0;
-      if (woodGain || stoneGain) {
-        setResources((current) => {
-          const next = { wood: current.wood + woodGain, stone: current.stone + stoneGain };
-          saveJson(STORAGE_KEYS.resources, next);
-          return next;
-        });
-        setOfflineGather({ wood: woodGain, stone: stoneGain, seconds: offlineSeconds });
-      }
-    }
-    gatherLastSeenRef.current = now;
-    saveNumber(STORAGE_KEYS.gatherLastSeen, now);
-    const timer = window.setInterval(() => {
-      const tickNow = Date.now();
-      gatherLastSeenRef.current = tickNow;
-      window.localStorage.setItem("btw-gather-last-seen", String(tickNow));
-      setResources((current) => {
-        const next = { ...current };
-        if (workers.wood) next.wood += getAutoGatherAmount("wood");
-        if (workers.stone) next.stone += getAutoGatherAmount("stone");
-        saveJson(STORAGE_KEYS.resources, next);
-        return next;
-      });
-    }, 3000);
-    return () => {
-      window.clearInterval(timer);
-      window.localStorage.setItem("btw-gather-last-seen", String(Date.now()));
-    };
-  }, [battleState, workers, facilityLevels.lumber, facilityLevels.quarry, kingdomProductionBonus]);
-
+  useGatheringProduction({
+    active: battleState === "stageSelect",
+    workers,
+    setResources,
+    setOfflineGather,
+    lastSeenRef: gatherLastSeenRef,
+    getAutoAmount: getAutoGatherAmount,
+    dependencies: [facilityLevels.lumber, facilityLevels.quarry, kingdomProductionBonus]
+  });
 
 
   useEffect(() => {
