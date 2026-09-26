@@ -251,3 +251,55 @@ button { font: inherit; }
 .hero-card:not(.disabled):active{transform:translateY(2px);filter:brightness(1.15)}
 .upgrade-btn:not(:disabled):active{transform:translateY(2px)}
 .wave-banner{box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 0 2px rgba(255,214,120,.08)}
+
+
+/* Battle deployment deck v2 */
+.deck-panel{
+  display:block;
+  padding:10px 12px 12px;
+  background:linear-gradient(#101f2d,#08121a);
+  border-top:2px solid #385468;
+}
+.battle-deck-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+  color:#dff5ff;
+  font-size:10px;
+}
+.battle-deck-header b{font-size:12px;color:#fff0ad}
+.battle-deck-header span{color:#7e9cad}
+.deck-slots{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:8px;
+}
+.hero-card-wrap{min-width:0}
+.hero-card{width:100%;height:100%;min-height:142px}
+.hero-sprite{height:54px;font-size:36px}
+.hero-combat-type,.hero-ability{display:none}
+.deck-indicator{
+  padding:7px 10px 9px;
+  border-top:1px solid #172b38;
+  background:#08121a;
+}
+@media (max-width:800px){
+  .deck-panel{padding:7px}
+  .battle-deck-header{margin-bottom:6px;font-size:8px}
+  .battle-deck-header b{font-size:10px}
+  .deck-slots{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding-bottom:3px;
+    scrollbar-width:thin;
+  }
+  .hero-card-wrap{flex:0 0 92px}
+  .hero-card{min-height:116px;padding:5px}
+  .hero-sprite{height:45px;font-size:29px}
+  .hero-name{font-size:8px}
+  .hero-meta,.cooldown{font-size:7px}
+  .deck-indicator{font-size:8px}
+}
