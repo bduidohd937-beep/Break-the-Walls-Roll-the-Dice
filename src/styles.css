@@ -155,6 +155,7 @@ button { font: inherit; }
 .stage-card-top { display:flex; justify-content:space-between; color:#83b1c8; font-size:10px; font-weight:1000; }
 .stage-card-top b { color:#ffd45b; }
 .stage-card h2 { margin:22px 0 20px; font-size:21px; }
+.stage-story { margin:0 0 12px; color:#acc4cf; font-size:10px; line-height:1.5; }
 .stage-card-meta { display:flex; justify-content:space-between; color:#9bb6c5; font-size:10px; font-weight:800; }
 .stage-card-reward { margin-top:22px; color:#ffd76c; font-size:9px; font-weight:900; }
 
