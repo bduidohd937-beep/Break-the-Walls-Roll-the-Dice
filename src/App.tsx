@@ -60,8 +60,8 @@ function App() {
   const [deckEditMode, setDeckEditMode] = useState(false);
   const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
-  const [facilityLevels, setFacilityLevels] = useState<{ lumber: number; quarry: number }>(() => {
-    try { const saved = JSON.parse(window.localStorage.getItem("btw-facility-levels") ?? "{}"); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1) }; } catch { return { lumber: 1, quarry: 1 }; }
+  const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-facility-levels") ?? "{}"); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1), vault: Math.max(1, Number(saved.vault) || 1), training: Math.max(1, Number(saved.training) || 1) }; } catch { return { lumber: 1, quarry: 1, vault: 1, training: 1 }; }
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
@@ -113,15 +113,24 @@ function App() {
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
   const economyMaxLevel = 8;
-  const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
+  const battleGoldMax = 1000 + (facilityLevels.vault - 1) * 250 + (economyLevel - 1) * 1250;
   const goldPerSecond = 18 + (economyLevel - 1) * 9;
+  const trainingBonus = 1 + (facilityLevels.training - 1) * 0.02;
+  const battleStartGold = 300 + (facilityLevels.vault - 1) * 50;
   const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
 
   const kingdomUpgradeCost = 400 * kingdomLevel;
   const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
   const kingdomSellBonus = 1 + Math.floor((kingdomLevel - 1) / 3) * 0.1;
   const kingdomMilestone = kingdomLevel < 2 ? "Lv.2 · 자동채집 생산 +25%" : kingdomLevel < 3 ? "Lv.3 · 자원 판매가 +10%" : kingdomLevel < 4 ? "Lv.4 · 자동채집 생산 +25%" : kingdomLevel < 6 ? "Lv.6 · 생산/판매 보너스 강화" : "왕국 성장 보너스 적용 중";
-  const facilityUpgradeCost = (type: "lumber" | "quarry") => 180 * facilityLevels[type];
+  const facilityDefs = {
+    lumber: { name: "벌목장", icon: "🪚", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 목재 자동채집 +${lv} / 3초` },
+    quarry: { name: "채석장", icon: "⛏️", unlock: 1, baseCost: 180, text: (lv: number) => `배치 영웅 석재 자동채집 +${lv} / 3초` },
+    vault: { name: "왕국 금고", icon: "🏦", unlock: 2, baseCost: 300, text: (lv: number) => `전투 시작 골드 +${(lv - 1) * 50} · 기본 최대 골드 +${(lv - 1) * 250}` },
+    training: { name: "훈련소", icon: "🏋️", unlock: 3, baseCost: 360, text: (lv: number) => `출전 영웅 HP / ATK +${(lv - 1) * 2}%` }
+  } as const;
+  type FacilityKey = keyof typeof facilityDefs;
+  const facilityUpgradeCost = (type: FacilityKey) => facilityDefs[type].baseCost * facilityLevels[type];
   const upgradeKingdom = () => {
     if (kingdomGold < kingdomUpgradeCost) return;
     const nextLevel = kingdomLevel + 1;
@@ -131,7 +140,7 @@ function App() {
     window.localStorage.setItem("btw-kingdom-level", String(nextLevel));
     window.localStorage.setItem("btw-kingdom-gold", String(nextGold));
   };
-  const upgradeFacility = (type: "lumber" | "quarry") => {
+  const upgradeFacility = (type: FacilityKey) => {
     const cost = facilityUpgradeCost(type);
     if (kingdomGold < cost) return;
     const next = { ...facilityLevels, [type]: facilityLevels[type] + 1 };
@@ -260,8 +269,8 @@ function App() {
     const soulBonus = getSoulBonuses(def.id);
     const upgradedDef: UnitDef = {
       ...def,
-      hp: Math.round(def.hp * statMultiplier * soulBonus.hp),
-      atk: Math.round(def.atk * statMultiplier * soulBonus.atk),
+      hp: Math.round(def.hp * statMultiplier * soulBonus.hp * trainingBonus),
+      atk: Math.round(def.atk * statMultiplier * soulBonus.atk * trainingBonus),
       attackInterval: Math.max(0.25, Number((def.attackInterval * soulBonus.speed).toFixed(3)))
     };
     setNextUid((v) => v + 1);
@@ -270,7 +279,7 @@ function App() {
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
-  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels, heroSouls]);
+  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels, heroSouls, trainingBonus]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -617,7 +626,7 @@ function App() {
   const reset = (nextStageIndex = stageIndex) => {
     const nextStage = STAGES[nextStageIndex] ?? STAGES[0];
     stageRef.current = nextStageIndex;
-    goldRef.current = 300;
+    goldRef.current = battleStartGold;
     castleRef.current = 1000;
     enemyCastleRef.current = nextStage.enemyCastleHp;
     waveRef.current = 0;
@@ -626,7 +635,7 @@ function App() {
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
     setStageIndex(nextStageIndex);
-    setBattleGold(300);
+    setBattleGold(battleStartGold);
     setEconomyLevel(1);
     setWaveIndex(0);
     setHeroes([]);
@@ -888,8 +897,7 @@ function App() {
               <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small><small>다음 목표 · {clearedStages.length < 2 ? "STAGE 2 클리어 → 고대 숲" : clearedStages.length < 4 ? "STAGE 4 클리어 → 수정 광산" : "왕성·시설 강화 후 다음 전선 준비"}</small></div>
               <div className="facility-grid">
                 <div className="facility-card castle-card"><span>🏰</span><div><b>왕성 Lv.{kingdomLevel}</b><small>자동채집 ×{kingdomProductionBonus.toFixed(2)} · 판매 ×{kingdomSellBonus.toFixed(2)}</small><small className="next-unlock">다음 효과: {kingdomMilestone}</small></div><button disabled={kingdomGold < kingdomUpgradeCost} onClick={upgradeKingdom}>강화 · {kingdomUpgradeCost} 🪙</button></div>
-                <div className="facility-card"><span>🪚</span><div><b>벌목장 Lv.{facilityLevels.lumber}</b><small>배치 영웅 자동채집 +{facilityLevels.lumber} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("lumber")} onClick={() => upgradeFacility("lumber")}>강화 · {facilityUpgradeCost("lumber")} 🪙</button></div>
-                <div className="facility-card"><span>⛏️</span><div><b>채석장 Lv.{facilityLevels.quarry}</b><small>배치 영웅 자동채집 +{facilityLevels.quarry} / 3초</small></div><button disabled={kingdomGold < facilityUpgradeCost("quarry")} onClick={() => upgradeFacility("quarry")}>강화 · {facilityUpgradeCost("quarry")} 🪙</button></div>
+                {(Object.keys(facilityDefs) as FacilityKey[]).map((key) => { const facility = facilityDefs[key]; const unlocked = kingdomLevel >= facility.unlock; return <div key={key} className={`facility-card ${!unlocked ? "facility-locked" : ""}`}><span>{facility.icon}</span><div><b>{facility.name} Lv.{facilityLevels[key]}</b><small>{unlocked ? facility.text(facilityLevels[key]) : `왕성 Lv.${facility.unlock}에서 해금`}</small></div><button disabled={!unlocked || kingdomGold < facilityUpgradeCost(key)} onClick={() => upgradeFacility(key)}>{unlocked ? `강화 · ${facilityUpgradeCost(key)} 🪙` : "잠김"}</button></div>; })}
               </div>
               <button className="home-battle-cta" onClick={() => setMainTab("battle")}>⚔️ 전투 출격</button>
             </div>
