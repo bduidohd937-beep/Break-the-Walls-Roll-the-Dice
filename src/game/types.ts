@@ -1,6 +1,7 @@
 export type ElementType = "neutral" | "dark" | "fire";
 export type Team = "hero" | "enemy";
 export type AttackType = "single" | "splash";
+export type AbilityType = "guard" | "crit" | "regen" | "execute";
 
 export type UnitDef = {
   id: string;
@@ -18,6 +19,8 @@ export type UnitDef = {
   effect?: "burn";
   attackType?: AttackType;
   splashRadius?: number;
+  ability?: AbilityType;
+  abilityValue?: number;
 };
 
 export type Unit = UnitDef & {
