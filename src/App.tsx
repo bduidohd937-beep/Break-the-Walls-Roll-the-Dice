@@ -34,6 +34,7 @@ function App() {
   const [enemies, setEnemies] = useState<Unit[]>([]);
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
+  const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     try {
@@ -112,6 +113,7 @@ function App() {
 
     const interval = window.setInterval(() => {
       const dt = 0.05 * gameSpeed;
+      setCastleHit(null);
 
       goldRef.current = Math.min(99999, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
@@ -196,6 +198,7 @@ function App() {
             const damage = hero.atk * 1.8;
             enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
             setEnemyCastleHp(enemyCastleRef.current);
+            setCastleHit("enemy");
             nextHeroes[i].attackTimer = hero.attackInterval;
             nextHeroes[i].attackFlash = 0.16;
           }
@@ -251,6 +254,7 @@ function App() {
           if (enemy.x <= 13) {
             castleRef.current = Math.max(0, castleRef.current - enemy.atk * dt);
             setCastleHp(castleRef.current);
+            setCastleHit("our");
           } else {
             nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
@@ -380,6 +384,7 @@ function App() {
     setEnemies([]);
     setCastleHp(1000);
     setEnemyCastleHp(nextStage.enemyCastleHp);
+    setCastleHit(null);
     setBattleState("playing");
     setDeployCooldowns({});
     setNotice(`STAGE ${nextStage.id} · ${nextStage.name} 시작!`);
@@ -485,8 +490,8 @@ function App() {
       <section className="battle-card">
         <div className="battle-sky">
           <div className="cloud c1" /><div className="cloud c2" /><div className="mountains" />
-          <div className="castle our-castle"><div className="tower">🏰</div><div className="castle-label">우리 성</div><div className="castle-hp"><span style={{width: `${clamp(castleHp / 10, 0, 100)}%`}} /></div></div>
-          <div className="castle enemy-castle"><div className="tower">🏯</div><div className="castle-label">적 성</div><div className="castle-hp enemy"><span style={{width: `${clamp(enemyCastleHp / 18, 0, 100)}%`}} /></div></div>
+          <div className={`castle our-castle ${castleHit === "our" ? "castle-hit" : ""}`}><div className="tower">🏰</div><div className="castle-label">우리 성</div><div className="castle-hp"><span style={{width: `${clamp(castleHp / 10, 0, 100)}%`}} /></div></div>
+          <div className={`castle enemy-castle ${castleHit === "enemy" ? "castle-hit" : ""}`}><div className="tower">🏯</div><div className="castle-label">적 성</div><div className="castle-hp enemy"><span style={{width: `${clamp(enemyCastleHp / 18, 0, 100)}%`}} /></div></div>
 
           <div className="lane">
             <div className="lane-ground" />
