@@ -169,3 +169,7 @@ button { font: inherit; }
 .hero-name small { margin-left:3px; color:#ffd76c; font-size:8px; }
 .upgrade-btn { width:100%; margin-top:5px; padding:4px 3px; border:1px solid #735f2c; border-radius:5px; background:#2b2410; color:#ffd76c; font-size:8px; font-weight:1000; cursor:pointer; }
 .upgrade-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+.hero-card.locked { opacity:.42; filter:grayscale(.65); cursor:not-allowed; }
+.hero-card.locked .hero-sprite { filter:grayscale(1); }
+.hero-card.locked .hero-name small { color:#8da0aa; }
