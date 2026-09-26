@@ -31,7 +31,8 @@ function App() {
       return [];
     }
   });
-  const [battleGold, setBattleGold] = useState(500);
+  const [battleGold, setBattleGold] = useState(300);
+  const [economyLevel, setEconomyLevel] = useState(1);
   const [waveIndex, setWaveIndex] = useState(0);
   const [heroes, setHeroes] = useState<Unit[]>([]);
   const [enemies, setEnemies] = useState<Unit[]>([]);
@@ -65,6 +66,10 @@ function App() {
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const deckSlotCount = clamp(4 + kingdomLevel, 5, DECK_IDS.length);
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
+  const economyMaxLevel = 8;
+  const battleGoldMax = 1000 + (economyLevel - 1) * 1250;
+  const goldPerSecond = 18 + (economyLevel - 1) * 9;
+  const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
   const getUpgradeCost = (id: string) => getUnitLevel(id) >= 10 ? 0 : 150 * getUnitLevel(id);
@@ -84,6 +89,15 @@ function App() {
     setNotice(`${HEROES.find((hero) => hero.id === id)?.name ?? id} 강화 Lv.${level + 1}!`);
   };
 
+  const upgradeEconomy = () => {
+    if (battleState !== "playing" || economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost) return;
+    const nextLevel = economyLevel + 1;
+    goldRef.current = Math.max(0, goldRef.current - economyUpgradeCost);
+    setBattleGold(goldRef.current);
+    setEconomyLevel(nextLevel);
+    setNotice(`왕국 경제 Lv.${nextLevel}! 골드 생산과 최대 보유량 증가`);
+  };
+
   const deploy = useCallback((def: UnitDef) => {
     if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
     const uid = nextUid;
@@ -99,7 +113,7 @@ function App() {
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
-  const goldRef = useRef(500);
+  const goldRef = useRef(300);
   const castleRef = useRef(1000);
   const enemyCastleRef = useRef(STAGES[0].enemyCastleHp);
   const stageRef = useRef(0);
@@ -124,7 +138,7 @@ function App() {
       setDamagePopups((popups) => popups.slice(-24));
       setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
 
-      goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + dt * 5);
+      goldRef.current = Math.min(battleGoldMax, goldRef.current + dt * goldPerSecond);
       setBattleGold(goldRef.current);
 
       spawnTimerRef.current -= dt;
@@ -320,7 +334,7 @@ function App() {
       }
       const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {
-        goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + defeatedEnemies * 20);
+        goldRef.current = Math.min(battleGoldMax, goldRef.current + defeatedEnemies * 20);
         setBattleGold(Math.floor(goldRef.current));
       }
 
@@ -347,7 +361,7 @@ function App() {
       const waveCleared = spawnRef.current >= totalInWave && nextEnemies.length === 0;
       if (waveCleared && waveRef.current < stage.waves.length - 1) {
         const reward = stage.waveMeta[waveRef.current]?.reward ?? 0;
-        goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + reward);
+        goldRef.current = Math.min(battleGoldMax, goldRef.current + reward);
         setBattleGold(Math.floor(goldRef.current));
         waveRef.current += 1;
         spawnRef.current = 0;
@@ -398,7 +412,7 @@ function App() {
   const reset = (nextStageIndex = stageIndex) => {
     const nextStage = STAGES[nextStageIndex] ?? STAGES[0];
     stageRef.current = nextStageIndex;
-    goldRef.current = 500;
+    goldRef.current = 300;
     castleRef.current = 1000;
     enemyCastleRef.current = nextStage.enemyCastleHp;
     waveRef.current = 0;
@@ -407,7 +421,8 @@ function App() {
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
     setStageIndex(nextStageIndex);
-    setBattleGold(500);
+    setBattleGold(300);
+    setEconomyLevel(1);
     setWaveIndex(0);
     setHeroes([]);
     setEnemies([]);
@@ -522,7 +537,7 @@ function App() {
         </div>
         <div className="top-stats">
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
-          <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()}</b></div>
+          <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()} / {battleGoldMax.toLocaleString()}</b></div>
           <div className="stat-pill">💎 Gem <b>{Math.floor(gems).toLocaleString()}</b></div><div className="stat-pill">🪙 Gold <b>{Math.floor(kingdomGold).toLocaleString()}</b></div>
           <div className="stat-pill">🏆 CLEAR <b>{clearedStages.length}/{STAGES.length}</b></div>
           <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
@@ -578,6 +593,10 @@ function App() {
           </div>
         </div>
 
+        <div className="economy-panel">
+          <div className="economy-info"><b>🏗️ 왕국 경제 Lv.{economyLevel}/{economyMaxLevel}</b><span>초당 +{goldPerSecond} 🪙 · 최대 {battleGoldMax.toLocaleString()}</span></div>
+          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "MAX LEVEL" : `경제 강화 · 🪙 ${economyUpgradeCost}`}</button>
+        </div>
         <div className="deck-panel">
           <div className="battle-deck-header"><b>⚔️ 출전 영웅</b><span>카드를 눌러 전장에 배치 · {deckIds.length}/{deckSlotCount}</span></div>
           <div className="deck-slots">
