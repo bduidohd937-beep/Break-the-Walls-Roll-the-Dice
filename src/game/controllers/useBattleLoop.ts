@@ -6,7 +6,6 @@ import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
-import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
@@ -14,7 +13,7 @@ type DamagePopup = { id:number; x:number; value:number; critical:boolean };
 type DeathEffect = { id:number; x:number; team:"hero"|"enemy"; life:number };
 type BattleState = "stageSelect"|"playing"|"victory"|"defeat";
 type BattleLoopContext = {
-  battleState: BattleState; gameSpeed:number; battleGoldMax:number; goldPerSecond:number;
+  battleState: BattleState; gameSpeed:number; battleGoldMax:number; goldPerSecond:number; clearedStages:number[];
   setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<DeathEffect[]>; setBattleGold:Setter<number>;
   setDeployCooldowns:Setter<Record<string,number>>; setNotice:Setter<string>; setEnemyCastleHp:Setter<number>; setCastleHp:Setter<number>;
   setHeroes:Setter<Unit[]>; setEnemies:Setter<Unit[]>; setWaveIndex:Setter<number>; setUnlockedStage:Setter<number>;
@@ -22,11 +21,11 @@ type BattleLoopContext = {
   goldRef:Ref<number>; spawnTimerRef:Ref<number>; heroesRef:Ref<Unit[]>; enemiesRef:Ref<Unit[]>; stageRef:Ref<number>; waveRef:Ref<number>;
   spawnRef:Ref<number>; uidRef:Ref<number>; bossSpawnAnnouncedRef:Ref<boolean>; bossSummonTimerRef:Ref<number>;
   bossEnrageTriggeredRef:Ref<boolean>; bossFieldTickRef:Ref<number>; bossChargeRef:Ref<number>; bossPhaseRef:Ref<number>;
-  enemyCastleRef:Ref<number>; popupUidRef:Ref<number>; castleRef:Ref<number>; deathUidRef:Ref<number>; finalClearNotifiedRef:Ref<boolean>;
+  enemyCastleRef:Ref<number>; popupUidRef:Ref<number>; castleRef:Ref<number>; deathUidRef:Ref<number>; finalClearNotifiedRef:Ref<boolean>; victoryAwardedRef:Ref<boolean>;
 };
 
 export function useBattleLoop(ctx: BattleLoopContext) {
-  const { battleState, gameSpeed, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState } = ctx;
+  const { battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState } = ctx;
   useEffect(() => {
     if (battleState !== "playing") return;
 
@@ -380,34 +379,17 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         setNotice("FINAL WAVE CLEAR · 적 성을 파괴하면 스테이지 클리어!");
       }
 
-      if (enemyCastleRef.current <= 0) {
+      if (enemyCastleRef.current <= 0 && !victoryAwardedRef.current) {
+        victoryAwardedRef.current = true;
         setEnemyCastleHp(0);
         const clearedStage = stageRef.current + 1;
-        setUnlockedStage((current) => {
-          const next = Math.max(current, Math.min(STAGES.length, clearedStage + 1));
-          saveNumber(STORAGE_KEYS.unlockedStage, next);
-          return next;
-        });
-        setClearedStages((current) => {
-          const firstClear = !current.includes(clearedStage);
-          if (firstClear) {
-            setGems((currentGems) => {
-              const nextGems = currentGems + stage.firstClearGems;
-              saveNumber(STORAGE_KEYS.gems, nextGems);
-              return nextGems;
-            });
-          }
-          const reward = firstClear ? stage.clearReward : stage.repeatReward;
-          setKingdomGold((gold) => {
-            const nextGold = gold + reward;
-            saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
-            return nextGold;
-          });
-          if (!firstClear) return current;
-          const next = [...current, clearedStage].sort((a, b) => a - b);
-          saveJson(STORAGE_KEYS.clearedStages, next);
-          return next;
-        });
+        setUnlockedStage((current) => Math.max(current, Math.min(STAGES.length, clearedStage + 1)));
+        const firstClear = !clearedStages.includes(clearedStage);
+        if (firstClear) {
+          setClearedStages((current) => current.includes(clearedStage) ? current : [...current, clearedStage].sort((a, b) => a - b));
+          setGems((currentGems) => currentGems + stage.firstClearGems);
+        }
+        setKingdomGold((gold) => gold + (firstClear ? stage.clearReward : stage.repeatReward));
         setBattleState("victory");
       } else if (castleRef.current <= 0) {
         setCastleHp(0);

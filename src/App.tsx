@@ -56,6 +56,10 @@ function App() {
       return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === "string") : [];
     } catch { return []; }
   });
+  useEffect(() => { saveNumber(STORAGE_KEYS.unlockedStage, unlockedStage); }, [unlockedStage]);
+  useEffect(() => { saveNumber(STORAGE_KEYS.kingdomGold, kingdomGold); }, [kingdomGold]);
+  useEffect(() => { saveNumber(STORAGE_KEYS.gems, gems); }, [gems]);
+  useEffect(() => { saveJson(STORAGE_KEYS.clearedStages, clearedStages); }, [clearedStages]);
   const [battleGold, setBattleGold] = useState(300);
   const [economyLevel, setEconomyLevel] = useState(1);
   const [waveIndex, setWaveIndex] = useState(0);
@@ -280,6 +284,7 @@ function App() {
   const spawnTimerRef = useRef(1.2);
   const uidRef = useRef(1);
   const finalClearNotifiedRef = useRef(false);
+  const victoryAwardedRef = useRef(false);
   const bossSummonTimerRef = useRef(0);
   const bossEnrageTriggeredRef = useRef(false);
   const bossFieldTickRef = useRef(1);
@@ -304,7 +309,7 @@ function App() {
   });
 
 
-  useBattleLoop({ battleState, gameSpeed, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState });
+  useBattleLoop({ battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState });
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
@@ -322,6 +327,7 @@ function App() {
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
+    victoryAwardedRef.current = false;
     bossSummonTimerRef.current = 0;
     bossEnrageTriggeredRef.current = false;
     bossFieldTickRef.current = 1;
