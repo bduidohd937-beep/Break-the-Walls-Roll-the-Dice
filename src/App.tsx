@@ -80,7 +80,10 @@ function App() {
   const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-summon-storage") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
   });
-  const [souls, setSouls] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-souls") ?? "0")));
+  const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-hero-souls") ?? "{}"); return saved && typeof saved === "object" ? saved : {}; } catch { return {}; }
+  });
+  const [soulShards, setSoulShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-soul-shards") ?? "0")));
   const [transcendShards, setTranscendShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-transcend-shards") ?? "0")));
   const summonUidRef = useRef(Date.now());
   const [legendPity, setLegendPity] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-legend-pity") ?? "0")));
@@ -676,49 +679,73 @@ function App() {
   };
   const useStoredHero = (uid: number) => {
     const item = summonStorage.find((entry) => entry.uid === uid);
-    if (!item) return;
+    if (!item || ownedHeroes.includes(item.heroId)) return;
+    const nextOwned = [...ownedHeroes, item.heroId];
     const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
-    if (!ownedHeroes.includes(item.heroId)) {
-      const nextOwned = [...ownedHeroes, item.heroId];
-      setOwnedHeroes(nextOwned);
-      window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
-    }
-    setSummonStorage(nextStorage);
+    setOwnedHeroes(nextOwned); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
     window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
   };
   const soulStoredHero = (uid: number) => {
     const item = summonStorage.find((entry) => entry.uid === uid);
-    if (!item) return;
-    const soulValue: Record<SummonGrade, number> = { 일반: 10, 희귀: 25, 영웅: 60, 전설: 150, 신화: 350, 초월: 800 };
-    const shardValue = item.grade === "신화" ? 1 : item.grade === "초월" ? 5 : 0;
-    const nextSouls = souls + soulValue[item.grade];
-    const nextShards = transcendShards + shardValue;
+    if (!item || !ownedHeroes.includes(item.heroId)) return;
+    const nextHeroSouls = { ...heroSouls, [item.heroId]: Math.min(30, (heroSouls[item.heroId] ?? 0) + 1) };
     const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
-    setSouls(nextSouls); setTranscendShards(nextShards); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-souls", String(nextSouls));
-    window.localStorage.setItem("btw-transcend-shards", String(nextShards));
+    setHeroSouls(nextHeroSouls); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-hero-souls", JSON.stringify(nextHeroSouls));
     window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
-  };  const bulkUseStoredHeroes = () => {
+  };
+  const shardStoredHero = (uid: number) => {
+    const item = summonStorage.find((entry) => entry.uid === uid);
+    if (!item) return;
+    const shardValue: Record<SummonGrade, number> = { 일반: 5, 희귀: 15, 영웅: 40, 전설: 120, 신화: 400, 초월: 1500 };
+    const nextShards = soulShards + shardValue[item.grade];
+    const nextTranscend = transcendShards + (item.grade === "신화" ? 1 : item.grade === "초월" ? 5 : 0);
+    const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
+    setSoulShards(nextShards); setTranscendShards(nextTranscend); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-soul-shards", String(nextShards));
+    window.localStorage.setItem("btw-transcend-shards", String(nextTranscend));
+    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
+  };
+  const bulkUseStoredHeroes = () => {
     const uniqueIds = [...new Set(summonStorage.map((item) => item.heroId).filter((id) => !ownedHeroes.includes(id)))];
     if (!uniqueIds.length) return;
     const nextOwned = [...ownedHeroes, ...uniqueIds];
-    const used = new Set(uniqueIds);
-    const nextStorage = summonStorage.filter((item) => !used.has(item.heroId));
+    const usedOnce = new Set<string>();
+    const nextStorage = summonStorage.filter((item) => {
+      if (!uniqueIds.includes(item.heroId) || usedOnce.has(item.heroId)) return true;
+      usedOnce.add(item.heroId); return false;
+    });
     setOwnedHeroes(nextOwned); setSummonStorage(nextStorage);
     window.localStorage.setItem("btw-owned-heroes", JSON.stringify(nextOwned));
     window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
   };
   const bulkSoulStoredHeroes = (maxGrade: "일반" | "희귀") => {
     const allowed = maxGrade === "일반" ? new Set<SummonGrade>(["일반"]) : new Set<SummonGrade>(["일반", "희귀"]);
+    const capacity = { ...heroSouls };
+    const targetIds = new Set<number>();
+    summonStorage.forEach((item) => {
+      if (!allowed.has(item.grade) || !ownedHeroes.includes(item.heroId) || (capacity[item.heroId] ?? 0) >= 30) return;
+      capacity[item.heroId] = (capacity[item.heroId] ?? 0) + 1;
+      targetIds.add(item.uid);
+    });
+    if (!targetIds.size) return;
+    const nextStorage = summonStorage.filter((item) => !targetIds.has(item.uid));
+    setHeroSouls(capacity); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-hero-souls", JSON.stringify(capacity));
+    window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
+  };
+  const bulkShardStoredHeroes = (maxGrade: "일반" | "희귀") => {
+    const allowed = maxGrade === "일반" ? new Set<SummonGrade>(["일반"]) : new Set<SummonGrade>(["일반", "희귀"]);
+    const shardValue: Record<SummonGrade, number> = { 일반: 5, 희귀: 15, 영웅: 40, 전설: 120, 신화: 400, 초월: 1500 };
     const targets = summonStorage.filter((item) => allowed.has(item.grade));
     if (!targets.length) return;
-    const soulValue: Record<SummonGrade, number> = { 일반: 10, 희귀: 25, 영웅: 60, 전설: 150, 신화: 350, 초월: 800 };
-    const gain = targets.reduce((sum, item) => sum + soulValue[item.grade], 0);
+    const gain = targets.reduce((sum, item) => sum + shardValue[item.grade], 0);
     const ids = new Set(targets.map((item) => item.uid));
     const nextStorage = summonStorage.filter((item) => !ids.has(item.uid));
-    const nextSouls = souls + gain;
-    setSouls(nextSouls); setSummonStorage(nextStorage);
-    window.localStorage.setItem("btw-souls", String(nextSouls));
+    const nextShards = soulShards + gain;
+    setSoulShards(nextShards); setSummonStorage(nextStorage);
+    window.localStorage.setItem("btw-soul-shards", String(nextShards));
     window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
   };
 
@@ -928,7 +955,7 @@ function App() {
                 </div>
               </div>}
               <p>소환 결과는 바로 영웅이 되지 않고 저장소로 이동합니다. 사용할 영웅만 영입하거나 영혼으로 변환하세요.</p>
-              <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 👻 영혼 <b>{souls.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
+              <div className="summon-gem-balance">💎 <b>{gems.toLocaleString()}</b> · 🧩 영혼 파편 <b>{soulShards.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
               <div className="summon-actions">
                 <button className="summon-btn" disabled={gems < SUMMON_GEM_COST} onClick={() => performSummon(1)}>🎲 1회 소환 · 100 💎</button>
                 <button className="summon-btn multi" disabled={gems < 1000} onClick={() => performSummon(11)}>🎲 10+1 소환 · 1000 💎<small>11명 소환 · 마지막 1명 영웅 이상 보장</small></button>
@@ -943,9 +970,10 @@ function App() {
           {mainTab === "storage" && (
             <div className="summon-panel storage-screen">
               <div className="storage-screen-head"><button onClick={() => setMainTab("summon")}>← 소환으로</button><div><small>SUMMON STORAGE</small><h2>📦 영웅 저장소</h2></div><b>{summonStorage.length}명</b></div>
-              <div className="storage-wallet">👻 영혼 <b>{souls.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
-              <div className="storage-bulk"><button onClick={bulkUseStoredHeroes}>미보유 영웅 일괄 영입</button><button onClick={() => bulkSoulStoredHeroes("일반")}>일반 일괄 영혼화</button><button onClick={() => bulkSoulStoredHeroes("희귀")}>희귀 이하 일괄 영혼화</button></div>
-              <div className="summon-storage full">{summonStorage.length === 0 ? <div className="storage-empty">저장소가 비어 있습니다.</div> : summonStorage.map((item) => { const hero = HEROES.find((unit) => unit.id === item.heroId); if (!hero) return null; return <div key={item.uid} className={`storage-card grade-${item.grade}`}><div className="storage-hero"><span>{hero.sprite}</span><div><small>{item.grade}</small><b>{hero.name}</b></div></div><div className="storage-actions"><button onClick={() => useStoredHero(item.uid)}>{ownedHeroes.includes(hero.id) ? "중복 보유" : "사용"}</button><button onClick={() => soulStoredHero(item.uid)}>영혼화</button></div></div>; })}</div>
+              <div className="storage-wallet">🧩 영혼 파편 <b>{soulShards.toLocaleString()}</b> · ✦ 초월 조각 <b>{transcendShards}</b></div>
+              <div className="storage-help">미보유 영웅은 <b>영입</b> · 보유 중복은 해당 영웅 <b>영혼 +1</b> · 필요 없으면 <b>영혼 파편</b>으로 변환</div>
+              <div className="storage-bulk"><button onClick={bulkUseStoredHeroes}>미보유 일괄 영입</button><button onClick={() => bulkSoulStoredHeroes("희귀")}>희귀↓ 중복 일괄 영혼 +1</button><button onClick={() => bulkShardStoredHeroes("일반")}>일반 일괄 파편화</button><button onClick={() => bulkShardStoredHeroes("희귀")}>희귀↓ 일괄 파편화</button></div>
+              <div className="summon-storage full">{summonStorage.length === 0 ? <div className="storage-empty">저장소가 비어 있습니다.</div> : summonStorage.map((item) => { const hero = HEROES.find((unit) => unit.id === item.heroId); if (!hero) return null; const owned = ownedHeroes.includes(hero.id); const soulLevel = heroSouls[hero.id] ?? 0; return <div key={item.uid} className={`storage-card grade-${item.grade}`}><div className="storage-hero"><span>{hero.sprite}</span><div><small>{item.grade} · 영혼 +{soulLevel}/30</small><b>{hero.name}</b></div></div><div className="storage-actions">{!owned ? <button onClick={() => useStoredHero(item.uid)}>영입</button> : <button disabled={soulLevel >= 30} onClick={() => soulStoredHero(item.uid)}>{soulLevel >= 30 ? "영혼 MAX" : "영혼 +1"}</button>}<button onClick={() => shardStoredHero(item.uid)}>파편화</button></div></div>; })}</div>
             </div>
           )}
 
