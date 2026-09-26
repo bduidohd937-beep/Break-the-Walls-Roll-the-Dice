@@ -245,11 +245,13 @@ function App() {
             const targetIndex = nextEnemies.findIndex((enemy) => enemy.uid === targetUid);
             if (targetIndex < 0) continue;
 
+            const isPrimaryTarget = targetUid === target.uid;
+            const impactAtk = hero.attackType === "splash" && !isPrimaryTarget ? hero.atk * 0.65 : hero.atk;
             const hitTarget = applyKnockback(
               nextEnemies[targetIndex],
               nextEnemies[targetIndex].currentHp - damage,
               "hero",
-              hero.atk,
+              impactAtk,
             );
 
             nextEnemies[targetIndex] = hero.effect === "burn"
@@ -317,11 +319,13 @@ function App() {
             const hitIndex = nextHeroes.findIndex((heroTarget) => heroTarget.uid === targetUid);
             if (hitIndex < 0) continue;
             const damage = incomingDamage(nextHeroes[hitIndex], attackDamage);
+            const isPrimaryTarget = targetUid === target.uid;
+            const impactAtk = enemy.attackType === "splash" && !isPrimaryTarget ? attackDamage * 0.65 : attackDamage;
             nextHeroes[hitIndex] = applyKnockback(
               nextHeroes[hitIndex],
               nextHeroes[hitIndex].currentHp - damage,
               "enemy",
-              attackDamage,
+              impactAtk,
             );
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
