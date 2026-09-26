@@ -201,6 +201,7 @@ function App() {
             setCastleHit("enemy");
             nextHeroes[i].attackTimer = hero.attackInterval;
             nextHeroes[i].attackFlash = 0.16;
+            nextHeroes[i].attackTargetX = 87;
           }
           continue;
         }
@@ -236,6 +237,7 @@ function App() {
           setBattleGold(Math.floor(goldRef.current));
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
+          nextHeroes[i].attackTargetX = target.x;
         }
       }
 
@@ -285,6 +287,7 @@ function App() {
           }
           nextEnemies[i].attackTimer = enemy.attackInterval;
           nextEnemies[i].attackFlash = 0.16;
+          nextEnemies[i].attackTargetX = target.x;
         }
       }
 
