@@ -110,7 +110,8 @@ function App() {
     const statMultiplier = 1 + (level - 1) * 0.08;
     const upgradedDef: UnitDef = { ...def, hp: Math.round(def.hp * statMultiplier), atk: Math.round(def.atk * statMultiplier) };
     setNextUid((v) => v + 1);
-    setBattleGold((g) => g - def.cost);
+    goldRef.current = Math.max(0, goldRef.current - def.cost);
+    setBattleGold(goldRef.current);
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
@@ -229,13 +230,19 @@ function App() {
         if (!target) {
           nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
           if (hero.x >= 84 && hero.attackTimer <= 0) {
-            const damage = hero.atk * 1.8;
-            enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
-            setEnemyCastleHp(enemyCastleRef.current);
-            setCastleHit("enemy");
+            const finalWaveCleared =
+              waveRef.current === stage.waves.length - 1 &&
+              spawnRef.current >= totalInWave &&
+              nextEnemies.every((enemy) => enemy.currentHp <= 0);
+            if (finalWaveCleared) {
+              const damage = hero.atk * 1.8;
+              enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
+              setEnemyCastleHp(enemyCastleRef.current);
+              setCastleHit("enemy");
+              nextHeroes[i].attackFlash = 0.16;
+              nextHeroes[i].attackTargetX = 87;
+            }
             nextHeroes[i].attackTimer = hero.attackInterval;
-            nextHeroes[i].attackFlash = 0.16;
-            nextHeroes[i].attackTargetX = 87;
           }
           continue;
         }
@@ -332,12 +339,15 @@ function App() {
             const damage = incomingDamage(nextHeroes[hitIndex], attackDamage);
             const isPrimaryTarget = targetUid === target.uid;
             const impactAtk = enemy.attackType === "splash" && !isPrimaryTarget ? attackDamage * 0.65 : attackDamage;
-            nextHeroes[hitIndex] = applyKnockback(
+            const hitHero = applyKnockback(
               nextHeroes[hitIndex],
               nextHeroes[hitIndex].currentHp - damage,
               "enemy",
               impactAtk,
             );
+            nextHeroes[hitIndex] = enemy.effect === "burn"
+              ? { ...hitHero, burnTimer: 3, burnDamage: Math.max(hitHero.burnDamage, enemy.atk * 0.12), hitFlash: 0.14 }
+              : hitHero;
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
           }
