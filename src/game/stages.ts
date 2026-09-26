@@ -5,6 +5,7 @@ export const STAGES: StageDef[] = [
     id: 1,
     name: "성 공략전",
     enemyCastleHp: 1800,
+    clearReward: 300,
     waves: [
       [{ enemy: "goblin", count: 8, gap: 0.9 }],
       [{ enemy: "goblin", count: 5, gap: 0.6 }, { enemy: "orc", count: 3, gap: 1.2 }],
@@ -24,6 +25,7 @@ export const STAGES: StageDef[] = [
     id: 2,
     name: "오크의 진군",
     enemyCastleHp: 2200,
+    clearReward: 500,
     waves: [
       [{ enemy: "goblin", count: 6, gap: 0.7 }, { enemy: "orc", count: 2, gap: 1.1 }],
       [{ enemy: "orc", count: 5, gap: 0.8 }],
@@ -43,6 +45,7 @@ export const STAGES: StageDef[] = [
     id: 3,
     name: "화염의 전장",
     enemyCastleHp: 2600,
+    clearReward: 800,
     waves: [
       [{ enemy: "goblin", count: 10, gap: 0.5 }],
       [{ enemy: "orc", count: 5, gap: 0.7 }, { enemy: "darkKnight", count: 1, gap: 1.8 }],
