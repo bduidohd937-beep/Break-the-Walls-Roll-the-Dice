@@ -31,6 +31,8 @@ export type Unit = UnitDef & {
   knockbackFromX: number;
   knockbackTargetX: number;
   alive: boolean;
+  burnTimer: number;
+  burnDamage: number;
 };
 
 export type WaveGroup = { enemy: "goblin" | "orc" | "darkKnight" | "fireOgre"; count: number; gap?: number };
