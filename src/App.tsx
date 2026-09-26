@@ -56,6 +56,7 @@ function App() {
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [deckEditMode, setDeckEditMode] = useState(false);
+  const [mainTab, setMainTab] = useState<"home" | "battle" | "heroes" | "summon">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     try {
@@ -527,32 +528,66 @@ function App() {
   if (battleState === "stageSelect") {
     return (
       <main className="stage-select-shell">
-        <section className="stage-select-card">
+        <section className="stage-select-card main-hub-card">
           <div className="stage-select-kicker">BREAK THE WALLS</div>
-          <h1>STAGE SELECT</h1>
-          <p className="stage-select-sub">영웅은 뽑기로 획득하고, 영지는 성장할수록 전투 슬롯이 늘어납니다.</p>
-          <div className="stage-select-stats"><span>🏯 영지 Lv.<b>{kingdomLevel}</b></span><span>⚔️ 전투 슬롯 <b>{deckIds.length}/{deckSlotCount}</b></span></div>
-          <div className="management-buttons"><button className="deck-builder-open" onClick={() => setDeckEditMode((value) => !value)}>{deckEditMode ? "전장 선택으로 돌아가기" : "⚔️ 영웅 편성"}</button><button className="summon-open" onClick={() => { setSummonOpen((value) => !value); setSummonMessage(""); }}>{summonOpen ? "뽑기 닫기" : "🎲 영웅 뽑기"}</button></div>
-          {summonOpen && <div className="summon-panel"><div className="deck-builder-title">영웅 소환 · 1회 {SUMMON_GEM_COST} 💎</div><p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p><div className="summon-gem-balance">보유 젬 <b>💎 {gems.toLocaleString()}</b></div><button className="summon-btn" disabled={gems < SUMMON_GEM_COST || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : "🎲 " + SUMMON_GEM_COST + " 💎 뽑기"}</button>{summonMessage && <div className="summon-result">{summonMessage}</div>}<div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div></div>}
-          {deckEditMode && <div className="deck-builder"><div className="deck-builder-title">보유 영웅 · 뽑기로 획득한 영웅만 편성 가능</div><div className="deck-builder-grid">{HEROES.map((hero) => { const selected = deckIds.includes(hero.id); const owned = ownedHeroes.includes(hero.id); const full = !selected && deckIds.length >= deckSlotCount; return <button key={hero.id} className={`deck-builder-card ${selected ? "selected" : ""} ${!owned || full ? "disabled" : ""}`} disabled={!owned || full} onClick={() => toggleDeckHero(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{selected ? "✓ 출전" : owned ? "보유" : "🔒 미보유"}</small></button>; })}</div><div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div></div>}
+          <h1>{mainTab === "home" ? "KINGDOM" : mainTab === "battle" ? "BATTLE" : mainTab === "heroes" ? "HEROES" : "SUMMON"}</h1>
           <div className="stage-select-stats">
-            <span>💎 GEM <b>{gems.toLocaleString()}</b></span><span>🪙 강화 골드 <b>{kingdomGold.toLocaleString()}</b></span>
-            <span>🏆 Clear <b>{clearedStages.length}/{STAGES.length}</b></span>
+            <span>🏯 영지 Lv.<b>{kingdomLevel}</b></span>
+            <span>💎 <b>{gems.toLocaleString()}</b></span>
+            <span>🪙 <b>{kingdomGold.toLocaleString()}</b></span>
+            <span>🏆 <b>{clearedStages.length}/{STAGES.length}</b></span>
           </div>
-          {!deckEditMode && <div className="stage-grid">
-            {STAGES.map((stage) => {
-              const unlocked = stage.id <= unlockedStage;
-              const cleared = clearedStages.includes(stage.id);
-              return (
-                <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
-                  <div className="stage-card-top"><span>STAGE {stage.id}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
-                  <h2>{stage.name}</h2>
-                  <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
-                  <div className="stage-card-reward">FIRST CLEAR · +{stage.clearReward} 🪙</div>
-                </button>
-              );
-            })}
-          </div>}
+
+          {mainTab === "home" && (
+            <div className="kingdom-home">
+              <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
+              <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(unlockedStage, STAGES.length)} · {STAGES[Math.min(unlockedStage, STAGES.length) - 1]?.name}</b><small>보유 영웅 {ownedHeroes.length}/{HEROES.length} · 편성 {deckIds.length}/{deckSlotCount}</small></div>
+              <button className="home-battle-cta" onClick={() => setMainTab("battle")}>⚔️ 전투 출격</button>
+            </div>
+          )}
+
+          {mainTab === "battle" && (
+            <div className="stage-grid">
+              {STAGES.map((stage) => {
+                const unlocked = stage.id <= unlockedStage;
+                const cleared = clearedStages.includes(stage.id);
+                return (
+                  <button key={stage.id} className={"stage-card " + (unlocked ? "unlocked " : "locked ") + (cleared ? "cleared" : "")} disabled={!unlocked} onClick={() => selectStage(stage.id - 1)}>
+                    <div className="stage-card-top"><span>STAGE {stage.id}</span><b>{cleared ? "✓ CLEAR" : unlocked ? "▶ PLAY" : "🔒 LOCKED"}</b></div>
+                    <h2>{stage.name}</h2>
+                    <div className="stage-card-meta"><span>🌊 {stage.waves.length} WAVES</span><span>🏰 HP {stage.enemyCastleHp}</span></div>
+                    <div className="stage-card-reward">FIRST CLEAR · +{stage.clearReward} 🪙</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {mainTab === "heroes" && (
+            <div className="deck-builder">
+              <div className="deck-builder-title">영웅 편성 · {deckIds.length}/{deckSlotCount}</div>
+              <div className="deck-builder-grid">{HEROES.map((hero) => { const selected = deckIds.includes(hero.id); const owned = ownedHeroes.includes(hero.id); const full = !selected && deckIds.length >= deckSlotCount; return <button key={hero.id} className={`deck-builder-card ${selected ? "selected" : ""} ${!owned || full ? "disabled" : ""}`} disabled={!owned || full} onClick={() => toggleDeckHero(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{selected ? "✓ 출전" : owned ? `Lv.${getUnitLevel(hero.id)} · 보유` : "🔒 미보유"}</small></button>; })}</div>
+              <div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div>
+            </div>
+          )}
+
+          {mainTab === "summon" && (
+            <div className="summon-panel hub-summon">
+              <div className="deck-builder-title">영웅 소환 · 1회 {SUMMON_GEM_COST} 💎</div>
+              <p>현재 보유하지 않은 영웅 중 무작위로 1명을 획득합니다.</p>
+              <div className="summon-gem-balance">보유 젬 <b>💎 {gems.toLocaleString()}</b></div>
+              <button className="summon-btn" disabled={gems < SUMMON_GEM_COST || ownedHeroes.length >= HEROES.length} onClick={summonHero}>{ownedHeroes.length >= HEROES.length ? "ALL HEROES OWNED" : `🎲 ${SUMMON_GEM_COST} 💎 뽑기`}</button>
+              {summonMessage && <div className="summon-result">{summonMessage}</div>}
+              <div className="owned-count">보유 영웅 {ownedHeroes.length}/{HEROES.length}</div>
+            </div>
+          )}
+
+          <nav className="main-nav">
+            <button className={mainTab === "home" ? "active" : ""} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
+            <button className={mainTab === "battle" ? "active" : ""} onClick={() => setMainTab("battle")}>⚔️<span>전투</span></button>
+            <button className={mainTab === "heroes" ? "active" : ""} onClick={() => setMainTab("heroes")}>🛡️<span>영웅</span></button>
+            <button className={mainTab === "summon" ? "active" : ""} onClick={() => { setMainTab("summon"); setSummonMessage(""); }}>🎲<span>소환</span></button>
+          </nav>
         </section>
       </main>
     );
