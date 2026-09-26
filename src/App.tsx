@@ -1020,7 +1020,11 @@ function App() {
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
-  const bossUnit = currentStage.waveMeta[waveIndex]?.boss ? enemies.find((unit) => unit.id === "fireOgreE") : undefined;
+  const bossUnitIds: Record<number, string> = { 9: "fireOgreE", 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" };
+  const currentBossUnitId = bossUnitIds[currentStage.id];
+  const bossUnit = currentStage.waveMeta[waveIndex]?.boss && currentBossUnitId ? enemies.find((unit) => unit.id === currentBossUnitId) : undefined;
+  const bossDisplayName = currentStage.bossName ?? bossUnit?.name ?? "BOSS";
+  const bossDisplayIcon = currentStage.id === 20 ? "🌑" : currentStage.id === 30 ? "🔥" : currentStage.id === 40 ? "⚡" : currentStage.id === 50 ? "⚪" : "👹";
   const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
   const bossPhaseTwo = Boolean(bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5);
   const waveThreat = currentWave?.some((group) => group.enemy === "assassin")
@@ -1284,7 +1288,7 @@ function App() {
 
           {currentStage.waveMeta[waveIndex]?.boss && (
             <div className={`boss-bar ${bossPhaseTwo ? "enraged" : ""}`}>
-              <div className="boss-title">🔥 BOSS · 화염의 거인 {bossPhaseTwo ? "· ENRAGED" : ""}</div>
+              <div className="boss-title">{bossDisplayIcon} BOSS · {bossDisplayName} {bossPhaseTwo ? "· ENRAGED" : ""}</div>
               <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
               <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
             </div>
