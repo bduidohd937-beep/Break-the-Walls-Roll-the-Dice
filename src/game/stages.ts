@@ -1,4 +1,4 @@
-import type { StageDef } from "./types";
+import type { EnemyKey, StageDef } from "./types";
 
 
 const chapter1KeyStages: Record<number, Partial<StageDef>> = {
@@ -33,7 +33,7 @@ const makeStage = (id: number): StageDef => {
   const enemyPool = id <= 10 ? ["goblin", "orc"] as const : id <= 20 ? ["orc", "darkKnight", "archer"] as const : id <= 30 ? ["darkKnight", "fireMage", "fireOgre"] as const : ["archer", "assassin", "fireMage", "darkKnight"] as const;
   const enemyA = enemyPool[(id - 1) % enemyPool.length];
   const enemyB = enemyPool[id % enemyPool.length];
-  const bossEnemy = id === 20 ? "morgar" : id === 30 ? "ignis" : id === 40 ? "voltras" : id === 50 ? "arcanon" : id === 9 ? "fireOgre" : undefined;
+  const bossEnemy: EnemyKey | undefined = id === 20 ? "morgar" : id === 30 ? "ignis" : id === 40 ? "voltras" : id === 50 ? "arcanon" : id === 9 ? "fireOgre" : undefined;
   return {
     id,
     name: key.name ?? `퓨어 월드 전선 ${String(id).padStart(2, "0")}`,
