@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, SUMMON_GEM_COST, INITIAL_GEMS, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
@@ -125,7 +124,7 @@ function App() {
       setDamagePopups((popups) => popups.slice(-24));
       setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
 
-      goldRef.current = Math.min(99999, goldRef.current + dt * 5);
+      goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + dt * 5);
       setBattleGold(goldRef.current);
 
       spawnTimerRef.current -= dt;
