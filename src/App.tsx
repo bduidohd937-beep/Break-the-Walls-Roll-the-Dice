@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, HERO_UNLOCK_STAGE, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
 import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
@@ -34,15 +34,20 @@ function App() {
   const [castleHp, setCastleHp] = useState(1000);
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
-  const [deckPage, setDeckPage] = useState(0);
+  const [deckIds, setDeckIds] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("btw-deck-ids") ?? "[]");
+      return Array.isArray(saved) && saved.every((id) => typeof id === "string") && saved.length > 0 ? saved : DECK_IDS.slice(0, 5);
+    } catch { return DECK_IDS.slice(0, 5); }
+  });
+  const [deckEditMode, setDeckEditMode] = useState(false);
+  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
   const [notice, setNotice] = useState("전투 시작!");
   const [nextUid, setNextUid] = useState(1);
   const [gameSpeed, setGameSpeed] = useState(5);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
-  const visibleDeck = useMemo(() => {
-    const start = deckPage * 5;
-    return DECK_IDS.slice(start, start + 5).map((id) => HEROES.find((hero) => hero.id === id)!);
-  }, [deckPage]);
+  const deckSlotCount = clamp(4 + kingdomLevel, 5, DECK_IDS.length);
+  const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
 
   const getUnitLevel = (id: string) => Math.max(1, unitLevels[id] ?? 1);
   const isHeroUnlocked = (id: string) => (HERO_UNLOCK_STAGE[id] ?? 1) <= unlockedStage;
@@ -64,7 +69,7 @@ function App() {
   };
 
   const deploy = useCallback((def: UnitDef) => {
-    if (!isHeroUnlocked(def.id) || battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
+    if (battleState !== "playing" || battleGold < def.cost || (deployCooldowns[def.id] ?? 0) > 0) return;
     const uid = nextUid;
     const level = getUnitLevel(def.id);
     const statMultiplier = 1 + (level - 1) * 0.08;
@@ -74,7 +79,7 @@ function App() {
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     setHeroes((list) => [...list, makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid)]);
     setNotice(`${def.name} 출전!`);
-  }, [battleGold, battleState, heroes, nextUid, deployCooldowns]);
+  }, [battleGold, battleState, nextUid, deployCooldowns, unitLevels]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -321,6 +326,7 @@ function App() {
           window.localStorage.setItem("btw-unlocked-stage", String(next));
           return next;
         });
+        setKingdomLevel((level) => { const nextLevel = Math.min(DECK_IDS.length - 4, level + 1); window.localStorage.setItem("btw-kingdom-level", String(nextLevel)); return nextLevel; });
         setClearedStages((current) => {
           if (current.includes(clearedStage)) return current;
           const next = [...current, clearedStage].sort((a, b) => a - b);
@@ -373,6 +379,20 @@ function App() {
 
   const currentStage = STAGES[stageIndex] ?? STAGES[0];
   const currentWave = currentStage.waves[waveIndex];
+
+  const toggleDeckHero = (id: string) => {
+    if (deckIds.includes(id)) {
+      if (deckIds.length <= 1) return;
+      const next = deckIds.filter((value) => value !== id);
+      setDeckIds(next);
+      window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+      return;
+    }
+    if (deckIds.length >= deckSlotCount) return;
+    const next = [...deckIds, id];
+    setDeckIds(next);
+    window.localStorage.setItem("btw-deck-ids", JSON.stringify(next));
+  };
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
@@ -383,12 +403,15 @@ function App() {
         <section className="stage-select-card">
           <div className="stage-select-kicker">BREAK THE WALLS</div>
           <h1>STAGE SELECT</h1>
-          <p className="stage-select-sub">해금된 전장을 선택하고 성을 돌파하세요.</p>
+          <p className="stage-select-sub">영웅은 뽑기로 획득하고, 영지는 성장할수록 전투 슬롯이 늘어납니다.</p>
+          <div className="stage-select-stats"><span>🏯 영지 Lv.<b>{kingdomLevel}</b></span><span>⚔️ 전투 슬롯 <b>{deckIds.length}/{deckSlotCount}</b></span></div>
+          <button className="deck-builder-open" onClick={() => setDeckEditMode((value) => !value)}>{deckEditMode ? "전장 선택으로 돌아가기" : "⚔️ 영웅 편성"}</button>
+          {deckEditMode && <div className="deck-builder"><div className="deck-builder-title">보유 영웅 · 개발자 계정이라 현재 전원 보유</div><div className="deck-builder-grid">{DECK_IDS.map((id) => { const hero = HEROES.find((value) => value.id === id)!; const selected = deckIds.includes(id); const full = !selected && deckIds.length >= deckSlotCount; return <button key={id} className={`deck-builder-card ${selected ? "selected" : ""} ${full ? "disabled" : ""}`} disabled={full} onClick={() => toggleDeckHero(id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{selected ? "✓ 출전" : "보유"}</small></button>; })}</div><div className="deck-builder-slots">{Array.from({ length: deckSlotCount }, (_, index) => <div key={index} className={`deck-slot ${deckIds[index] ? "filled" : ""}`}>{deckIds[index] ? HEROES.find((hero) => hero.id === deckIds[index])?.name : "빈 슬롯"}</div>)}</div></div>}
           <div className="stage-select-stats">
             <span>👑 Kingdom Gold <b>{kingdomGold.toLocaleString()}</b></span>
             <span>🏆 Clear <b>{clearedStages.length}/{STAGES.length}</b></span>
           </div>
-          <div className="stage-grid">
+          {!deckEditMode && <div className="stage-grid">
             {STAGES.map((stage) => {
               const unlocked = stage.id <= unlockedStage;
               const cleared = clearedStages.includes(stage.id);
@@ -444,40 +467,27 @@ function App() {
         </div>
 
         <div className="deck-panel">
-          <button className="swap-btn" onClick={() => setDeckPage(0)} disabled={deckPage === 0}>▲</button>
           <div className="deck-slots">
             {visibleDeck.map((hero) => {
               const cooldownLeft = deployCooldowns[hero.id] ?? 0;
-              const unlocked = isHeroUnlocked(hero.id);
-              const disabled = !unlocked || battleGold < hero.cost || cooldownLeft > 0;
+              const disabled = battleGold < hero.cost || cooldownLeft > 0;
               return (
-                <button key={hero.id} className={`hero-card ${disabled ? "disabled" : ""} ${!unlocked ? "locked" : ""}`} onClick={() => deploy(hero)}>
-                  <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
-                  <div className="hero-name">{hero.name} <small>{unlocked ? `Lv.${getUnitLevel(hero.id)}` : "🔒 LOCKED"}</small></div>
-                  <div className="hero-meta"><span>{hero.role}</span><b>{unlocked ? `🪙 ${hero.cost}` : `🔓 STAGE ${HERO_UNLOCK_STAGE[hero.id]}`}</b></div>
-                  <div className="hero-combat-type">
-                    <span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span>
-                    <span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span>
-                  </div>
-                  <div className="hero-ability">
-                    {hero.ability === "guard" && "🛡️ 피해 감소 22%"}
-                    {hero.ability === "regen" && "✚ 초당 HP 회복"}
-                    {hero.ability === "crit" && "⚡ 28% 치명타"}
-                    {hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}
-                    {!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}
-                    {!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}
-                  </div>
-                  <div className="cooldown">{!unlocked ? `STAGE ${HERO_UNLOCK_STAGE[hero.id]} 클리어로 해금` : cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
-                  {unlocked && <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={(event) => { event.stopPropagation(); upgradeUnit(hero.id); }}>
-                    {getUpgradeCost(hero.id) === 0 ? "MAX" : `강화 👑${getUpgradeCost(hero.id)}`}
-                  </button>}
-                </button>
+                <div key={hero.id} className={`hero-card-wrap ${disabled ? "disabled" : ""}`}>
+                  <button className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
+                    <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
+                    <div className="hero-name">{hero.name} <small>Lv.{getUnitLevel(hero.id)}</small></div>
+                    <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
+                    <div className="hero-combat-type"><span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span><span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span></div>
+                    <div className="hero-ability">{hero.ability === "guard" && "🛡️ 피해 감소 22%"}{hero.ability === "regen" && "✚ 초당 HP 회복"}{hero.ability === "crit" && "⚡ 28% 치명타"}{hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}{!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}{!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}</div>
+                    <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
+                  </button>
+                  <button className="upgrade-btn" disabled={getUpgradeCost(hero.id) === 0 || kingdomGold < getUpgradeCost(hero.id)} onClick={() => upgradeUnit(hero.id)}>{getUpgradeCost(hero.id) === 0 ? "MAX" : `강화 👑${getUpgradeCost(hero.id)}`}</button>
+                </div>
               );
             })}
           </div>
-          <button className="swap-btn" onClick={() => setDeckPage(1)} disabled={deckPage === 1}>▼</button>
         </div>
-        <div className="deck-indicator">덱 {deckPage + 1}/2 · 🔓 해금된 영웅만 출격 가능 · ▲▼ 스왑</div>
+        <div className="deck-indicator">영웅 편성 {deckIds.length}/{deckSlotCount} · 영지 Lv.{kingdomLevel} · 영웅은 추후 뽑기로 획득</div>
       </section>
 
       <section className="battle-info">
