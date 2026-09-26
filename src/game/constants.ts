@@ -61,7 +61,7 @@ export const ELEMENT_CLASS: Record<ElementType, string> = {
   fire: "el-fire",
 };
 
-export const BATTLE_GOLD_MAX = 9999;
+export const BATTLE_GOLD_MAX = 9999;\nexport const SUMMON_GEM_COST = 100;\nexport const INITIAL_GEMS = 300;
 export const MOVE_SPEED_MULTIPLIER = 1.8;
 export const KNOCKBACK_DISTANCE = 7;
 export const KNOCKBACK_MAX_COUNT = 3;
