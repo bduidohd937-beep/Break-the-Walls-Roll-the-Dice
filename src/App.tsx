@@ -1,109 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
-
-type ElementType = "neutral" | "dark" | "fire";
-type Team = "hero" | "enemy";
-
-type UnitDef = {
-  id: string;
-  name: string;
-  sprite: string;
-  element: ElementType;
-  hp: number;
-  atk: number;
-  speed: number;
-  range: number;
-  attackInterval: number;
-  cost: number;
-  cooldown: number;
-  role: string;
-  effect?: "burn";
-};
-
-type Unit = UnitDef & {
-  uid: number;
-  team: Team;
-  x: number;
-  currentHp: number;
-  attackTimer: number;
-  cooldownTimer: number;
-  hitFlash: number;
-  attackFlash: number;
-  knockbackCount: number;
-  alive: boolean;
-};
-
-const HEROES: UnitDef[] = [
-  { id: "goblin", name: "고블린", sprite: "👺", element: "neutral", hp: 90, atk: 14, speed: 48, range: 34, attackInterval: 0.9, cost: 50, cooldown: 2.5, role: "근접" },
-  { id: "fireGoblin", name: "화염 고블린", sprite: "👺", element: "fire", hp: 82, atk: 24, speed: 43, range: 120, attackInterval: 1.2, cost: 90, cooldown: 4, role: "원거리", effect: "burn" },
-  { id: "shield", name: "철갑 방패병", sprite: "🛡️", element: "neutral", hp: 260, atk: 22, speed: 30, range: 32, attackInterval: 1.3, cost: 150, cooldown: 6, role: "탱커" },
-  { id: "archer", name: "왕국 궁수", sprite: "🏹", element: "neutral", hp: 120, atk: 38, speed: 38, range: 190, attackInterval: 1.35, cost: 180, cooldown: 7, role: "원거리" },
-  { id: "knight", name: "왕국 기사", sprite: "⚔️", element: "neutral", hp: 430, atk: 65, speed: 34, range: 40, attackInterval: 1.5, cost: 400, cooldown: 10, role: "근접 딜러" },
-  { id: "mage", name: "불꽃 마법사", sprite: "🧙", element: "fire", hp: 150, atk: 82, speed: 28, range: 210, attackInterval: 1.9, cost: 500, cooldown: 12, role: "광역 마법", effect: "burn" },
-  { id: "paladin", name: "성기사", sprite: "🧝", element: "dark", hp: 620, atk: 72, speed: 26, range: 42, attackInterval: 1.7, cost: 700, cooldown: 15, role: "탱커" },
-  { id: "assassin", name: "암살자", sprite: "🥷", element: "dark", hp: 210, atk: 145, speed: 64, range: 45, attackInterval: 1.8, cost: 900, cooldown: 18, role: "암살자" },
-  { id: "dragon", name: "성룡", sprite: "🐉", element: "fire", hp: 1250, atk: 220, speed: 30, range: 170, attackInterval: 2.4, cost: 1600, cooldown: 25, role: "광역" },
-  { id: "arthur", name: "아서왕", sprite: "👑", element: "dark", hp: 2100, atk: 330, speed: 25, range: 55, attackInterval: 2.6, cost: 3000, cooldown: 40, role: "전설" },
-];
-
-const ENEMIES: UnitDef[] = [
-  { id: "goblinE", name: "굶주린 고블린", sprite: "👺", element: "neutral", hp: 70, atk: 10, speed: 42, range: 30, attackInterval: 1.1, cost: 0, cooldown: 0, role: "일반" },
-  { id: "orcE", name: "오크 전사", sprite: "👹", element: "neutral", hp: 210, atk: 28, speed: 30, range: 35, attackInterval: 1.6, cost: 0, cooldown: 0, role: "전열" },
-  { id: "darkKnightE", name: "다크 나이트", sprite: "🗡️", element: "dark", hp: 520, atk: 82, speed: 28, range: 42, attackInterval: 1.5, cost: 0, cooldown: 0, role: "엘리트" },
-  { id: "fireOgreE", name: "화염의 거인 오거", sprite: "👹", element: "fire", hp: 1200, atk: 180, speed: 18, range: 55, attackInterval: 2.5, cost: 0, cooldown: 0, role: "강적" },
-];
-
-const DECK_IDS = ["goblin", "fireGoblin", "shield", "archer", "knight", "mage", "paladin", "assassin", "dragon", "arthur"];
-
-type Wave = Array<{ enemy: keyof typeof ENEMY_MAP; count: number; gap?: number }>;
-const ENEMY_MAP = {
-  goblin: ENEMIES[0],
-  orc: ENEMIES[1],
-  darkKnight: ENEMIES[2],
-  fireOgre: ENEMIES[3],
-} as const;
-
-const WAVES: Wave[] = [
-  [{ enemy: "goblin", count: 8, gap: 0.9 }],
-  [{ enemy: "goblin", count: 5, gap: 0.6 }, { enemy: "orc", count: 3, gap: 1.2 }],
-  [{ enemy: "goblin", count: 7, gap: 0.55 }, { enemy: "darkKnight", count: 1, gap: 2 }],
-  [{ enemy: "orc", count: 5, gap: 0.8 }, { enemy: "goblin", count: 10, gap: 0.45 }],
-  [{ enemy: "goblin", count: 8, gap: 0.45 }, { enemy: "orc", count: 4, gap: 0.9 }, { enemy: "fireOgre", count: 1, gap: 2.2 }],
-];
-
-const ELEMENT_LABEL: Record<ElementType, string> = {
-  neutral: "무속성",
-  dark: "어둠",
-  fire: "불",
-};
-
-const ELEMENT_CLASS: Record<ElementType, string> = {
-  neutral: "el-neutral",
-  dark: "el-dark",
-  fire: "el-fire",
-};
-
-const BATTLE_GOLD_MAX = 9999;
-const MOVE_SPEED_MULTIPLIER = 1.8;
-const KNOCKBACK_DISTANCE = 7;
-const KNOCKBACK_MAX_COUNT = 3;
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-function makeUnit(def: UnitDef, team: Team, x: number, uid: number): Unit {
-  return {
-    ...def,
-    uid,
-    team,
-    x,
-    currentHp: def.hp,
-    attackTimer: Math.random() * 0.5,
-    cooldownTimer: 0,
-    hitFlash: 0,
-    attackFlash: 0,
-    knockbackCount: 0,
-    alive: true,
-  };
-}
+import type { Unit, UnitDef } from "./game/types";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, clamp } from "./game/constants";
+import { makeUnit } from "./game/units/createUnit";
+import { applyKnockback } from "./game/combat/knockback";
+import { resolveSameTeamSpacing } from "./game/combat/collision";
+import { BattleUnit } from "./components/BattleUnit";
 
 function App() {
   const [battleGold, setBattleGold] = useState(500);
@@ -180,42 +82,6 @@ function App() {
         hitFlash: Math.max(0, u.hitFlash - dt),
         attackFlash: Math.max(0, u.attackFlash - dt),
       }));
-
-      const applyKnockback = (
-        target: Unit,
-        nextHp: number,
-        attackerTeam: Team,
-        attackerAtk: number,
-      ): Unit => {
-        const previousHp = target.currentHp;
-        const threshold = target.hp / (KNOCKBACK_MAX_COUNT + 1);
-        const previousStep = Math.floor((target.hp - previousHp) / threshold);
-        const nextStep = Math.floor((target.hp - Math.max(0, nextHp)) / threshold);
-        const shouldKnockback =
-          nextHp > 0 &&
-          nextStep > previousStep &&
-          target.knockbackCount < KNOCKBACK_MAX_COUNT;
-
-        if (!shouldKnockback) {
-          return {
-            ...target,
-            currentHp: nextHp,
-            hitFlash: 0.12,
-          };
-        }
-
-        const direction = attackerTeam === "hero" ? 1 : -1;
-        const powerScale = clamp(attackerAtk / 100, 0.7, 1.6);
-        return {
-          ...target,
-          currentHp: nextHp,
-          x: clamp(target.x + direction * KNOCKBACK_DISTANCE * powerScale, 9, 87),
-          attackTimer: Math.max(target.attackTimer, 0.35),
-          hitFlash: 0.28,
-          attackFlash: 0,
-          knockbackCount: target.knockbackCount + 1,
-        };
-      };
 
       // Spawn the fixed wave sequence.
       const wave = WAVES[waveRef.current];
@@ -315,30 +181,7 @@ function App() {
         }
       }
 
-      // Keep units from stacking into the same pixel. Same-team units slide apart,
-      // while enemy units are allowed to meet so attack range still controls the frontline.
-      nextHeroes = nextHeroes.filter((h) => h.currentHp > 0);
-      nextEnemies = nextEnemies.filter((e) => e.currentHp > 0);
-
-      const resolveSameTeamSpacing = (units: Unit[]) => {
-        const MIN_GAP = 3.2;
-        const sorted = [...units].sort((a, b) => a.x - b.x);
-
-        for (let i = 1; i < sorted.length; i++) {
-          const left = sorted[i - 1];
-          const right = sorted[i];
-          const gap = right.x - left.x;
-
-          if (gap >= MIN_GAP) continue;
-
-          const push = (MIN_GAP - gap) / 2;
-          left.x = clamp(left.x - push, 9, 87);
-          right.x = clamp(right.x + push, 9, 87);
-        }
-
-        return units.map((unit) => sorted.find((candidate) => candidate.uid === unit.uid) ?? unit);
-      };
-
+      // Keep same-team units from stacking into the same position.
       nextHeroes = resolveSameTeamSpacing(nextHeroes);
       nextEnemies = resolveSameTeamSpacing(nextEnemies);
 
@@ -461,24 +304,6 @@ function App() {
         </div>
       )}
     </main>
-  );
-}
-
-function BattleUnit({ unit }: { unit: Unit }) {
-  return (
-    <div
-      className={`battle-unit ${unit.team} ${ELEMENT_CLASS[unit.element]} ${unit.hitFlash > 0 ? "hit" : ""} ${unit.attackFlash > 0 ? "attacking" : ""}`}
-      style={{ left: `${unit.x}%` }}
-      title={`${unit.name} · ${ELEMENT_LABEL[unit.element]}`}
-    >
-      <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>
-      <div className="unit-sprite">
-        {unit.sprite}<span className="unit-aura" />
-        {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}/3</span>}
-      </div>
-      <div className="unit-name">{unit.name}</div>
-      {unit.effect === "burn" && unit.attackFlash > 0 && <div className="attack-effect">✦</div>}
-    </div>
   );
 }
 
