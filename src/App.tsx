@@ -276,6 +276,8 @@ function App() {
         if (distance > enemy.range / 10) {
           nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
+          const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
+          const attackDamage = enragedBoss ? enemy.atk * 1.2 : enemy.atk;
           const splashRadius = enemy.splashRadius ?? 0;
           const hitTargets = enemy.attackType === "splash"
             ? nextHeroes
@@ -286,12 +288,12 @@ function App() {
           for (const targetUid of hitTargets) {
             const hitIndex = nextHeroes.findIndex((heroTarget) => heroTarget.uid === targetUid);
             if (hitIndex < 0) continue;
-            const damage = incomingDamage(nextHeroes[hitIndex], enemy.atk);
+            const damage = incomingDamage(nextHeroes[hitIndex], attackDamage);
             nextHeroes[hitIndex] = applyKnockback(
               nextHeroes[hitIndex],
               nextHeroes[hitIndex].currentHp - damage,
               "enemy",
-              enemy.atk,
+              attackDamage,
             );
             const popupId = popupUidRef.current++;
             setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: nextHeroes[hitIndex].x, value: Math.max(1, Math.round(damage)), critical: false }]);
@@ -536,7 +538,7 @@ function App() {
 
           {currentStage.waveMeta[waveIndex]?.boss && (
             <div className="boss-bar">
-              <div className="boss-title">🔥 BOSS · 화염의 거인</div>
+              <div className="boss-title">🔥 BOSS · 화염의 거인 {bossUnit && bossUnit.currentHp / bossUnit.hp <= 0.5 ? "· ENRAGED" : ""}</div>
               <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
               <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
             </div>
