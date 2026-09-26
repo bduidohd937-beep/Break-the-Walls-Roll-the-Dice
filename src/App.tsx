@@ -80,19 +80,37 @@ function App() {
         return next;
       });
 
-      let nextHeroes = heroesRef.current.map((u) => updateKnockback({
-        ...u,
-        attackTimer: Math.max(0, u.attackTimer - dt),
-        hitFlash: Math.max(0, u.hitFlash - dt),
-        attackFlash: Math.max(0, u.attackFlash - dt),
-      }, dt));
+      let nextHeroes = heroesRef.current.map((u) => {
+        const unit = updateKnockback({
+          ...u,
+          attackTimer: Math.max(0, u.attackTimer - dt),
+          hitFlash: Math.max(0, u.hitFlash - dt),
+          attackFlash: Math.max(0, u.attackFlash - dt),
+        }, dt);
+        if (unit.burnTimer <= 0) return unit;
+        const burnTick = Math.min(unit.burnTimer, dt);
+        return {
+          ...unit,
+          currentHp: Math.max(0, unit.currentHp - unit.burnDamage * burnTick),
+          burnTimer: Math.max(0, unit.burnTimer - dt),
+        };
+      });
 
-      let nextEnemies = enemiesRef.current.map((u) => updateKnockback({
-        ...u,
-        attackTimer: Math.max(0, u.attackTimer - dt),
-        hitFlash: Math.max(0, u.hitFlash - dt),
-        attackFlash: Math.max(0, u.attackFlash - dt),
-      }, dt));
+      let nextEnemies = enemiesRef.current.map((u) => {
+        const unit = updateKnockback({
+          ...u,
+          attackTimer: Math.max(0, u.attackTimer - dt),
+          hitFlash: Math.max(0, u.hitFlash - dt),
+          attackFlash: Math.max(0, u.attackFlash - dt),
+        }, dt);
+        if (unit.burnTimer <= 0) return unit;
+        const burnTick = Math.min(unit.burnTimer, dt);
+        return {
+          ...unit,
+          currentHp: Math.max(0, unit.currentHp - unit.burnDamage * burnTick),
+          burnTimer: Math.max(0, unit.burnTimer - dt),
+        };
+      });
 
       // Spawn the fixed wave sequence.
       const wave = WAVES[waveRef.current];
@@ -138,15 +156,15 @@ function App() {
           const damage = hero.atk * advantage;
           const targetIndex = nextEnemies.findIndex((e) => e.uid === target.uid);
           if (targetIndex >= 0) {
-            nextEnemies[targetIndex] = {
-              ...applyKnockback(
-                nextEnemies[targetIndex],
-                nextEnemies[targetIndex].currentHp - damage,
-                "hero",
-                hero.atk,
-              ),
-              attackFlash: 0.08,
-            };
+            const hitTarget = applyKnockback(
+              nextEnemies[targetIndex],
+              nextEnemies[targetIndex].currentHp - damage,
+              "hero",
+              hero.atk,
+            );
+            nextEnemies[targetIndex] = hero.effect === "burn"
+              ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
+              : { ...hitTarget, attackFlash: 0.08 };
           }
           goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + 20);
           setBattleGold(Math.floor(goldRef.current));
