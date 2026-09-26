@@ -524,3 +524,29 @@ button { font: inherit; }
 @keyframes resourceBurst{0%{opacity:1;transform:scale(.5) translate(0,0)}100%{opacity:0;transform:scale(1.5) translate(16px,-16px)}}
 @keyframes workerApproach{0%,25%,100%{transform:translateX(0)}45%,70%{transform:translateX(34px)}}
 @keyframes workerSwing{0%,42%,100%{transform:rotate(-45deg)}55%{transform:rotate(42deg)}65%{transform:rotate(-18deg)}}
+
+
+/* Hero management */
+.hero-management{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(240px,.75fr);gap:12px;margin-top:16px}
+.hero-roster{min-width:0}
+.deck-builder-card.focused{outline:2px solid #ffe49a;outline-offset:-3px}
+.hero-detail{padding:15px;border:2px solid #314657;background:linear-gradient(#102330,#08131b)}
+.hero-detail.locked{opacity:.65}
+.hero-detail-head{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid #294151}
+.hero-detail-head>span{font-size:58px}
+.hero-detail-head div{display:flex;flex-direction:column;gap:3px;text-align:left}
+.hero-detail-head small{color:#7894a5;font-size:8px}
+.hero-detail-head h2{margin:0;color:#f2f8fb;font-size:17px}
+.hero-detail-head b{color:#ffe49a;font-size:10px}
+.hero-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:12px}
+.hero-stat-grid div{display:flex;flex-direction:column;gap:3px;padding:9px;border:1px solid #263d4c;background:#071119}
+.hero-stat-grid span{color:#6f8b9c;font-size:7px}
+.hero-stat-grid b{color:#eaf7ff;font-size:11px}
+.hero-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.hero-detail-actions button{padding:10px 6px;border:1px solid #567084;background:#173247;color:#eaf7ff;font-weight:900;font-size:9px;cursor:pointer}
+.hero-detail-actions button:last-child{border-color:#9c7a32;background:#49370f;color:#ffe49a}
+.hero-detail-actions button:disabled{opacity:.35;cursor:not-allowed}
+.hero-detail-actions .remove-deck{background:#3a1d20;border-color:#74434a;color:#ffc5c5}
+.upgrade-preview,.hero-locked-message{margin-top:8px;padding:8px;border:1px solid #243947;background:#071119;color:#7894a5;font-size:8px}
+.hero-management>.deck-builder-slots{grid-column:1/-1}
+@media(max-width:800px){.hero-management{grid-template-columns:1fr}.hero-management>.deck-builder-slots{grid-column:1}}
