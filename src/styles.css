@@ -597,3 +597,17 @@ button { font: inherit; }
 .gather-region-progress span.locked{opacity:.45}
 .region-bonus{padding:7px;border:1px solid #66572d;background:#29230e;color:#ffe49a;font-size:8px;text-align:center}
 @media(max-width:700px){.gather-region-progress{grid-template-columns:1fr 1fr}.gather-region-progress>b{grid-column:1/-1}}
+
+
+/* Hub overlap fix */
+.stage-select-shell{min-height:100dvh;height:100dvh;overflow:hidden;padding:12px}
+.stage-select-card.main-hub-card{position:relative;width:min(1100px,100%);height:calc(100dvh - 24px);min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding-bottom:92px;scrollbar-gutter:stable}
+.main-nav{position:sticky;z-index:30;bottom:-92px;margin:24px -1px -92px;min-height:68px}
+.main-nav.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+.main-nav button{min-width:0}
+.kingdom-home,.gather-hub,.hero-center,.stage-grid,.hub-summon{min-width:0}
+@media(max-width:800px){
+  .stage-select-shell{padding:6px}
+  .stage-select-card.main-hub-card{height:calc(100dvh - 12px);padding-bottom:80px}
+  .main-nav{bottom:-80px;margin-bottom:-80px;min-height:58px}
+}
