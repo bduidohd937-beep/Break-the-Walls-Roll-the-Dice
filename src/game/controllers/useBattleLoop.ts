@@ -100,17 +100,13 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         };
         const uid = 1000 + uidRef.current++;
         nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
-        if (waveMeta?.boss && stage.bossName && !bossSpawnAnnouncedRef.current && ["morgarE", "ignisE", "voltrasE", "arcanonE"].includes(enemyDef.id)) {
-          bossSpawnAnnouncedRef.current = true;
-          setNotice(`⚠ BOSS 등장 · ${stage.bossName}`);
-        }
         spawnRef.current += 1;
         spawnTimerRef.current = group.gap ?? 0.8;
       }
 
       const bossMechanic = stage.bossMechanic;
       const bossWaveActive = Boolean(waveMeta?.boss && bossMechanic);
-      const bossId = ({ 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" } as Record<number, string>)[stage.id];
+      const bossId = ({ 9: "fireOgreE", 20: "morgarE", 30: "ignisE", 40: "voltrasE", 50: "arcanonE" } as Record<number, string>)[stage.id];
       const livingBoss = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);
       const bossAlive = bossWaveActive && Boolean(livingBoss);
       if (bossAlive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
@@ -163,7 +159,18 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               nextEnemies.every((enemy) => enemy.currentHp <= 0);
             if (finalWaveCleared) {
               const damage = hero.atk * 1.8;
-              enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
+              if (stage.type === "boss" && bossId && !bossSpawnAnnouncedRef.current && damage >= enemyCastleRef.current) {
+                const bossDef = ENEMY_MAP[({ 9: "fireOgre", 20: "morgar", 30: "ignis", 40: "voltras", 50: "arcanon" } as const)[stage.id as 9 | 20 | 30 | 40 | 50]];
+                const hpScale = 1 + stageRef.current * STAGE_HP_SCALE + waveRef.current * WAVE_HP_SCALE + 0.35;
+                const atkScale = 1 + stageRef.current * STAGE_ATK_SCALE + waveRef.current * WAVE_ATK_SCALE + 0.15;
+                nextEnemies.push(makeUnit({ ...bossDef, hp: Math.round(bossDef.hp * hpScale), atk: Math.round(bossDef.atk * atkScale) }, "enemy", 90, 1000 + uidRef.current++));
+                bossSpawnAnnouncedRef.current = true;
+                enemyCastleRef.current = Math.ceil(stage.enemyCastleHp / 2);
+                nextHeroes = nextHeroes.map((unit) => ({ ...unit, knockbackTimer: 0.22, knockbackFromX: unit.x, knockbackTargetX: Math.max(9, unit.x - 40), attackTimer: Math.max(unit.attackTimer, 0.5), attackFlash: 0 }));
+                setNotice(`⚠ 성벽 붕괴 저지 · ${stage.bossName ?? "BOSS"} 등장!`);
+              } else {
+                enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
+              }
               setEnemyCastleHp(enemyCastleRef.current);
               setCastleHit("enemy");
               nextHeroes[i].attackFlash = 0.16;
