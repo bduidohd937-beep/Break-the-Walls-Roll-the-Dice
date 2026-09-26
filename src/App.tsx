@@ -4,7 +4,7 @@ import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, clamp } from "./game/constants";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
-import { resolveSameTeamSpacing } from "./game/combat/collision";
+import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 
 function App() {
@@ -184,6 +184,10 @@ function App() {
       // Keep same-team units from stacking into the same position.
       nextHeroes = resolveSameTeamSpacing(nextHeroes);
       nextEnemies = resolveSameTeamSpacing(nextEnemies);
+
+      const frontline = resolveFrontlineCollision(nextHeroes, nextEnemies);
+      nextHeroes = frontline.heroes;
+      nextEnemies = frontline.enemies;
 
       const deadEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (deadEnemies > 0) goldRef.current += deadEnemies * 20;
