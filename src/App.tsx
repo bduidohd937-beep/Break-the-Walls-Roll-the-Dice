@@ -9,13 +9,13 @@ import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damag
 import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat/collision";
 import { BattleUnit } from "./components/BattleUnit";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
-import { GATHER_REGIONS, type GatherRegionKey } from "./game/systems/gathering";
+import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
+import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "./game/systems/summon";
+import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
-type SummonGrade = "일반" | "희귀" | "영웅" | "전설" | "신화" | "초월";
-type SummonStorageItem = { uid: number; heroId: string; grade: SummonGrade; };
 type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
 const DEV_MODE = true;
 
@@ -127,12 +127,9 @@ function App() {
   const deployCooldownsRef = useRef<Record<string, number>>({});
   const deckSlotCount = 10;
   const visibleDeck = useMemo(() => deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[], [deckIds]);
-  const economyMaxLevel = 8;
-  const battleGoldMax = 1000 + (facilityLevels.vault - 1) * 250 + (economyLevel - 1) * 1250;
-  const goldPerSecond = 18 + (economyLevel - 1) * 9;
-  const trainingBonus = 1 + (facilityLevels.training - 1) * 0.02;
-  const battleStartGold = 300 + (facilityLevels.vault - 1) * 50;
-  const economyUpgradeCost = economyLevel >= economyMaxLevel ? 0 : 120 + (economyLevel - 1) * 100;
+  const economyMaxLevel = ECONOMY_MAX_LEVEL;
+  const { battleGoldMax, goldPerSecond, trainingBonus, battleStartGold, economyUpgradeCost } =
+    getBattleEconomy(economyLevel, facilityLevels.vault, facilityLevels.training);
 
   const kingdomUpgradeCost = 400 * kingdomLevel;
   const kingdomProductionBonus = 1 + Math.floor((kingdomLevel - 1) / 2) * 0.25;
@@ -173,11 +170,7 @@ function App() {
   const getGatherAttackDamage = (type: "wood" | "stone") => {
     const heroId = workers[type];
     const hero = heroId ? HEROES.find((unit) => unit.id === heroId) : undefined;
-    const baseDamage = type === "wood" ? 2 : 3;
-    if (!hero) return baseDamage;
-    const levelScale = getLevelMultiplier(hero.id);
-    const attackContribution = Math.max(1, Math.floor((hero.atk * levelScale) / 55));
-    return baseDamage + attackContribution;
+    return calculateGatherAttackDamage(type, hero?.atk, hero ? getLevelMultiplier(hero.id) : 1);
   };
   const gatherResource = (type: "wood" | "stone") => {
     setGatherHit(type);
@@ -199,7 +192,7 @@ function App() {
   const sellResource = (type: "wood" | "stone") => {
     const amount = resources[type];
     if (amount <= 0) return;
-    const unitPrice = Math.round((type === "wood" ? 5 : 8) * kingdomSellBonus);
+    const unitPrice = getResourceSellPrice(type, kingdomSellBonus);
     const next = { ...resources, [type]: 0 };
     saveResources(next);
     setKingdomGold((gold) => {
@@ -237,15 +230,14 @@ function App() {
   };
   const getGatherEfficiency = (heroId?: string) => {
     if (!heroId) return 1;
-    const levelBonus = 1 + (getUnitLevel(heroId) - 1) * 0.03;
     const grade = getHeroGrade(heroId).name;
-    return levelBonus * (GATHER_GRADE_BONUS[grade] ?? 1);
+    return calculateGatherEfficiency(getUnitLevel(heroId), GATHER_GRADE_BONUS[grade] ?? 1);
   };
   const getAutoGatherAmount = (type: "wood" | "stone") => {
     const heroId = workers[type];
     if (!heroId) return 0;
     const facilityLevel = type === "wood" ? facilityLevels.lumber : facilityLevels.quarry;
-    return Math.max(1, Math.floor(facilityLevel * kingdomProductionBonus * getGatherEfficiency(heroId)));
+    return calculateAutoGatherAmount(facilityLevel, kingdomProductionBonus, getGatherEfficiency(heroId));
   };
 
   const getSoulBonuses = (id: string) => calculateSoulBonuses(heroSouls[id] ?? 0);
@@ -782,22 +774,7 @@ function App() {
   const currentStage = STAGES[stageIndex] ?? STAGES[0];
   const currentWave = currentStage.waves[waveIndex];
 
-  const summonGrade = (minimumHero = false): SummonGrade => {
-    if (minimumHero) {
-      const roll = Math.random() * 10;
-      if (roll < 0.05) return "초월";
-      if (roll < 0.5) return "신화";
-      if (roll < 3) return "전설";
-      return "영웅";
-    }
-    const roll = Math.random() * 100;
-    if (roll < 0.05) return "초월";
-    if (roll < 0.5) return "신화";
-    if (roll < 3) return "전설";
-    if (roll < 10) return "영웅";
-    if (roll < 35) return "희귀";
-    return "일반";
-  };
+  const summonGrade = (minimumHero = false): SummonGrade => rollSummonGrade(minimumHero);
   const rollHero = (grade: SummonGrade) => {
     const pool = HEROES.filter((hero) => getHeroGrade(hero.id).name === grade);
     const fallback = HEROES.filter((hero) => ["일반", "희귀", "영웅", "전설"].includes(getHeroGrade(hero.id).name));
@@ -812,12 +789,10 @@ function App() {
     const items: SummonStorageItem[] = Array.from({ length: count }, (_, index) => {
       nextLegendPity += 1;
       nextMythPity += 1;
-      let grade: SummonGrade;
-      if (nextMythPity >= 500) grade = "신화";
-      else if (nextLegendPity >= 100) grade = "전설";
-      else grade = summonGrade(count === 11 && index === count - 1);
-      if (["전설", "신화", "초월"].includes(grade)) nextLegendPity = 0;
-      if (["신화", "초월"].includes(grade)) nextMythPity = 0;
+      const pityResult = applySummonPity(nextLegendPity, nextMythPity, summonGrade(count === 11 && index === count - 1));
+      const grade = pityResult.grade;
+      nextLegendPity = pityResult.legendPity;
+      nextMythPity = pityResult.mythPity;
       const hero = rollHero(grade);
       return { uid: summonUidRef.current++, heroId: hero.id, grade };
     });
@@ -877,8 +852,7 @@ function App() {
   const shardStoredHero = (uid: number) => {
     const item = summonStorage.find((entry) => entry.uid === uid);
     if (!item) return;
-    const shardValue: Record<SummonGrade, number> = { 일반: 5, 희귀: 15, 영웅: 40, 전설: 120, 신화: 400, 초월: 1500 };
-    const nextShards = soulShards + shardValue[item.grade];
+    const nextShards = soulShards + SHARD_VALUE[item.grade];
     const nextTranscend = transcendShards + (item.grade === "신화" ? 1 : item.grade === "초월" ? 5 : 0);
     const nextStorage = summonStorage.filter((entry) => entry.uid !== uid);
     setSoulShards(nextShards); setTranscendShards(nextTranscend); setSummonStorage(nextStorage);
@@ -916,10 +890,9 @@ function App() {
   };
   const bulkShardStoredHeroes = (maxGrade: "일반" | "희귀") => {
     const allowed = maxGrade === "일반" ? new Set<SummonGrade>(["일반"]) : new Set<SummonGrade>(["일반", "희귀"]);
-    const shardValue: Record<SummonGrade, number> = { 일반: 5, 희귀: 15, 영웅: 40, 전설: 120, 신화: 400, 초월: 1500 };
     const targets = summonStorage.filter((item) => allowed.has(item.grade));
     if (!targets.length) return;
-    const gain = targets.reduce((sum, item) => sum + shardValue[item.grade], 0);
+    const gain = targets.reduce((sum, item) => sum + SHARD_VALUE[item.grade], 0);
     const ids = new Set(targets.map((item) => item.uid));
     const nextStorage = summonStorage.filter((item) => !ids.has(item.uid));
     const nextShards = soulShards + gain;
