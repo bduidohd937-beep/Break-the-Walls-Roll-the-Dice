@@ -1,0 +1,34 @@
+export type ElementType = "neutral" | "dark" | "fire";
+export type Team = "hero" | "enemy";
+
+export type UnitDef = {
+  id: string;
+  name: string;
+  sprite: string;
+  element: ElementType;
+  hp: number;
+  atk: number;
+  speed: number;
+  range: number;
+  attackInterval: number;
+  cost: number;
+  cooldown: number;
+  role: string;
+  effect?: "burn";
+};
+
+export type Unit = UnitDef & {
+  uid: number;
+  team: Team;
+  x: number;
+  currentHp: number;
+  attackTimer: number;
+  cooldownTimer: number;
+  hitFlash: number;
+  attackFlash: number;
+  knockbackCount: number;
+  alive: boolean;
+};
+
+export type WaveGroup = { enemy: "goblin" | "orc" | "darkKnight" | "fireOgre"; count: number; gap?: number };
+export type Wave = WaveGroup[];
