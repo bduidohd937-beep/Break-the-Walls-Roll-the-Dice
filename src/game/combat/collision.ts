@@ -1,5 +1,4 @@
 import type { Unit } from "../types";
-import { clamp } from "../constants";
 import { MIN_UNIT_GAP, clamp } from "../constants";
 
 export function resolveSameTeamSpacing(units: Unit[]): Unit[] {
