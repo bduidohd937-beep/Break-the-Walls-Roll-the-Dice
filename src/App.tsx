@@ -58,7 +58,7 @@ function App() {
     } catch { return DECK_IDS.slice(0, 5); }
   });
   const [deckEditMode, setDeckEditMode] = useState(false);
-  const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage">("home");
+  const [mainTab, setMainTab] = useState<"home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion">("home");
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Number(window.localStorage.getItem("btw-kingdom-level") ?? "1")));
   const [facilityLevels, setFacilityLevels] = useState<{ lumber: number; quarry: number }>(() => {
     try { const saved = JSON.parse(window.localStorage.getItem("btw-facility-levels") ?? "{}"); return { lumber: Math.max(1, Number(saved.lumber) || 1), quarry: Math.max(1, Number(saved.quarry) || 1) }; } catch { return { lumber: 1, quarry: 1 }; }
@@ -85,6 +85,9 @@ function App() {
   });
   const [soulShards, setSoulShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-soul-shards") ?? "0")));
   const [transcendShards, setTranscendShards] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-transcend-shards") ?? "0")));
+  const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
+    try { const saved = JSON.parse(window.localStorage.getItem("btw-fusion-records") ?? "[]"); return Array.isArray(saved) ? saved : []; } catch { return []; }
+  });
   const summonUidRef = useRef(Date.now());
   const [legendPity, setLegendPity] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-legend-pity") ?? "0")));
   const [mythPity, setMythPity] = useState(() => Math.max(0, Number(window.localStorage.getItem("btw-myth-pity") ?? "0")));
@@ -763,6 +766,28 @@ function App() {
     window.localStorage.setItem("btw-soul-shards", String(nextShards));
     window.localStorage.setItem("btw-summon-storage", JSON.stringify(nextStorage));
   };
+  const buyHeroSoulWithShards = (heroId: string) => {
+    const cost = 100;
+    if (!ownedHeroes.includes(heroId) || soulShards < cost || (heroSouls[heroId] ?? 0) >= 30) return;
+    const nextSouls = { ...heroSouls, [heroId]: (heroSouls[heroId] ?? 0) + 1 };
+    const nextShards = soulShards - cost;
+    setHeroSouls(nextSouls); setSoulShards(nextShards);
+    window.localStorage.setItem("btw-hero-souls", JSON.stringify(nextSouls));
+    window.localStorage.setItem("btw-soul-shards", String(nextShards));
+  };
+  const fusionRecipes = [
+    { id: "unknown-01", name: "??? · 봉인된 왕", icon: "👑", materials: [DECK_IDS[18], DECK_IDS[17]].filter(Boolean), shardCost: 10 },
+    { id: "unknown-02", name: "??? · 경계의 사신", icon: "☠️", materials: [DECK_IDS[19], DECK_IDS[16]].filter(Boolean), shardCost: 10 }
+  ];
+  const performFusion = (recipeId: string) => {
+    const recipe = fusionRecipes.find((entry) => entry.id === recipeId);
+    if (!recipe || fusionRecords.includes(recipeId) || transcendShards < recipe.shardCost || !recipe.materials.every((id) => ownedHeroes.includes(id))) return;
+    const nextRecords = [...fusionRecords, recipeId];
+    const nextShards = transcendShards - recipe.shardCost;
+    setFusionRecords(nextRecords); setTranscendShards(nextShards);
+    window.localStorage.setItem("btw-fusion-records", JSON.stringify(nextRecords));
+    window.localStorage.setItem("btw-transcend-shards", String(nextShards));
+  };
 
   const toggleDeckHero = (id: string) => {
     if (!ownedHeroes.includes(id)) return;
@@ -928,7 +953,7 @@ function App() {
                   </div>
                 </> : <div className="hero-management upgrade-only">
                   <div className="hero-roster"><div className="deck-builder-title">강화할 영웅 선택</div><div className="deck-builder-grid">{HEROES.map((hero) => { const heroOwned = ownedHeroes.includes(hero.id); return <button key={hero.id} className={`deck-builder-card ${!heroOwned ? "disabled" : ""} ${selectedHero.id === hero.id ? "focused" : ""}`} onClick={() => setSelectedHeroId(hero.id)}><span>{hero.sprite}</span><b>{hero.name}</b><small>{heroOwned ? `${getHeroGrade(hero.id).name} · Lv.${getUnitLevel(hero.id)} · 영혼 +${heroSouls[hero.id] ?? 0}` : "🔒 미보유"}</small></button>; })}</div></div>
-                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier * soulBonus.hp)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier * soulBonus.atk)}</b></div><div><span>공격속도</span><b>{(selectedHero.attackInterval * soulBonus.speed).toFixed(2)}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-soul-panel"><div className="hero-soul-head"><span>영혼 성장</span><b>+{soulPlus}/30</b></div><div className="hero-soul-track"><i style={{width:`${(soulPlus / 30) * 100}%`}}/></div><div className="hero-soul-milestones">{soulMilestones.map((value) => <div key={value} className={soulPlus >= value ? "reached" : ""}><b>+{value}</b><small>{value === 5 ? "HP +8%" : value === 10 ? "ATK +8%" : value === 15 ? "공속 +8%" : value === 20 ? "HP +12%" : value === 25 ? "ATK +12%" : "HP/ATK +10% · 공속 +5%"}</small></div>)}</div><div className="hero-soul-next">{soulPlus >= 30 ? "영혼 성장 MAX" : `다음 마일스톤 +${nextSoulMilestone} · 중복 영웅을 저장소에서 영혼으로 변환하세요.`}</div></div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
+                  <div className={`hero-detail ${!owned ? "locked" : ""}`}><div className="hero-detail-head"><span>{selectedHero.sprite}</span><div><small>{grade.name} · {selectedHero.role}</small><h2>{selectedHero.name}</h2><b>Lv.{level}</b></div></div>{owned ? <><div className="hero-stat-grid"><div><span>HP</span><b>{Math.round(selectedHero.hp * multiplier * soulBonus.hp)}</b></div><div><span>ATK</span><b>{Math.round(selectedHero.atk * multiplier * soulBonus.atk)}</b></div><div><span>공격속도</span><b>{(selectedHero.attackInterval * soulBonus.speed).toFixed(2)}s</b></div><div><span>등급</span><b>{grade.name}</b></div></div><div className="hero-soul-panel"><div className="hero-soul-head"><span>영혼 성장</span><b>+{soulPlus}/30</b></div><div className="hero-soul-track"><i style={{width:`${(soulPlus / 30) * 100}%`}}/></div><div className="hero-soul-milestones">{soulMilestones.map((value) => <div key={value} className={soulPlus >= value ? "reached" : ""}><b>+{value}</b><small>{value === 5 ? "HP +8%" : value === 10 ? "ATK +8%" : value === 15 ? "공속 +8%" : value === 20 ? "HP +12%" : value === 25 ? "ATK +12%" : "HP/ATK +10% · 공속 +5%"}</small></div>)}</div><div className="hero-soul-next">{soulPlus >= 30 ? "영혼 성장 MAX" : `다음 마일스톤 +${nextSoulMilestone} · 중복 영웅 또는 영혼 파편으로 성장할 수 있습니다.`}</div>{soulPlus < 30 && <button className="soul-shard-buy" disabled={soulShards < 100} onClick={() => buyHeroSoulWithShards(selectedHero.id)}>🧩 영혼 파편 100 → {selectedHero.name} 영혼 +1</button>}</div><div className="hero-detail-actions single"><button disabled={level >= 10 || kingdomGold < upgradeCost} onClick={() => upgradeUnit(selectedHero.id)}>{level >= 10 ? "MAX LEVEL" : `강화 · ${upgradeCost} 🪙`}</button></div><div className="upgrade-preview">{grade.name} 등급 강화 비용 적용 · HP / ATK +8% · 보유 {kingdomGold.toLocaleString()} 🪙</div></> : <div className="hero-locked-message">🎲 소환에서 획득해야 강화할 수 있습니다.</div>}</div>
                 </div>}
               </div>
             );
@@ -983,6 +1008,7 @@ function App() {
               <div className="summon-pity"><span>전설 이상 천장 <b>{legendPity}/100</b></span><span>신화 이상 천장 <b>{mythPity}/500</b></span></div>
               {summonMessage && <div className="summon-result">{summonMessage}</div>}
               <button className="open-storage-btn" onClick={() => setMainTab("storage")}>📦 저장소 열기 <b>{summonStorage.length}</b></button>
+              <button className="open-storage-btn fusion-open" onClick={() => setMainTab("fusion")}>⚗️ 영웅 합성소 <b>{fusionRecords.length}/{fusionRecipes.length}</b></button>
               <div className="owned-count">실사용 보유 영웅 {ownedHeroes.length}/{HEROES.length}</div>
             </div>
           )}
@@ -993,6 +1019,15 @@ function App() {
               <div className="storage-help">미보유 영웅은 <b>영입</b> · 보유 중복은 해당 영웅 <b>영혼 +1</b> · 필요 없으면 <b>영혼 파편</b>으로 변환</div>
               <div className="storage-bulk"><button onClick={bulkUseStoredHeroes}>미보유 일괄 영입</button><button onClick={() => bulkSoulStoredHeroes("희귀")}>희귀↓ 중복 일괄 영혼 +1</button><button onClick={() => bulkShardStoredHeroes("일반")}>일반 일괄 파편화</button><button onClick={() => bulkShardStoredHeroes("희귀")}>희귀↓ 일괄 파편화</button></div>
               <div className="summon-storage full">{summonStorage.length === 0 ? <div className="storage-empty">저장소가 비어 있습니다.</div> : summonStorage.map((item) => { const hero = HEROES.find((unit) => unit.id === item.heroId); if (!hero) return null; const owned = ownedHeroes.includes(hero.id); const soulLevel = heroSouls[hero.id] ?? 0; return <div key={item.uid} className={`storage-card grade-${item.grade}`}><div className="storage-hero"><span>{hero.sprite}</span><div><small>{item.grade} · 영혼 +{soulLevel}/30</small><b>{hero.name}</b></div></div><div className="storage-actions">{!owned ? <button onClick={() => useStoredHero(item.uid)}>영입</button> : <button disabled={soulLevel >= 30} onClick={() => soulStoredHero(item.uid)}>{soulLevel >= 30 ? "영혼 MAX" : "영혼 +1"}</button>}<button onClick={() => shardStoredHero(item.uid)}>파편화</button></div></div>; })}</div>
+            </div>
+          )}
+
+          {mainTab === "fusion" && (
+            <div className="summon-panel fusion-screen">
+              <div className="storage-screen-head"><button onClick={() => setMainTab("summon")}>← 소환으로</button><div><small>HERO FUSION</small><h2>⚗️ 영웅 합성소</h2></div><b>✦ {transcendShards}</b></div>
+              <div className="fusion-warning">??? 등급은 가챠에서 등장하지 않습니다. 지정된 영웅 족보와 초월 조각을 모아 합성합니다. 현재 레시피/영웅은 시스템 검증용 임시 데이터입니다.</div>
+              <div className="fusion-recipes">{fusionRecipes.map((recipe) => { const complete = recipe.materials.every((id) => ownedHeroes.includes(id)); const crafted = fusionRecords.includes(recipe.id); return <div key={recipe.id} className={`fusion-card ${crafted ? "crafted" : ""}`}><span>{recipe.icon}</span><div><small>SECRET RECIPE</small><h3>{recipe.name}</h3><p>{recipe.materials.map((id) => { const hero = HEROES.find((unit) => unit.id === id); return `${ownedHeroes.includes(id) ? "✓" : "✕"} ${hero?.name ?? id}`; }).join(" + ")}</p><b>필요 초월 조각 {recipe.shardCost}</b></div><button disabled={crafted || !complete || transcendShards < recipe.shardCost} onClick={() => performFusion(recipe.id)}>{crafted ? "족보 완성" : complete ? "합성" : "재료 부족"}</button></div>; })}</div>
+              <div className="fusion-book"><b>📖 발견한 족보</b><span>{fusionRecords.length}/{fusionRecipes.length}</span></div>
             </div>
           )}
 
