@@ -33,6 +33,7 @@ const makeStage = (id: number): StageDef => {
   const enemyPool = id <= 10 ? ["goblin", "orc"] as const : id <= 20 ? ["orc", "darkKnight", "archer"] as const : id <= 30 ? ["darkKnight", "fireMage", "fireOgre"] as const : ["archer", "assassin", "fireMage", "darkKnight"] as const;
   const enemyA = enemyPool[(id - 1) % enemyPool.length];
   const enemyB = enemyPool[id % enemyPool.length];
+  const bossEnemy = id === 20 ? "morgar" : id === 30 ? "ignis" : id === 40 ? "voltras" : id === 50 ? "arcanon" : id === 9 ? "fireOgre" : undefined;
   return {
     id,
     name: key.name ?? `퓨어 월드 전선 ${String(id).padStart(2, "0")}`,
@@ -51,7 +52,7 @@ const makeStage = (id: number): StageDef => {
       [{ enemy: enemyA, count: baseCount, gap: 0.65 }, { enemy: enemyB, count: Math.max(2, Math.floor(baseCount / 2)), gap: 1.1 }],
       [{ enemy: enemyB, count: baseCount + 1, gap: 0.6 }],
       [{ enemy: enemyA, count: baseCount + 2, gap: 0.55 }, { enemy: enemyB, count: Math.max(2, Math.floor(baseCount / 2)), gap: 0.9 }],
-      [{ enemy: enemyB, count: baseCount + (boss ? 4 : 2), gap: 0.5 }, ...(boss ? [{ enemy: "fireOgre" as const, count: Math.max(1, Math.ceil(id / 20)), gap: 1.8 }] : [])],
+      [{ enemy: enemyB, count: baseCount + (boss ? 4 : 2), gap: 0.5 }, ...(bossEnemy ? [{ enemy: bossEnemy, count: 1, gap: 2.2 }] : [])],
     ],
     waveMeta: [
       { name: "선발대", reward: 60 + id * 6 },
