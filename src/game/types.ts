@@ -65,4 +65,8 @@ export type StageDef = {
   clearReward: number;
   repeatReward: number;
   firstClearGems: number;
+  story?: string;
+  mechanic?: string;
+  bossName?: string;
+  implemented?: boolean;
 };
