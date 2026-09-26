@@ -15,6 +15,7 @@ import { SummonPanel } from "./components/SummonPanel";
 import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
 import { StageSelectPanel } from "./components/StageSelectPanel";
+import { BattleScreen } from "./components/BattleScreen";
 import { KINGDOM_UNLOCKS, FACILITY_DEFS, type FacilityKey } from "./game/systems/kingdom";
 import { GATHER_REGIONS, getAutoGatherAmount as calculateAutoGatherAmount, getGatherAttackDamage as calculateGatherAttackDamage, getGatherEfficiency as calculateGatherEfficiency, getResourceSellPrice, type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGradeByIndex, GRADE_GROWTH, GATHER_GRADE_BONUS, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
@@ -1106,126 +1107,20 @@ function App() {
     );
   }
 
-  return (
-    <main className="game-shell">
-      <header className="topbar">
-        <div>
-          <div className="game-title">BREAK THE WALLS</div>
-          <div className="sub-title">퓨어 월드 · STAGE {currentStage.id} · {currentStage.name}</div>
-        </div>
-        <div className="top-stats">
-          <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
-          <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()} / {battleGoldMax.toLocaleString()}</b></div>
-          <div className="stat-pill">💰 지갑 <b>Lv.{economyLevel}/{economyMaxLevel}</b></div>
-          <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
-          <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button><button className={`stat-pill auto-com-control ${autoCom ? "active" : ""}`} onClick={() => setAutoCom((value) => !value)}>🤖 AUTO {autoCom ? "ON" : "OFF"}</button>
-        </div>
-      </header>
-
-      <section className="battle-card">
-        <div className="battle-sky">
-          <div className="pixel-sky-grid" />
-          <div className="cloud c1" /><div className="cloud c2" /><div className="mountains" />
-          <div className="battle-horizon" />
-          <div className="battle-title-plate">⚔️ FRONTLINE</div>
-          <div className={`castle our-castle ${castleHit === "our" ? "castle-hit" : ""}`}><div className="tower">🏰</div><div className="castle-label">우리 성</div><div className="castle-hp"><span style={{width: `${clamp(castleHp / 10, 0, 100)}%`}} /></div></div>
-          <div className={`castle enemy-castle ${castleHit === "enemy" ? "castle-hit" : ""}`}><div className="tower">🏯</div><div className="castle-label">적 성</div><div className="castle-hp enemy"><span style={{width: `${clamp(enemyCastleHp / 18, 0, 100)}%`}} /></div></div>
-
-          <div className="lane">
-            <div className="lane-ground" />
-            <div className="lane-grid" />
-            <div className="lane-center-line" />
-            <div className="castle-zone our-zone" />
-            <div className="castle-zone enemy-zone" />
-            {heroes.map((u) => <BattleUnit key={u.uid} unit={u} />)}
-            {enemies.map((u) => <BattleUnit key={u.uid} unit={u} />)}
-             {deathEffects.map((effect) => (
-               <div key={effect.id} style={{
-                 position: "absolute", zIndex: 17, left: String(effect.x) + "%",
-                 top: effect.team === "hero" ? "42%" : "48%",
-                 transform: "translate(-50%,-50%)", fontSize: 25, pointerEvents: "none",
-                 opacity: Math.min(1, effect.life * 3),
-               }}>
-                 {effect.team === "hero" ? "💥" : "💢"}
-               </div>
-             ))}
-             {damagePopups.map((popup) => (
-              <div key={popup.id} className={`damage-popup ${popup.critical ? "critical" : ""}`} style={{ left: `${popup.x}%` }}>-{popup.value}</div>
-            ))}
-          </div>
-
-          {currentStage.waveMeta[waveIndex]?.boss && (
-            <div className={`boss-bar ${bossPhaseTwo ? "enraged" : ""}`}>
-              <div className="boss-title">{bossDisplayIcon} BOSS · {bossDisplayName} {bossPhaseTwo ? "· ENRAGED" : ""}</div>
-              <div className="boss-hp"><span style={{ width: `${bossHpPercent}%` }} /></div>
-              <div className="boss-hp-text">{bossUnit ? `${Math.ceil(bossUnit.currentHp)} / ${bossUnit.hp}` : "등장 준비 중"}</div>
-              {bossUnit && <div className="boss-mechanic-status">{currentStage.id === 40 ? `전하 ${Math.min(10, Math.floor(bossChargeRef.current / 4))}/10` : currentStage.id === 50 && currentStage.bossMechanic?.phaseElements ? `현재 페이즈 · ${currentStage.bossMechanic.phaseElements[Math.max(0, bossPhaseRef.current)] ?? currentStage.bossMechanic.phaseElements[0]}` : currentStage.mechanic}</div>}
-            </div>
-          )}
-
-          <div className="wave-banner">
-            <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
-            <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
-            <div className="wave-notice">{notice}</div>
-            {waveThreat && <div className="wave-threat">{waveThreat}</div>}
-          </div>
-        </div>
-
-        <div className="economy-panel">
-          <div className="economy-info"><b>💰 전투 지갑 Lv.{economyLevel}/{economyMaxLevel}</b><span>초당 +{goldPerSecond} 🪙 · 최대 {battleGoldMax.toLocaleString()}</span></div>
-          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "지갑 MAX" : `지갑 강화 · 🪙 ${economyUpgradeCost}`}</button>
-        </div>
-        <div className="deck-panel">
-          <div className="battle-deck-header"><b>⚔️ 출전 영웅</b><span>카드를 눌러 전장에 배치 · {deckIds.length}/{deckSlotCount}</span></div>
-          <div className="deck-slots">
-            {visibleDeck.map((hero) => {
-              const cooldownLeft = deployCooldowns[hero.id] ?? 0;
-              const lacksGold = battleGold < hero.cost;
-              const coolingDown = cooldownLeft > 0;
-              const disabled = lacksGold || coolingDown;
-              return (
-                <div key={hero.id} className={`hero-card-wrap ${disabled ? "disabled" : ""}`}>
-                  <button className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
-                    <div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}>{hero.sprite}<span className="spark" /></div>
-                    <div className="hero-name">{hero.name} <small>Lv.{getUnitLevel(hero.id)}</small></div>
-                    <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
-                    <div className="hero-combat-type"><span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span><span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span></div>
-                    <div className="hero-ability">{hero.ability === "guard" && "🛡️ 피해 감소 22%"}{hero.ability === "regen" && "✚ 초당 HP 회복"}{hero.ability === "crit" && "⚡ 28% 치명타"}{hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}{!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}{!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}</div>
-                    <div className="cooldown">{cooldownLeft > 0 ? `⏱ ${cooldownLeft.toFixed(1)}s` : lacksGold ? `🪙 ${Math.ceil(hero.cost - battleGold)} 부족` : "⚔️ 출격 가능"}</div>
-                     {coolingDown && <div className="cooldown-mask" style={{ "--cooldown-ratio": `${Math.min(100, (cooldownLeft / hero.cooldown) * 100)}%` } as React.CSSProperties} />}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="deck-indicator">영웅 편성 {deckIds.length}/{deckSlotCount} · 영지 Lv.{kingdomLevel} · 보유 {ownedHeroes.length}/{HEROES.length}</div>
-      </section>
-
-      <section className="battle-info">
-        <div><b>자동전투</b><span>영웅은 자동으로 이동·공격·스킬 발동</span></div>
-        <div><b>속성</b><span>⚪ 무속성 · 🔥 불 · 🌑 어둠</span></div>
-        <div><b>현재 적</b><span>{enemies.filter((e) => e.alive).length}기</span></div>
-      </section>
-
-      {battleState !== "playing" && (
-        <div className="result-overlay">
-          <div className={`result-box ${battleState}`}>
-            <div className="result-kicker">{battleState === "victory" ? "STAGE CLEAR" : "STAGE FAILED"}</div>
-            <h1>{battleState === "victory" ? "적 성을 돌파했다!" : "성이 함락됐다..."}</h1>
-            <p>{battleState === "victory" ? `STAGE ${currentStage.id} 클리어! 최초 클리어 시 ${currentStage.clearReward} 골드 + ${25 + currentStage.id * 10} 보석 · 다음 전장/채집 지역이 해금됩니다.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
-            <div className="result-actions">
-              <button onClick={() => reset(stageIndex)}>다시 전투</button>
-              <button onClick={() => setBattleState("stageSelect")}>스테이지 선택</button>
-              {battleState === "victory" && stageIndex + 1 < unlockedStage && (
-                <button onClick={() => reset(stageIndex + 1)}>다음 스테이지 ▶</button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
-  );
+  return <BattleScreen
+    stage={currentStage} stageIndex={stageIndex} unlockedStage={unlockedStage} battleState={battleState}
+    castleHp={castleHp} enemyCastleHp={enemyCastleHp} battleGold={battleGold} battleGoldMax={battleGoldMax}
+    economyLevel={economyLevel} economyMaxLevel={economyMaxLevel} goldPerSecond={goldPerSecond} economyUpgradeCost={economyUpgradeCost}
+    waveIndex={waveIndex} gameSpeed={gameSpeed} autoCom={autoCom} heroes={heroes} enemies={enemies}
+    deathEffects={deathEffects} damagePopups={damagePopups} castleHit={castleHit} bossPhaseTwo={bossPhaseTwo}
+    bossDisplayIcon={bossDisplayIcon} bossDisplayName={bossDisplayName} bossHpPercent={bossHpPercent} bossUnit={bossUnit}
+    bossCharge={bossChargeRef.current} bossPhase={bossPhaseRef.current} waveProgress={waveProgress} notice={notice} waveThreat={waveThreat}
+    visibleDeck={visibleDeck} deployCooldowns={deployCooldowns} deckCount={deckIds.length} deckSlotCount={deckSlotCount}
+    kingdomLevel={kingdomLevel} ownedHeroCount={ownedHeroes.length} heroTotal={HEROES.length} getUnitLevel={getUnitLevel}
+    onSpeed={() => setGameSpeed(v => v === 1 ? 5 : 1)} onAuto={() => setAutoCom(v => !v)}
+    onUpgradeEconomy={upgradeEconomy} onDeploy={deploy} onRetry={() => reset(stageIndex)}
+    onStageSelect={() => setBattleState("stageSelect")} onNext={() => reset(stageIndex + 1)}
+  />;
 }
 
 export default App;
