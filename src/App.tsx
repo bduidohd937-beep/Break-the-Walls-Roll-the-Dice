@@ -95,7 +95,7 @@ function App() {
     goldRef.current = Math.max(0, goldRef.current - economyUpgradeCost);
     setBattleGold(goldRef.current);
     setEconomyLevel(nextLevel);
-    setNotice(`왕국 경제 Lv.${nextLevel}! 골드 생산과 최대 보유량 증가`);
+    setNotice(`전투 지갑 Lv.${nextLevel}! 생산속도와 최대 골드 증가`);
   };
 
   const deploy = useCallback((def: UnitDef) => {
@@ -594,15 +594,17 @@ function App() {
         </div>
 
         <div className="economy-panel">
-          <div className="economy-info"><b>🏗️ 왕국 경제 Lv.{economyLevel}/{economyMaxLevel}</b><span>초당 +{goldPerSecond} 🪙 · 최대 {battleGoldMax.toLocaleString()}</span></div>
-          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "MAX LEVEL" : `경제 강화 · 🪙 ${economyUpgradeCost}`}</button>
+          <div className="economy-info"><b>💰 전투 지갑 Lv.{economyLevel}/{economyMaxLevel}</b><span>초당 +{goldPerSecond} 🪙 · 최대 {battleGoldMax.toLocaleString()}</span></div>
+          <button className="economy-upgrade" disabled={economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost} onClick={upgradeEconomy}>{economyLevel >= economyMaxLevel ? "지갑 MAX" : `지갑 강화 🪙 ${economyUpgradeCost} · +9/s · +1,250 MAX`}</button>
         </div>
         <div className="deck-panel">
           <div className="battle-deck-header"><b>⚔️ 출전 영웅</b><span>카드를 눌러 전장에 배치 · {deckIds.length}/{deckSlotCount}</span></div>
           <div className="deck-slots">
             {visibleDeck.map((hero) => {
               const cooldownLeft = deployCooldowns[hero.id] ?? 0;
-              const disabled = battleGold < hero.cost || cooldownLeft > 0;
+              const lacksGold = battleGold < hero.cost;
+              const coolingDown = cooldownLeft > 0;
+              const disabled = lacksGold || coolingDown;
               return (
                 <div key={hero.id} className={`hero-card-wrap ${disabled ? "disabled" : ""}`}>
                   <button className={`hero-card ${disabled ? "disabled" : ""}`} onClick={() => deploy(hero)}>
@@ -611,7 +613,8 @@ function App() {
                     <div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div>
                     <div className="hero-combat-type"><span>{hero.rangeType === "melee" ? "⚔️ 근접" : "🏹 원거리"}</span><span>{hero.attackType === "splash" ? "💥 광역" : "🎯 단일"}</span></div>
                     <div className="hero-ability">{hero.ability === "guard" && "🛡️ 피해 감소 22%"}{hero.ability === "regen" && "✚ 초당 HP 회복"}{hero.ability === "crit" && "⚡ 28% 치명타"}{hero.ability === "execute" && "☠️ 저체력 적 추가 피해"}{!hero.ability && hero.attackType === "splash" && "💥 광역 공격"}{!hero.ability && hero.effect === "burn" && hero.attackType !== "splash" && "🔥 화상"}</div>
-                    <div className="cooldown">{cooldownLeft > 0 ? `재배치 ${cooldownLeft.toFixed(1)}s` : `배치 쿨 ${hero.cooldown}s`}</div>
+                    <div className="cooldown">{cooldownLeft > 0 ? `⏱ ${cooldownLeft.toFixed(1)}s` : lacksGold ? `🪙 ${Math.ceil(hero.cost - battleGold)} 부족` : "⚔️ 출격 가능"}</div>
+                     {coolingDown && <div className="cooldown-mask" style={{ "--cooldown-ratio": `${Math.min(100, (cooldownLeft / hero.cooldown) * 100)}%` } as React.CSSProperties} />}
                   </button>
                 </div>
               );
