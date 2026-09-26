@@ -550,3 +550,15 @@ button { font: inherit; }
 .upgrade-preview,.hero-locked-message{margin-top:8px;padding:8px;border:1px solid #243947;background:#071119;color:#7894a5;font-size:8px}
 .hero-management>.deck-builder-slots{grid-column:1/-1}
 @media(max-width:800px){.hero-management{grid-template-columns:1fr}.hero-management>.deck-builder-slots{grid-column:1}}
+
+
+/* Kingdom facilities */
+.facility-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.facility-card{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;padding:10px;border:1px solid #294151;background:#09151e;text-align:left}
+.facility-card>span{grid-row:1/3;font-size:30px}
+.facility-card div{display:flex;flex-direction:column;gap:2px}
+.facility-card b{color:#eaf7ff;font-size:10px}
+.facility-card small{color:#7894a5;font-size:7px}
+.facility-card button{grid-column:1/-1;padding:7px;border:1px solid #806526;background:#392b0d;color:#ffe49a;font-size:8px;font-weight:900;cursor:pointer}
+.facility-card button:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:700px){.facility-grid{grid-template-columns:1fr}}
