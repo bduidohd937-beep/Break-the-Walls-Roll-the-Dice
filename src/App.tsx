@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, WAVES, WAVE_META, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, WAVE_HP_SCALE, WAVE_ATK_SCALE, BATTLE_GOLD_MAX, MOVE_SPEED_MULTIPLIER, ELEMENT_CLASS, clamp } from "./game/constants";
+import { STAGES, STAGE_HP_SCALE, STAGE_ATK_SCALE } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { applyKnockback, updateKnockback } from "./game/combat/knockback";
 import { incomingDamage, outgoingDamage, regenAmount } from "./game/combat/damage";
@@ -9,6 +10,11 @@ import { resolveSameTeamSpacing, resolveFrontlineCollision } from "./game/combat
 import { BattleUnit } from "./components/BattleUnit";
 
 function App() {
+  const [stageIndex, setStageIndex] = useState(0);
+  const [unlockedStage, setUnlockedStage] = useState(() => {
+    const saved = Number(window.localStorage.getItem("btw-unlocked-stage") ?? "1");
+    return clamp(Math.floor(saved) || 1, 1, STAGES.length);
+  });
   const [battleGold, setBattleGold] = useState(500);
   const [waveIndex, setWaveIndex] = useState(0);
   const [heroes, setHeroes] = useState<Unit[]>([]);
@@ -45,7 +51,8 @@ function App() {
   const enemiesRef = useRef<Unit[]>([]);
   const goldRef = useRef(500);
   const castleRef = useRef(1000);
-  const enemyCastleRef = useRef(1800);
+  const enemyCastleRef = useRef(STAGES[0].enemyCastleHp);
+  const stageRef = useRef(0);
   const waveRef = useRef(0);
   const spawnRef = useRef(0);
   const spawnTimerRef = useRef(1.2);
@@ -109,15 +116,16 @@ function App() {
       });
 
       // Spawn the current wave with gentle per-wave scaling.
-      const wave = WAVES[waveRef.current];
-      const waveMeta = WAVE_META[waveRef.current];
+      const stage = STAGES[stageRef.current];
+      const wave = stage.waves[waveRef.current];
+      const waveMeta = stage.waveMeta[waveRef.current];
       const totalInWave = wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
       if (wave && spawnRef.current < totalInWave && spawnTimerRef.current <= 0) {
         const sequence = wave.flatMap((group) => Array.from({ length: group.count }, () => group));
         const group = sequence[spawnRef.current];
         const baseEnemy = ENEMY_MAP[group.enemy];
-        const hpScale = 1 + waveRef.current * WAVE_HP_SCALE + (waveMeta?.boss ? 0.35 : 0);
-        const atkScale = 1 + waveRef.current * WAVE_ATK_SCALE + (waveMeta?.boss ? 0.15 : 0);
+        const hpScale = 1 + stageRef.current * STAGE_HP_SCALE + waveRef.current * WAVE_HP_SCALE + (waveMeta?.boss ? 0.35 : 0);
+        const atkScale = 1 + stageRef.current * STAGE_ATK_SCALE + waveRef.current * WAVE_ATK_SCALE + (waveMeta?.boss ? 0.15 : 0);
         const enemyDef = {
           ...baseEnemy,
           hp: Math.round(baseEnemy.hp * hpScale),
@@ -262,22 +270,28 @@ function App() {
       setEnemies(nextEnemies);
 
       const waveCleared = spawnRef.current >= totalInWave && nextEnemies.length === 0;
-      if (waveCleared && waveRef.current < WAVES.length - 1) {
-        const reward = WAVE_META[waveRef.current]?.reward ?? 0;
+      if (waveCleared && waveRef.current < stage.waves.length - 1) {
+        const reward = stage.waveMeta[waveRef.current]?.reward ?? 0;
         goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + reward);
         setBattleGold(Math.floor(goldRef.current));
         waveRef.current += 1;
         spawnRef.current = 0;
         spawnTimerRef.current = 1.4;
         setWaveIndex(waveRef.current);
-        setNotice(`WAVE ${waveRef.current + 1} · ${WAVE_META[waveRef.current]?.name ?? "다음 전투"}`);
-      } else if (waveCleared && waveRef.current === WAVES.length - 1 && !finalClearNotifiedRef.current) {
+        setNotice(`WAVE ${waveRef.current + 1} · ${stage.waveMeta[waveRef.current]?.name ?? "다음 전투"}`);
+      } else if (waveCleared && waveRef.current === stage.waves.length - 1 && !finalClearNotifiedRef.current) {
         finalClearNotifiedRef.current = true;
         setNotice("FINAL WAVE CLEAR · 적 성을 파괴하면 스테이지 클리어!");
       }
 
       if (enemyCastleRef.current <= 0) {
         setEnemyCastleHp(0);
+        const clearedStage = stageRef.current + 1;
+        setUnlockedStage((current) => {
+          const next = Math.max(current, Math.min(STAGES.length, clearedStage + 1));
+          window.localStorage.setItem("btw-unlocked-stage", String(next));
+          return next;
+        });
         setBattleState("victory");
       } else if (castleRef.current <= 0) {
         setCastleHp(0);
@@ -288,27 +302,31 @@ function App() {
     return () => window.clearInterval(interval);
   }, [battleState, gameSpeed]);
 
-  const reset = () => {
+  const reset = (nextStageIndex = stageIndex) => {
+    const nextStage = STAGES[nextStageIndex] ?? STAGES[0];
+    stageRef.current = nextStageIndex;
     goldRef.current = 500;
     castleRef.current = 1000;
-    enemyCastleRef.current = 1800;
+    enemyCastleRef.current = nextStage.enemyCastleHp;
     waveRef.current = 0;
     spawnRef.current = 0;
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
+    setStageIndex(nextStageIndex);
     setBattleGold(500);
     setWaveIndex(0);
     setHeroes([]);
     setEnemies([]);
     setCastleHp(1000);
-    setEnemyCastleHp(1800);
+    setEnemyCastleHp(nextStage.enemyCastleHp);
     setBattleState("playing");
     setDeployCooldowns({});
-    setNotice("전투 시작!");
+    setNotice(`STAGE ${nextStage.id} · ${nextStage.name} 시작!`);
   };
 
-  const currentWave = WAVES[waveIndex];
+  const currentStage = STAGES[stageIndex] ?? STAGES[0];
+  const currentWave = currentStage.waves[waveIndex];
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
   const currentWaveSpawned = waveIndex === waveRef.current ? spawnRef.current : 0;
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
@@ -318,12 +336,12 @@ function App() {
       <header className="topbar">
         <div>
           <div className="game-title">BREAK THE WALLS</div>
-          <div className="sub-title">퓨어 월드 · 제1장 · 성 공략전</div>
+          <div className="sub-title">퓨어 월드 · STAGE ${currentStage.id} · ${currentStage.name}</div>
         </div>
         <div className="top-stats">
           <div className="stat-pill">🏰 우리 성 <b>{Math.ceil(castleHp)}</b></div>
           <div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(battleGold).toLocaleString()}</b></div>
-          <div className="stat-pill">🌊 WAVE <b>{Math.min(waveIndex + 1, WAVES.length)}/{WAVES.length}</b></div>
+          <div className="stat-pill">🗺️ STAGE <b>{currentStage.id}</b> · 🌊 <b>{Math.min(waveIndex + 1, currentStage.waves.length)}/{currentStage.waves.length}</b></div>
           <button className="stat-pill speed-control" onClick={() => setGameSpeed((v) => v === 1 ? 5 : 1)}>⚡ {gameSpeed}X</button>
         </div>
       </header>
@@ -341,7 +359,7 @@ function App() {
           </div>
 
           <div className="wave-banner">
-            <div className="wave-title">WAVE {waveIndex + 1}/{WAVES.length} · {WAVE_META[waveIndex]?.name}</div>
+            <div className="wave-title">STAGE {currentStage.id} · WAVE {waveIndex + 1}/{currentStage.waves.length} · {currentStage.waveMeta[waveIndex]?.name}</div>
             <div className="wave-progress"><span style={{ width: `${clamp(waveProgress, 0, 100)}%` }} /></div>
             <div className="wave-notice">{notice}</div>
           </div>
@@ -387,8 +405,13 @@ function App() {
           <div className={`result-box ${battleState}`}>
             <div className="result-kicker">{battleState === "victory" ? "STAGE CLEAR" : "STAGE FAILED"}</div>
             <h1>{battleState === "victory" ? "적 성을 돌파했다!" : "성이 함락됐다..."}</h1>
-            <p>{battleState === "victory" ? "다음 스테이지를 향해 전진하자." : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
-            <button onClick={reset}>다시 전투</button>
+            <p>{battleState === "victory" ? `STAGE ${currentStage.id} 클리어! 다음 전장을 선택할 수 있어요.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
+            <div className="result-actions">
+              <button onClick={() => reset(stageIndex)}>다시 전투</button>
+              {battleState === "victory" && stageIndex + 1 < unlockedStage && (
+                <button onClick={() => reset(stageIndex + 1)}>다음 스테이지 ▶</button>
+              )}
+            </div>
           </div>
         </div>
       )}
