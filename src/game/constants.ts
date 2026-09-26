@@ -22,18 +22,6 @@ export const ENEMIES: UnitDef[] = [
 
 export const DECK_IDS = ["goblin", "fireGoblin", "shield", "archer", "knight", "mage", "paladin", "assassin", "dragon", "arthur"];
 
-export const HERO_UNLOCK_STAGE: Record<string, number> = {
-  goblin: 1,
-  fireGoblin: 1,
-  shield: 1,
-  archer: 1,
-  knight: 2,
-  mage: 2,
-  paladin: 2,
-  assassin: 3,
-  dragon: 3,
-  arthur: 3,
-};
 
 export const ENEMY_MAP = {
   goblin: ENEMIES[0],
