@@ -213,7 +213,7 @@ function App() {
 
         const distance = Math.abs(target.x - hero.x);
         if (distance > hero.range / 10) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * dt / 100) };
+          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (hero.attackTimer <= 0) {
           const advantage = hero.element === "fire" && target.element === "dark" ? 1.25 : 1;
           const damage = hero.atk * advantage;
@@ -226,7 +226,7 @@ function App() {
               attackFlash: 0.08,
             };
           }
-          goldRef.current += 20;
+          goldRef.current = Math.min(BATTLE_GOLD_MAX, goldRef.current + 20);
           setBattleGold(Math.floor(goldRef.current));
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
@@ -254,7 +254,7 @@ function App() {
 
         const distance = Math.abs(target.x - enemy.x);
         if (distance > enemy.range / 10) {
-          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * dt / 100) };
+          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const targetIndex = nextHeroes.findIndex((h) => h.uid === target.uid);
           if (targetIndex >= 0) {
