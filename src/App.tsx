@@ -337,6 +337,8 @@ function App() {
   const spawnTimerRef = useRef(1.2);
   const uidRef = useRef(1);
   const finalClearNotifiedRef = useRef(false);
+  const bossSummonTimerRef = useRef(0);
+  const bossEnrageTriggeredRef = useRef(false);
 
   useEffect(() => { heroesRef.current = heroes; }, [heroes]);
   useEffect(() => { enemiesRef.current = enemies; }, [enemies]);
@@ -456,6 +458,28 @@ function App() {
         nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
         spawnRef.current += 1;
         spawnTimerRef.current = group.gap ?? 0.8;
+      }
+
+      const bossMechanic = stage.bossMechanic;
+      const bossWaveActive = Boolean(waveMeta?.boss && bossMechanic);
+      if (bossWaveActive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
+        bossSummonTimerRef.current -= dt;
+        if (bossSummonTimerRef.current <= 0 && spawnRef.current >= totalInWave) {
+          const summonDef = ENEMY_MAP[bossMechanic.summonEnemy];
+          const summonScale = 1 + stageRef.current * STAGE_HP_SCALE;
+          const summon = makeUnit({ ...summonDef, hp: Math.round(summonDef.hp * summonScale), atk: Math.round(summonDef.atk * summonScale) }, "enemy", 91, 1000 + uidRef.current++);
+          nextEnemies.push(summon);
+          bossSummonTimerRef.current = bossMechanic.summonInterval;
+          setNotice(`${stage.bossName ?? "BOSS"} · 증원!`);
+        }
+      }
+      if (bossWaveActive && bossMechanic?.auraAtk) {
+        nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, atk: enemy.atk * (1 + bossMechanic.auraAtk! * dt * 0.15) }));
+      }
+      if (bossWaveActive && bossMechanic?.deathEnrage && !bossEnrageTriggeredRef.current && spawnRef.current >= totalInWave && nextEnemies.length === 0) {
+        bossEnrageTriggeredRef.current = true;
+        spawnTimerRef.current = Math.min(spawnTimerRef.current, 0.35);
+        setNotice(`${stage.bossName ?? "BOSS"} 격파 · 남은 군세 광폭화!`);
       }
 
       // Heroes move, attack, and hit the enemy castle when the lane is clear.
@@ -705,6 +729,8 @@ function App() {
     spawnTimerRef.current = 1.2;
     uidRef.current = 1;
     finalClearNotifiedRef.current = false;
+    bossSummonTimerRef.current = 0;
+    bossEnrageTriggeredRef.current = false;
     setStageIndex(nextStageIndex);
     setBattleGold(battleStartGold);
     setEconomyLevel(1);
