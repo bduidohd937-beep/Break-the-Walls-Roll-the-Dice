@@ -44,13 +44,16 @@ button { font: inherit; }
 .battle-unit { position:absolute; z-index:4; bottom: 16%; width: 76px; transform: translateX(-50%); text-align:center; transition: left .12s linear; }
 .battle-unit.hero { z-index: 5; }.battle-unit.enemy { z-index: 4; }
 .unit-sprite { position:relative; width:64px; height:70px; margin:auto; display:grid; place-items:center; font-size:46px; filter: drop-shadow(0 7px 3px #0008); }
-/* 002 방패병: 256px 시트의 32px 프레임 8개씩. 픽셀 보간 없이 표시한다. */
-.shield-pixel { --shield-size: 48px; display:inline-block; flex:none; width:var(--shield-size); height:var(--shield-size); background-image:url("./assets/heroes/002-shield.png"); background-repeat:no-repeat; background-size:calc(var(--shield-size) * 8) calc(var(--shield-size) * 8); image-rendering:pixelated; vertical-align:middle; animation:shield-idle .9s steps(8) infinite; }
-.unit-sprite .shield-pixel { --shield-size: 64px; }
-.unit-sprite .shield-pixel-attack { background-position-y:calc(var(--shield-size) * -3); animation:shield-idle .4s steps(8) infinite; }
-.formation-hero .shield-pixel,.formation-slot .shield-pixel,.deck-builder-card .shield-pixel,.storage-hero .shield-pixel { --shield-size: 32px; }
-.hero-detail-head .shield-pixel,.reveal-sprite .shield-pixel { --shield-size: 64px; }
-@keyframes shield-idle { to { background-position-x:calc(var(--shield-size) * -8); } }
+/* Sprite atlas rows have different heights; per-state frame origins live in visuals/sprites.ts. */
+.unit-pixel-sprite{--sprite-size:48px;display:inline-block;flex:none;width:var(--sprite-size);height:calc(var(--sprite-size) * 1.375);background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * 8) calc(var(--sprite-size) * 8);background-position:calc(var(--sprite-size) * var(--frame-x) * -1) calc(var(--sprite-size) * var(--frame-y) * -1);image-rendering:pixelated;vertical-align:middle;animation:spriteFrames .85s steps(8) infinite}
+.unit-pixel-sprite.state-walk{animation-duration:.55s;animation-timing-function:steps(7)}
+.unit-pixel-sprite.state-attack{animation-duration:.16s;animation-timing-function:steps(7)}
+.unit-pixel-sprite.state-hit{animation-duration:.14s;animation-timing-function:steps(3)}
+.unit-pixel-sprite.state-death{animation:none}
+.unit-sprite .unit-pixel-sprite{--sprite-size:64px}
+.formation-hero .unit-pixel-sprite,.formation-slot .unit-pixel-sprite,.deck-builder-card .unit-pixel-sprite,.storage-hero .unit-pixel-sprite{--sprite-size:32px}
+.hero-detail-head .unit-pixel-sprite,.reveal-sprite .unit-pixel-sprite{--sprite-size:64px}
+@keyframes spriteFrames{to{background-position-x:calc(var(--sprite-size) * (var(--frame-x) + var(--frame-count)) * -1)}}
 .unit-aura { position:absolute; inset:10px; border-radius:50%; opacity:.0; pointer-events:none; }
 .el-fire .unit-aura { opacity:.45; background:#ff6a1938; box-shadow:0 0 18px #ff7b20; animation:pulse .7s infinite alternate; }
 .el-dark .unit-aura { opacity:.35; background:#8f4bff30; box-shadow:0 0 20px #8d4cff; }
@@ -822,3 +825,15 @@ button { font: inherit; }
 .kingdom-overview-links span{color:#a9c6d1;font-size:11px}
 .kingdom-hero{min-height:150px}
 @media(max-width:700px){.kingdom-section-nav button{font-size:11px}.kingdom-overview-links{grid-template-columns:1fr}}
+
+.battle-unit.dying{pointer-events:none;z-index:6}
+.battle-unit.dying .unit-sprite{animation:none!important;filter:drop-shadow(0 4px 0 rgba(0,0,0,.42))}
+.battle-pause-btn{min-width:46px;cursor:pointer;font-size:19px;font-weight:900;color:#fff}
+.battle-pause-btn:disabled{opacity:.5;cursor:default}
+.battle-paused .battle-card *, .battle-paused .battle-card *::before, .battle-paused .battle-card *::after{animation-play-state:paused!important;transition-duration:0s!important}
+.pause-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(2,8,15,.76)}
+.pause-menu{display:grid;gap:12px;width:min(390px,100%);padding:28px;border:2px solid #a9c2cc;background:#102431;box-shadow:0 25px 70px #000b;text-align:center}
+.pause-menu h2{margin:0 0 6px;color:#ffe4a1;font-size:24px}
+.pause-menu p{margin:4px 0 10px;line-height:1.7;color:#d7e5eb}
+.pause-menu button{padding:13px;border:1px solid #7996a3;background:#214050;color:#f2fbff;font-weight:900;cursor:pointer}
+.pause-menu button:hover{background:#345d71}

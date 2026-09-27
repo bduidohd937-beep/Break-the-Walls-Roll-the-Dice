@@ -6,16 +6,16 @@ import { makeUnit } from "../units/createUnit";
 import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
+import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
 type DamagePopup = { id:number; x:number; value:number; critical:boolean };
-type DeathEffect = { id:number; x:number; team:"hero"|"enemy"; life:number };
 type BattleState = "stageSelect"|"playing"|"victory"|"defeat";
 export type BattleReward = { gold: number; gems: number; firstClear: boolean };
 type BattleLoopContext = {
-  battleState: BattleState; gameSpeed:number; battleGoldMax:number; goldPerSecond:number; clearedStages:number[];
-  setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<DeathEffect[]>; setBattleGold:Setter<number>;
+  battleState: BattleState; paused:boolean; gameSpeed:number; battleGoldMax:number; goldPerSecond:number; clearedStages:number[];
+  setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<BattleDeathEffect[]>; setBattleGold:Setter<number>;
   setDeployCooldowns:Setter<Record<string,number>>; setNotice:Setter<string>; setEnemyCastleHp:Setter<number>; setCastleHp:Setter<number>;
   setHeroes:Setter<Unit[]>; setEnemies:Setter<Unit[]>; setWaveIndex:Setter<number>; setUnlockedStage:Setter<number>;
   setClearedStages:Setter<number[]>; setGems:Setter<number>; setKingdomGold:Setter<number>; setBattleState:Setter<BattleState>; setBattleReward:Setter<BattleReward|null>;
@@ -26,15 +26,15 @@ type BattleLoopContext = {
 };
 
 export function useBattleLoop(ctx: BattleLoopContext) {
-  const { battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward } = ctx;
+  const { battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward } = ctx;
   useEffect(() => {
-    if (battleState !== "playing") return;
+    if (battleState !== "playing" || paused) return;
 
     const interval = window.setInterval(() => {
       const dt = 0.05 * gameSpeed;
       setCastleHit(null);
       setDamagePopups((popups) => popups.slice(-24));
-      setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - dt })).filter((effect) => effect.life > 0));
+      setDeathEffects((effects) => effects.map((effect) => ({ ...effect, life: effect.life - 0.05 })).filter((effect) => effect.life > 0));
 
       goldRef.current = Math.min(battleGoldMax, goldRef.current + dt * goldPerSecond);
       setBattleGold(goldRef.current);
@@ -51,8 +51,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const unit = updateKnockback({
           ...u,
           attackTimer: Math.max(0, u.attackTimer - dt),
-          hitFlash: Math.max(0, u.hitFlash - dt),
-          attackFlash: Math.max(0, u.attackFlash - dt),
+          hitFlash: Math.max(0, u.hitFlash - 0.05),
+          attackFlash: Math.max(0, u.attackFlash - 0.05),
           specialTimer: Math.max(0, u.specialTimer - dt),
         }, dt);
         const healed = Math.min(unit.hp, unit.currentHp + regenAmount(unit, dt));
@@ -69,8 +69,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const unit = updateKnockback({
           ...u,
           attackTimer: Math.max(0, u.attackTimer - dt),
-          hitFlash: Math.max(0, u.hitFlash - dt),
-          attackFlash: Math.max(0, u.attackFlash - dt),
+          hitFlash: Math.max(0, u.hitFlash - 0.05),
+          attackFlash: Math.max(0, u.attackFlash - 0.05),
           slowTimer: Math.max(0, u.slowTimer - dt),
         }, dt);
         if (unit.burnTimer <= 0) return unit;
@@ -338,7 +338,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       // Remove defeated units before collision and wave checks.
       const defeatedUnits = [...nextHeroes.filter((u) => u.currentHp <= 0), ...nextEnemies.filter((u) => u.currentHp <= 0)];
       if (defeatedUnits.length > 0) {
-        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: 0.42 }))].slice(-20));
+        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: spriteDeathDuration(unit.id), duration: spriteDeathDuration(unit.id), unit: UNIT_SPRITES[unit.id] ? { ...unit, alive: false, currentHp: 0 } : undefined }))].slice(-20));
       }
       const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {
@@ -358,8 +358,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       nextEnemies = resolveSameTeamSpacing(nextEnemies);
 
       const frontline = resolveFrontlineCollision(nextHeroes, nextEnemies);
-      nextHeroes = frontline.heroes;
-      nextEnemies = frontline.enemies;
+      nextHeroes = frontline.heroes.map((unit) => ({ ...unit, moving: Math.abs(unit.x - (heroesRef.current.find((old) => old.uid === unit.uid)?.x ?? unit.x)) > 0.01 }));
+      nextEnemies = frontline.enemies.map((unit) => ({ ...unit, moving: Math.abs(unit.x - (enemiesRef.current.find((old) => old.uid === unit.uid)?.x ?? unit.x)) > 0.01 }));
 
       heroesRef.current = nextHeroes;
       enemiesRef.current = nextEnemies;
@@ -402,5 +402,5 @@ export function useBattleLoop(ctx: BattleLoopContext) {
     }, 50);
 
     return () => window.clearInterval(interval);
-  }, [battleState, gameSpeed, battleGoldMax, goldPerSecond]);
+  }, [battleState, paused, gameSpeed, battleGoldMax, goldPerSecond]);
 }

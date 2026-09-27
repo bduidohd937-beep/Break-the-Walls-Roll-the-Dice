@@ -24,10 +24,10 @@ import { useGatheringController } from "./game/controllers/useGatheringControlle
 import { useSummonController } from "./game/controllers/useSummonController";
 import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
 import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
+import type { BattleDeathEffect } from "./game/visuals/sprites";
 import { savedClears, savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
-type DeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; };
 const DEV_FACILITY_LEVEL = 10; // Facilities currently have no level cap.
 
 function App() {
@@ -59,7 +59,7 @@ function App() {
   const [enemyCastleHp, setEnemyCastleHp] = useState(1800);
   const [castleHit, setCastleHit] = useState<"our" | "enemy" | null>(null);
   const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
-  const [deathEffects, setDeathEffects] = useState<DeathEffect[]>([]);
+  const [deathEffects, setDeathEffects] = useState<BattleDeathEffect[]>([]);
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
@@ -122,6 +122,8 @@ function App() {
   const gatherReward = { wood: 4, stone: 3 };
   const [notice, setNotice] = useState("전투 시작!");
   const [gameSpeed, setGameSpeed] = useState(5);
+  const [pauseScreen, setPauseScreen] = useState<null | "menu" | "settings" | "exit">(null);
+  const paused = pauseScreen !== null;
   const [autoCom, setAutoCom] = useState(false);
   const [battleDeckPage, setBattleDeckPage] = useState<0 | 1>(0);
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
@@ -188,7 +190,7 @@ function App() {
   };
 
   const upgradeEconomy = () => {
-    if (battleState !== "playing" || economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost) return;
+    if (battleState !== "playing" || paused || economyLevel >= economyMaxLevel || battleGold < economyUpgradeCost) return;
     const nextLevel = economyLevel + 1;
     goldRef.current = Math.max(0, goldRef.current - economyUpgradeCost);
     setBattleGold(goldRef.current);
@@ -197,7 +199,7 @@ function App() {
   };
 
   const deploy = useCallback((def: UnitDef) => {
-    if (battleState !== "playing" || goldRef.current < def.cost || (deployCooldownsRef.current[def.id] ?? 0) > 0 || heroesRef.current.length >= 50) return;
+    if (battleState !== "playing" || paused || goldRef.current < def.cost || (deployCooldownsRef.current[def.id] ?? 0) > 0 || heroesRef.current.length >= 50) return;
     const uid = nextUidRef.current++;
     const level = getUnitLevel(def.id);
     const statMultiplier = getLevelMultiplier(def.id, level);
@@ -226,7 +228,7 @@ function App() {
     heroesRef.current = [...heroesRef.current, deployed];
     setHeroes((list) => [...list, deployed]);
     setNotice(def.id === "devWukong" ? "손오공 강림 · 여의신철!" : `${def.name} 출전!`);
-  }, [battleState, unitLevels, heroSouls, trainingBonus]);
+  }, [battleState, paused, unitLevels, heroSouls, trainingBonus]);
 
   autoTickRef.current = () => {
       const activeCount = heroesRef.current.filter((hero) => hero.currentHp > 0).length;
@@ -243,13 +245,13 @@ function App() {
       if (economyLevel < economyMaxLevel && currentGold >= economyUpgradeCost && !visibleDeck.some(hero => (deployCooldownsRef.current[hero.id] ?? 0) <= 0 && hero.cost <= battleGoldMax)) upgradeEconomy();
   };
   useEffect(() => {
-    if (!autoCom || battleState !== "playing") return;
+    if (!autoCom || battleState !== "playing" || paused) return;
     const timer = window.setInterval(() => autoTickRef.current(), 650);
     return () => window.clearInterval(timer);
-  }, [autoCom, battleState]);
+  }, [autoCom, battleState, paused]);
 
   useEffect(() => {
-    if (battleState !== "playing") return;
+    if (battleState !== "playing" || paused) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((event.target as HTMLElement)?.tagName ?? "")) return;
       const index = event.code.startsWith("Numpad") ? Number(event.code.slice(6)) : /^Digit[0-9]$/.test(event.code) ? Number(event.code.slice(5)) : NaN;
@@ -259,7 +261,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [battleState, visibleDeck, deploy]);
+  }, [battleState, paused, visibleDeck, deploy]);
 
   const heroesRef = useRef<Unit[]>([]);
   const enemiesRef = useRef<Unit[]>([]);
@@ -297,7 +299,7 @@ function App() {
   });
 
 
-  useBattleLoop({ battleState, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
+  useBattleLoop({ battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
@@ -322,6 +324,7 @@ function App() {
     bossChargeRef.current = 0;
     bossPhaseRef.current = -1;
     bossSpawnAnnouncedRef.current = false;
+    setPauseScreen(null);
     setStageIndex(nextStageIndex);
     setBattleGold(battleStartGold);
     setEconomyLevel(1);
@@ -334,6 +337,7 @@ function App() {
     setEnemyCastleHp(nextStage.enemyCastleHp);
     setCastleHit(null);
     setDamagePopups([]);
+    setDeathEffects([]);
     popupUidRef.current = 1;
     setBattleReward(null);
     setBattleState("playing");
@@ -447,7 +451,7 @@ function App() {
   const waveProgress = currentWaveTotal > 0 ? (currentWaveSpawned / currentWaveTotal) * 100 : 0;
   const currentBossKey = BOSS_ENEMY_KEYS[currentStage.id];
   const currentBossUnitId = currentBossKey ? ENEMY_MAP[currentBossKey].id : undefined;
-  const bossUnit = currentStage.waveMeta[waveIndex]?.boss && currentBossUnitId ? enemies.find((unit) => unit.id === currentBossUnitId) : undefined;
+  const bossUnit = currentStage.waveMeta[waveIndex]?.boss && currentBossUnitId ? enemies.find((unit) => unit.id === currentBossUnitId && unit.currentHp > 0) : undefined;
   const bossDisplayName = currentStage.bossName ?? bossUnit?.name ?? "BOSS";
   const bossDisplayIcon = currentBossKey ? ENEMY_MAP[currentBossKey].sprite : "👹";
   const bossHpPercent = bossUnit ? clamp((bossUnit.currentHp / bossUnit.hp) * 100, 0, 100) : 0;
@@ -543,6 +547,8 @@ function App() {
   }
 
   return <BattleScreen
+    pauseScreen={pauseScreen} onPause={() => setPauseScreen("menu")} onPauseScreen={setPauseScreen}
+    onExitBattle={() => { setPauseScreen(null); setBattleReward(null); setBattleState("stageSelect"); }}
     stage={currentStage} stageIndex={stageIndex} unlockedStage={unlockedStage} battleState={battleState} battleReward={battleReward}
     castleHp={castleHp} enemyCastleHp={enemyCastleHp} battleGold={battleGold} battleGoldMax={battleGoldMax}
     economyLevel={economyLevel} economyMaxLevel={economyMaxLevel} goldPerSecond={goldPerSecond} economyUpgradeCost={economyUpgradeCost}

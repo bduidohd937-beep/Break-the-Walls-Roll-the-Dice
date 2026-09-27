@@ -1,26 +1,25 @@
 import React from "react";
 import type { Unit } from "../game/types";
-import { ELEMENT_CLASS, ELEMENT_LABEL, clamp } from "../game/constants";
+import { ELEMENT_CLASS, clamp } from "../game/constants";
 import { HeroSprite } from "./HeroSprite";
 
-export function BattleUnit({ unit }: { unit: Unit }) {
+export function BattleUnit({ unit, dyingProgress }: { unit: Unit; dyingProgress?: number }) {
+  const dying = dyingProgress !== undefined;
   return (
     <div
-      className={`battle-unit ${unit.team} ${ELEMENT_CLASS[unit.element]} ${unit.rangeType} ${unit.hitFlash > 0 ? "hit" : ""} ${unit.attackFlash > 0 ? "attacking" : ""}`}
+      className={`battle-unit ${unit.team} ${ELEMENT_CLASS[unit.element]} ${unit.rangeType} ${dying ? "dying" : unit.hitFlash > 0 ? "hit" : ""} ${!dying && unit.attackFlash > 0 ? "attacking" : ""}`}
       style={{ left: `${unit.x}%` }}
-      title={`${unit.name} · ${ELEMENT_LABEL[unit.element]}`}
+      aria-label={unit.name}
     >
-      <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>
+      {!dying && <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>}
       <div className="unit-sprite">
-        <HeroSprite hero={unit} attacking={unit.attackFlash > 0} /><span className="unit-aura" />
-        {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}/3</span>}
+        <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : unit.attackFlash > 0 ? "attack" : unit.moving ? "walk" : "idle"} deathProgress={dyingProgress} /><span className="unit-aura" />
       </div>
-      <div className="unit-name">{unit.name}</div>
-      {unit.attackFlash > 0 && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
-      {unit.ability === "guard" && <div className="ability-badge">🛡️</div>}
-      {unit.ability === "crit" && unit.attackFlash > 0 && <div className="ability-burst">✦✦</div>}
-      {unit.ability === "execute" && unit.currentHp / unit.hp <= (unit.abilityValue ?? 0.25) && <div className="execute-badge">EXECUTE</div>}
-      {unit.ability === "regen" && <div className="regen-badge">✚</div>}
+      {!dying && unit.attackFlash > 0 && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
+      {!dying && unit.ability === "guard" && <div className="ability-badge" aria-label="가드">🛡️</div>}
+      {!dying && unit.ability === "crit" && unit.attackFlash > 0 && <div className="ability-burst">✦✦</div>}
+      {!dying && unit.ability === "execute" && unit.currentHp / unit.hp <= (unit.abilityValue ?? 0.25) && <div className="execute-badge" aria-label="처형">☠️</div>}
+      {!dying && unit.ability === "regen" && <div className="regen-badge" aria-label="재생">✚</div>}
     </div>
   );
 }

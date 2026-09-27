@@ -43,6 +43,7 @@ export type Unit = UnitDef & {
   knockbackFromX: number;
   knockbackTargetX: number;
   alive: boolean;
+  moving?: boolean;
   burnTimer: number;
   burnDamage: number;
   slowTimer: number;
