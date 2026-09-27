@@ -844,7 +844,7 @@ button { font: inherit; }
 /* Kingdom shell: each landmark, HUD icon and menu icon can receive a PNG background later. */
 .stage-select-shell{background:radial-gradient(ellipse at 50% 25%,#263c4d 0,#0a121b 70%)}
 .stage-select-card.main-hub-card{display:flex;flex-direction:column;overflow-y:auto;background:#0a1119;border:2px solid #614d30;border-radius:2px;box-shadow:inset 0 0 0 3px #192633,0 16px 40px #000a;padding:0 22px 92px}
-.kingdom-hud{position:relative;z-index:5;display:flex;justify-content:space-between;align-items:start;gap:14px;min-height:78px;margin:0 -22px 14px;padding:12px 18px;background:linear-gradient(#202b35,#0d161e);border-bottom:3px solid #9a7541;box-shadow:0 6px 0 #0005}
+.kingdom-hud{position:relative;z-index:5;display:flex;flex-shrink:0;justify-content:space-between;align-items:start;gap:14px;min-height:78px;margin:0 -22px 14px;padding:12px 18px;background:linear-gradient(#202b35,#0d161e);border-bottom:3px solid #9a7541;box-shadow:0 6px 0 #0005}
 .kingdom-hud-level{width:190px;max-width:34%;font-size:14px;color:#f7d58d;text-shadow:0 2px #000}
 .kingdom-hud-level small{display:block;color:#aab9bd;font-size:9px;margin-top:4px}
 .kingdom-hud-track{height:9px;margin-top:8px;background:#0c1118;border:1px solid #897047;box-shadow:inset 0 2px 3px #0009}
@@ -891,3 +891,11 @@ button { font: inherit; }
 @media(max-width:800px){.stage-select-card.main-hub-card{padding-bottom:0}.kingdom-bottom-nav{bottom:0;margin:auto -10px 0}}
 .hero-management.upgrade-only{display:block}.hero-management.upgrade-only .hero-roster{width:100%}.hero-management.upgrade-only .hero-detail{max-width:100%}
 .hero-mode-tabs{display:flex;justify-content:space-between;align-items:center}.hero-mode-tabs>b{padding:12px;color:#ffe3a5}
+
+/* Keep touch targets on separate rows on narrow kingdom maps. */
+@media(max-width:800px){
+  .scene-vault{left:12%;top:16%}
+  .scene-training{right:12%;top:16%}
+  .scene-lumber{left:4%;top:72%}
+  .scene-quarry{right:4%;top:72%}
+}
