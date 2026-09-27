@@ -1,4 +1,4 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { useCallback, useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { UnitDef } from "../types";
 import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type SummonStorageItem } from "../systems/summon";
 import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
@@ -19,10 +19,16 @@ type Args={
  setMessage:Dispatch<SetStateAction<string>>;uidRef:MutableRefObject<number>;getGrade:(id:string)=>{name:SummonGrade|"???"};
 };
 export function useSummonController(a:Args){
+ const animationTimers = useRef<number[]>([]);
+ const clearAnimationTimers = useCallback(() => {
+  animationTimers.current.forEach(timer => window.clearTimeout(timer));
+  animationTimers.current = [];
+ }, []);
+ useEffect(() => clearAnimationTimers, [clearAnimationTimers]);
  const rollHero=(grade:SummonGrade)=>{const available=a.heroes.filter(h=>h.id!=="devWukong");const pool=available.filter(h=>a.getGrade(h.id).name===grade),fallback=available.filter(h=>["일반","희귀","영웅","전설"].includes(a.getGrade(h.id).name));const list=pool.length?pool:fallback;return list[Math.floor(Math.random()*list.length)]};
- const performSummon=(count:1|11)=>{if(a.phase!=="idle")return;const cost=count===11?1000:100;if(a.gems<cost)return;let lp=a.legendPity,mp=a.mythPity;const items=Array.from({length:count},(_,i)=>{lp++;mp++;const pity=applySummonPity(lp,mp,rollSummonGrade(count===11&&i===count-1));lp=pity.legendPity;mp=pity.mythPity;const hero=rollHero(pity.grade);return {uid:a.uidRef.current++,heroId:hero.id,grade:pity.grade}});a.setLegendPity(lp);a.setMythPity(mp);saveNumber(STORAGE_KEYS.legendPity,lp);saveNumber(STORAGE_KEYS.mythPity,mp);const storage=[...items,...a.storage];a.setStorage(storage);saveJson(STORAGE_KEYS.summonStorage,storage);const gems=a.gems-cost;a.setGems(gems);saveNumber(STORAGE_KEYS.gems,gems);a.setSequence(items);a.setResults(items);a.setSummaryOpen(false);a.setRevealIndex(0);a.setMessage("");a.setPhase("throw");window.setTimeout(()=>a.setPhase("impact"),650);window.setTimeout(()=>a.setPhase("crack"),1200);window.setTimeout(()=>a.setPhase("reveal"),1850)};
- const nextReveal=()=>{if(a.revealIndex<a.sequence.length-1){a.setRevealIndex(i=>i+1);return}a.setPhase("idle");a.setSequence([]);a.setSummaryOpen(true);a.setMessage("소환 완료 · 모든 결과가 저장소로 이동했습니다.")};
- const skipReveal=()=>{a.setPhase("idle");a.setSequence([]);a.setSummaryOpen(true);a.setMessage("연출 스킵 · 모든 결과가 저장소로 이동했습니다.")};
+ const performSummon=(count:1|11)=>{if(a.phase!=="idle")return;const cost=count===11?1000:100;if(a.gems<cost)return;let lp=a.legendPity,mp=a.mythPity;const items=Array.from({length:count},(_,i)=>{lp++;mp++;const pity=applySummonPity(lp,mp,rollSummonGrade(count===11&&i===count-1));lp=pity.legendPity;mp=pity.mythPity;const hero=rollHero(pity.grade);return {uid:a.uidRef.current++,heroId:hero.id,grade:pity.grade}});a.setLegendPity(lp);a.setMythPity(mp);saveNumber(STORAGE_KEYS.legendPity,lp);saveNumber(STORAGE_KEYS.mythPity,mp);const storage=[...items,...a.storage];a.setStorage(storage);saveJson(STORAGE_KEYS.summonStorage,storage);const gems=a.gems-cost;a.setGems(gems);saveNumber(STORAGE_KEYS.gems,gems);a.setSequence(items);a.setResults(items);a.setSummaryOpen(false);a.setRevealIndex(0);a.setMessage("");a.setPhase("throw");clearAnimationTimers();animationTimers.current=[window.setTimeout(()=>a.setPhase("impact"),650),window.setTimeout(()=>a.setPhase("crack"),1200),window.setTimeout(()=>a.setPhase("reveal"),1850)]};
+ const nextReveal=()=>{if(a.revealIndex<a.sequence.length-1){a.setRevealIndex(i=>i+1);return}clearAnimationTimers();a.setPhase("idle");a.setSequence([]);a.setSummaryOpen(true);a.setMessage("소환 완료 · 모든 결과가 저장소로 이동했습니다.")};
+ const skipReveal=()=>{clearAnimationTimers();a.setPhase("idle");a.setSequence([]);a.setSummaryOpen(true);a.setMessage("연출 스킵 · 모든 결과가 저장소로 이동했습니다.")};
  const useStored=(uid:number)=>{const item=a.storage.find(x=>x.uid===uid);if(!item||a.owned.includes(item.heroId))return;const owned=[...a.owned,item.heroId],storage=a.storage.filter(x=>x.uid!==uid);a.setOwned(owned);a.setStorage(storage);saveJson(STORAGE_KEYS.ownedHeroes,owned);saveJson(STORAGE_KEYS.summonStorage,storage)};
  const soulStored=(uid:number)=>{const item=a.storage.find(x=>x.uid===uid);if(!item||!a.owned.includes(item.heroId))return;const souls={...a.heroSouls,[item.heroId]:Math.min(30,(a.heroSouls[item.heroId]??0)+1)},storage=a.storage.filter(x=>x.uid!==uid);a.setHeroSouls(souls);a.setStorage(storage);saveJson(STORAGE_KEYS.heroSouls,souls);saveJson(STORAGE_KEYS.summonStorage,storage)};
  const shardStored=(uid:number)=>{const item=a.storage.find(x=>x.uid===uid);if(!item)return;const shards=a.soulShards+SHARD_VALUE[item.grade],trans=a.transcendShards+(item.grade==="신화"?1:item.grade==="초월"?5:0),storage=a.storage.filter(x=>x.uid!==uid);a.setSoulShards(shards);a.setTranscendShards(trans);a.setStorage(storage);saveNumber(STORAGE_KEYS.soulShards,shards);saveNumber(STORAGE_KEYS.transcendShards,trans);saveJson(STORAGE_KEYS.summonStorage,storage)};
