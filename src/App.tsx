@@ -10,9 +10,12 @@ import { HeroesPanel } from "./components/HeroesPanel";
 import { SummonPanel } from "./components/SummonPanel";
 import { StoragePanel } from "./components/StoragePanel";
 import { FusionPanel } from "./components/FusionPanel";
-import { StageSelectPanel } from "./components/StageSelectPanel";
 import { BattleScreen } from "./components/BattleScreen";
 import { HubHeader, type HubTab } from "./components/HubHeader";
+import { KingdomNav } from "./components/KingdomNav";
+import { ShopPanel } from "./components/ShopPanel";
+import { InventoryPanel } from "./components/InventoryPanel";
+import { BattleLobby } from "./components/BattleLobby";
 import { type GatherRegionKey } from "./game/systems/gathering";
 import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, getHeroTrait } from "./game/systems/heroGrowth";
 import { getProgressionGoals } from "./game/systems/progression";
@@ -69,6 +72,9 @@ function App() {
     return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
   });
   const [mainTab, setMainTab] = useState<HubTab>("home");
+  const [hubSettingsOpen, setHubSettingsOpen] = useState(false);
+  const [selectedLobbyStage, setSelectedLobbyStage] = useState<number | null>(null);
+  const [lobbyFormationOpen, setLobbyFormationOpen] = useState(false);
   const hubScrollRef = useRef<HTMLElement>(null);
   useEffect(() => { hubScrollRef.current?.scrollTo(0, 0); }, [mainTab]);
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
@@ -111,7 +117,7 @@ function App() {
   const [lastSummonResults, setLastSummonResults] = useState<SummonStorageItem[]>([]);
   const [summonPhase, setSummonPhase] = useState<"idle" | "throw" | "impact" | "crack" | "reveal">("idle");
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
-  const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("formation");
+  const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("upgrade");
   const [dragHeroId, setDragHeroId] = useState<string | null>(null);
   const [formationPage, setFormationPage] = useState<0 | 1>(0);
   const formationTouchY = useRef<number | null>(null);
@@ -470,16 +476,26 @@ function App() {
             : "⚠ BOSS · 강력한 특수 공격"
           : "";
 
+  const heroPanel = <HeroesPanel
+            heroes={HEROES} ownedHeroes={ownedHeroes} deckIds={deckIds} deckSlotCount={deckSlotCount}
+            heroMode={heroMode} setHeroMode={setHeroMode} formationPage={formationPage} setFormationPage={setFormationPage}
+            dragHeroId={dragHeroId} setDragHeroId={setDragHeroId} touchY={formationTouchY} setDeckSlot={setDeckSlot} removeDeckSlot={removeDeckSlot}
+            selectedHeroId={selectedHeroId} setSelectedHeroId={setSelectedHeroId} kingdomGold={kingdomGold} soulShards={soulShards}
+            heroSouls={heroSouls} getLevel={getUnitLevel} getMultiplier={getLevelMultiplier} getPower={getHeroPower}
+            getSoulBonus={getSoulBonuses} getUpgradeCost={getUpgradeCost} getGrade={getHeroGrade} getGrowth={getGradeGrowth}
+            getTrait={getHeroTrait} upgradeUnit={upgradeUnit} buySoul={buyHeroSoulWithShards}
+  />;
+
+
   if (battleState === "stageSelect") {
-    const nextAvailableStage = STAGES.find((stage) => !clearedStages.includes(stage.id) && (DEV_MODE || stage.id <= unlockedStage));
     return (
       <main className="stage-select-shell">
         <section ref={hubScrollRef} className="stage-select-card main-hub-card">
           <HubHeader tab={mainTab} devMode={DEV_MODE} kingdomLevel={kingdomLevel} gems={gems} gold={kingdomGold}
-            clearedCount={clearedStages.length} totalStages={STAGES.length}
-            nextStageLabel={nextAvailableStage ? `STAGE ${nextAvailableStage.id} · ${nextAvailableStage.name}` : "챕터 1 클리어"}
-            claimableGoals={claimableGoalCount} storageCount={summonStorage.length} canNavigate={summonPhase === "idle"}
-            onBattle={() => setMainTab("battle")} onStorage={() => setMainTab("storage")} />
+            nextLevelProgress={Math.min(100, Math.round(100 * Math.min(1, kingdomGold / Math.max(1, kingdomUpgradeCost))))}
+            onSettings={() => setHubSettingsOpen(true)} />
+          {mainTab !== "home" && <button className="kingdom-return" type="button" onClick={() => setMainTab("home")}>← 왕국으로</button>}
+          {hubSettingsOpen && <div className="hub-settings-overlay" role="dialog" aria-modal="true" aria-label="게임 설정"><div className="hub-settings-panel"><h2>게임 설정</h2><p>전투 속도 {gameSpeed}X · AUTO COM {autoCom ? "ON" : "OFF"}</p><button type="button" onClick={() => setGameSpeed(v => v === 1 ? 5 : 1)}>전투 속도 {gameSpeed}X</button><button type="button" onClick={() => setAutoCom(v => !v)}>AUTO COM {autoCom ? "끄기" : "켜기"}</button><button type="button" onClick={() => setHubSettingsOpen(false)}>닫기</button></div></div>}
 
           {mainTab === "home" && <KingdomPanel
             kingdomLevel={kingdomLevel} kingdomGold={kingdomGold} kingdomProductionBonus={kingdomProductionBonus} kingdomSellBonus={kingdomSellBonus}
@@ -489,7 +505,7 @@ function App() {
             nextGoalText={nextProgressionGoal?.text ?? "현재 준비된 진행 목표 완료"} kingdomUnlocks={kingdomUnlocks}
             nextKingdomUnlock={nextKingdomUnlock} kingdomMilestone={kingdomMilestone} facilityDefs={facilityDefs} facilityLevels={facilityLevels}
             kingdomUpgradeCost={kingdomUpgradeCost} facilityUpgradeCost={facilityUpgradeCost} onClaimGoal={claimGoalReward}
-            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => setMainTab("battle")}
+            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => setMainTab("battle")} onGather={() => setMainTab("gather")}
           />}
 
           {mainTab === "gather" && <GatheringPanel
@@ -501,17 +517,11 @@ function App() {
             onGather={gatherResource} onSell={sellResource} onAssign={assignWorker}
           />}
 
-          {mainTab === "battle" && <StageSelectPanel stages={STAGES} unlockedStage={unlockedStage} clearedStages={clearedStages} devMode={DEV_MODE} onSelect={selectStage} />}
+          {mainTab === "battle" && <BattleLobby stages={STAGES} unlockedStage={unlockedStage} clearedStages={clearedStages} devMode={DEV_MODE}
+            selected={selectedLobbyStage} onPick={index => { setSelectedLobbyStage(index); setLobbyFormationOpen(false); }} onBack={() => { setSelectedLobbyStage(null); setLobbyFormationOpen(false); }}
+            deck={visibleDeck} formationOpen={lobbyFormationOpen} onFormation={() => { setHeroMode("formation"); setLobbyFormationOpen(v => !v); }} formation={heroPanel} onDeploy={selectStage} />}
 
-          {mainTab === "heroes" && <HeroesPanel
-            heroes={HEROES} ownedHeroes={ownedHeroes} deckIds={deckIds} deckSlotCount={deckSlotCount}
-            heroMode={heroMode} setHeroMode={setHeroMode} formationPage={formationPage} setFormationPage={setFormationPage}
-            dragHeroId={dragHeroId} setDragHeroId={setDragHeroId} touchY={formationTouchY} setDeckSlot={setDeckSlot} removeDeckSlot={removeDeckSlot}
-            selectedHeroId={selectedHeroId} setSelectedHeroId={setSelectedHeroId} kingdomGold={kingdomGold} soulShards={soulShards}
-            heroSouls={heroSouls} getLevel={getUnitLevel} getMultiplier={getLevelMultiplier} getPower={getHeroPower}
-            getSoulBonus={getSoulBonuses} getUpgradeCost={getUpgradeCost} getGrade={getHeroGrade} getGrowth={getGradeGrowth}
-            getTrait={getHeroTrait} upgradeUnit={upgradeUnit} buySoul={buyHeroSoulWithShards}
-          />}
+          {mainTab === "heroes" && heroPanel}
 
           {mainTab === "summon" && <SummonPanel
             heroes={HEROES} phase={summonPhase} sequence={summonSequence} revealIndex={summonRevealIndex}
@@ -522,25 +532,20 @@ function App() {
             onSummon={performSummon} onStorage={() => setMainTab("storage")} onFusion={() => setMainTab("fusion")}
           />}
 
-          {mainTab === "storage" && <StoragePanel
+          {mainTab === "storage" && <InventoryPanel shards={soulShards} summonStorage={<StoragePanel
             heroes={HEROES} items={summonStorage} ownedHeroes={ownedHeroes} heroSouls={heroSouls}
             soulShards={soulShards} transcendShards={transcendShards} onBack={() => setMainTab("summon")}
             onBulkUse={bulkUseStoredHeroes} onBulkSoul={bulkSoulStoredHeroes} onBulkShard={bulkShardStoredHeroes}
             onUse={useStoredHero} onSoul={soulStoredHero} onShard={shardStoredHero}
-          />}
+          />} />}
 
           {mainTab === "fusion" && <FusionPanel
             heroes={HEROES} recipes={fusionRecipes} records={fusionRecords} ownedHeroes={ownedHeroes}
             transcendShards={transcendShards} onBack={() => setMainTab("summon")} onFusion={performFusion}
           />}
 
-          <nav className="main-nav five">
-            <button className={mainTab === "home" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("home")}>🏰<span>왕국</span></button>
-            <button className={mainTab === "gather" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("gather")}>🌲<span>채집</span></button>
-            <button className={mainTab === "battle" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("battle")}>⚔️<span>전투</span></button>
-            <button className={mainTab === "heroes" ? "active" : ""} disabled={summonPhase !== "idle"} onClick={() => setMainTab("heroes")}>🛡️<span>영웅</span></button>
-            <button className={["summon", "storage", "fusion"].includes(mainTab) ? "active" : ""} onClick={() => { if (summonPhase !== "idle") return; setMainTab("summon"); setSummonMessage(""); }}>🎲<span>소환</span></button>
-          </nav>
+          {mainTab === "shop" && <ShopPanel />}
+          <KingdomNav tab={mainTab} disabled={summonPhase !== "idle"} onNavigate={tab => { setMainTab(tab); if (tab === "battle") { setSelectedLobbyStage(null); setLobbyFormationOpen(false); } if (tab === "summon") setSummonMessage(""); if (tab === "heroes") setHeroMode("upgrade"); }} />
         </section>
       </main>
     );
@@ -548,7 +553,7 @@ function App() {
 
   return <BattleScreen
     pauseScreen={pauseScreen} onPause={() => setPauseScreen("menu")} onPauseScreen={setPauseScreen}
-    onExitBattle={() => { setPauseScreen(null); setBattleReward(null); setBattleState("stageSelect"); }}
+    onExitBattle={() => { setPauseScreen(null); setBattleReward(null); setSelectedLobbyStage(null); setBattleState("stageSelect"); }}
     stage={currentStage} stageIndex={stageIndex} unlockedStage={unlockedStage} battleState={battleState} battleReward={battleReward}
     castleHp={castleHp} enemyCastleHp={enemyCastleHp} battleGold={battleGold} battleGoldMax={battleGoldMax}
     economyLevel={economyLevel} economyMaxLevel={economyMaxLevel} goldPerSecond={goldPerSecond} economyUpgradeCost={economyUpgradeCost}
@@ -561,7 +566,7 @@ function App() {
     kingdomLevel={kingdomLevel} ownedHeroCount={ownedHeroes.length} heroTotal={HEROES.length} getUnitLevel={getUnitLevel}
     onSpeed={() => setGameSpeed(v => v === 1 ? 5 : 1)} onAuto={() => setAutoCom(v => !v)}
     onUpgradeEconomy={upgradeEconomy} onDeploy={deploy} onRetry={() => reset(stageIndex)}
-    onStageSelect={() => setBattleState("stageSelect")} onNext={() => reset(stageIndex + 1)}
+    onStageSelect={() => { setSelectedLobbyStage(null); setBattleState("stageSelect"); }} onNext={() => reset(stageIndex + 1)}
   />;
 }
 

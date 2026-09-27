@@ -13,23 +13,26 @@ type Props = {
   nextKingdomUnlock?:Unlock; kingdomMilestone:string; facilityDefs:Record<FacilityKey,Facility>;
   facilityLevels:Record<FacilityKey,number>; kingdomUpgradeCost:number;
   facilityUpgradeCost:(key:FacilityKey)=>number; onClaimGoal:(goal:ProgressionGoal)=>void;
-  onUpgradeKingdom:()=>void; onUpgradeFacility:(key:FacilityKey)=>void; onBattle:()=>void;
+  onUpgradeKingdom:()=>void; onUpgradeFacility:(key:FacilityKey)=>void; onBattle:()=>void; onGather:()=>void;
 };
 
 export function KingdomPanel(p:Props){
   const [section,setSection]=useState<"overview"|"goals"|"facilities">("overview");
   const claimable=p.progressionGoals.filter(goal=>goal.done&&!p.claimedGoals.includes(goal.id)).length;
   return <div className="kingdom-home">
-    <nav className="kingdom-section-nav" aria-label="왕국 메뉴">
-      <button type="button" aria-current={section==="overview"?"page":undefined} onClick={()=>setSection("overview")}>🏰 개요</button>
+    {section!=="overview"&&<button type="button" className="kingdom-scene-back" onClick={()=>setSection("overview")}>← 왕국으로</button>}
+    <nav className="kingdom-section-nav" aria-label="왕국 관리">
+      <button type="button" aria-current={section==="overview"?"page":undefined} onClick={()=>setSection("overview")}>🏰 왕국</button>
       <button type="button" aria-current={section==="goals"?"page":undefined} onClick={()=>setSection("goals")}>🏆 목표·보상{claimable>0&&<b>{claimable}</b>}</button>
       <button type="button" aria-current={section==="facilities"?"page":undefined} onClick={()=>setSection("facilities")}>🏗 시설 관리</button>
     </nav>
     {section==="overview"&&<>
-    <div className="kingdom-hero"><div className="kingdom-castle">🏰</div><div><b>퓨어 왕국</b><span>성벽 너머의 전장을 돌파하고 왕국을 성장시키세요.</span></div></div>
-    <div className="home-progress"><span>현재 전선</span><b>STAGE {Math.min(p.unlockedStage,p.stageCount)} · {p.currentStageName}</b><small>보유 영웅 {p.ownedHeroCount}/{p.heroCount} · 편성 {p.deckCount}/{p.deckSlotCount}</small><small>다음 성장 목표 · {p.nextGoalText}</small></div>
-    <div className="kingdom-overview-links"><button type="button" onClick={()=>setSection("goals")}><b>🏆 목표·보상</b><span>{claimable>0?`지금 받을 보상 ${claimable}개`: `진행 ${p.completedGoalCount}/${p.progressionGoals.length}`}</span></button><button type="button" onClick={()=>setSection("facilities")}><b>🏗 시설 관리</b><span>왕성 Lv.{p.kingdomLevel} · 다음 {p.nextKingdomUnlock?`Lv.${p.nextKingdomUnlock.level}`:"성장 단계"}</span></button></div>
-    <button className="home-battle-cta" onClick={p.onBattle}>⚔️ 전투 출격</button>
+    <div className="kingdom-scene" aria-label="왕국 시설 지도">
+      <div className="kingdom-scene-sky" aria-hidden="true"/><div className="kingdom-scene-road" aria-hidden="true"/>
+      <button className="scene-landmark scene-castle" type="button" aria-label={`중앙 성 Lv.${p.kingdomLevel} · 시설 관리`} onClick={()=>setSection("facilities")}><i aria-hidden="true">🏰</i><span>중앙 성<br/>Lv.{p.kingdomLevel}</span></button>
+      {(Object.keys(p.facilityDefs) as FacilityKey[]).map(key=>{const facility=p.facilityDefs[key];return <button key={key} type="button" className={`scene-landmark scene-${key}`} aria-label={`${facility.name} Lv.${p.facilityLevels[key]} · ${key==="lumber"||key==="quarry"?"채집":"시설 관리"}`} onClick={()=>key==="lumber"||key==="quarry"?p.onGather():setSection("facilities")}><i aria-hidden="true">{facility.icon}</i><span>{facility.name}<br/>Lv.{p.facilityLevels[key]}</span></button>})}
+    </div>
+    <div className="kingdom-scene-footer"><span>STAGE {Math.min(p.unlockedStage,p.stageCount)} · {p.currentStageName}</span><button type="button" onClick={()=>setSection("goals")}>목표·보상 {claimable>0&&`· ${claimable}개 수령 가능`}</button><button type="button" onClick={p.onGather}>채집</button></div>
     </>}
     {section==="goals"&&<>
     <div className="progression-board">
