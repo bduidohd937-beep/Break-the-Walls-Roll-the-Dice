@@ -1,4 +1,4 @@
-import shieldSheet from "../../assets/heroes/002-shield.png";
+import soldierSheet from "../../assets/heroes/001-soldier.png";
 import type { Unit } from "../types";
 
 export type BattleDeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; duration: number; unit?: Unit };
@@ -23,8 +23,8 @@ export type SpriteSheet = {
 const row = (y: number, count: number): Frame[] => Array.from({ length: count }, (_, x) => [x, y]);
 
 export const UNIT_SPRITES: Record<string, SpriteSheet> = {
-  shield: {
-    image: shieldSheet,
+  traineeSword: {
+    image: soldierSheet,
     idle: row(0, 8),
     walk: row(48, 7),
     attack: row(92, 7),
