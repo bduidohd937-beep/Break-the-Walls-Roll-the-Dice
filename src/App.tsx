@@ -476,6 +476,17 @@ function App() {
             : "⚠ BOSS · 강력한 특수 공격"
           : "";
 
+  const navigateHub = (tab: HubTab) => {
+    if (summonPhase !== "idle") return;
+    if (tab === "battle") {
+      setSelectedLobbyStage(null);
+      setLobbyFormationOpen(false);
+    }
+    if (tab === "summon") setSummonMessage("");
+    if (tab === "heroes") setHeroMode("upgrade");
+    setMainTab(tab);
+  };
+
   const heroPanel = <HeroesPanel
             heroes={HEROES} ownedHeroes={ownedHeroes} deckIds={deckIds} deckSlotCount={deckSlotCount}
             heroMode={heroMode} setHeroMode={setHeroMode} formationPage={formationPage} setFormationPage={setFormationPage}
@@ -494,7 +505,7 @@ function App() {
           <HubHeader tab={mainTab} devMode={DEV_MODE} kingdomLevel={kingdomLevel} gems={gems} gold={kingdomGold}
             nextLevelProgress={Math.min(100, Math.round(100 * Math.min(1, kingdomGold / Math.max(1, kingdomUpgradeCost))))}
             onSettings={() => setHubSettingsOpen(true)} />
-          {mainTab !== "home" && <button className="kingdom-return" type="button" onClick={() => setMainTab("home")}>← 왕국으로</button>}
+          {mainTab !== "home" && <button className="kingdom-return" type="button" disabled={summonPhase !== "idle"} onClick={() => navigateHub("home")}>← 왕국으로</button>}
           {hubSettingsOpen && <div className="hub-settings-overlay" role="dialog" aria-modal="true" aria-label="게임 설정"><div className="hub-settings-panel"><h2>게임 설정</h2><p>전투 속도 {gameSpeed}X · AUTO COM {autoCom ? "ON" : "OFF"}</p><button type="button" onClick={() => setGameSpeed(v => v === 1 ? 5 : 1)}>전투 속도 {gameSpeed}X</button><button type="button" onClick={() => setAutoCom(v => !v)}>AUTO COM {autoCom ? "끄기" : "켜기"}</button><button type="button" onClick={() => setHubSettingsOpen(false)}>닫기</button></div></div>}
 
           {mainTab === "home" && <KingdomPanel
@@ -505,7 +516,7 @@ function App() {
             nextGoalText={nextProgressionGoal?.text ?? "현재 준비된 진행 목표 완료"} kingdomUnlocks={kingdomUnlocks}
             nextKingdomUnlock={nextKingdomUnlock} kingdomMilestone={kingdomMilestone} facilityDefs={facilityDefs} facilityLevels={facilityLevels}
             kingdomUpgradeCost={kingdomUpgradeCost} facilityUpgradeCost={facilityUpgradeCost} onClaimGoal={claimGoalReward}
-            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => setMainTab("battle")} onGather={() => setMainTab("gather")}
+            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => navigateHub("battle")} onGather={() => navigateHub("gather")}
           />}
 
           {mainTab === "gather" && <GatheringPanel
@@ -529,23 +540,23 @@ function App() {
             legendPity={legendPity} mythPity={mythPity} message={summonMessage} storageCount={summonStorage.length}
             fusionCount={fusionRecords.length} fusionTotal={fusionRecipes.length} ownedCount={ownedHeroes.length}
             onSkip={skipSummonReveal} onNext={nextSummonReveal} onCloseSummary={() => setSummonSummaryOpen(false)}
-            onSummon={performSummon} onStorage={() => setMainTab("storage")} onFusion={() => setMainTab("fusion")}
+            onSummon={performSummon} onStorage={() => navigateHub("storage")} onFusion={() => navigateHub("fusion")}
           />}
 
           {mainTab === "storage" && <InventoryPanel shards={soulShards} summonStorage={<StoragePanel
             heroes={HEROES} items={summonStorage} ownedHeroes={ownedHeroes} heroSouls={heroSouls}
-            soulShards={soulShards} transcendShards={transcendShards} onBack={() => setMainTab("summon")}
+            soulShards={soulShards} transcendShards={transcendShards} onBack={() => navigateHub("summon")}
             onBulkUse={bulkUseStoredHeroes} onBulkSoul={bulkSoulStoredHeroes} onBulkShard={bulkShardStoredHeroes}
             onUse={useStoredHero} onSoul={soulStoredHero} onShard={shardStoredHero}
           />} />}
 
           {mainTab === "fusion" && <FusionPanel
             heroes={HEROES} recipes={fusionRecipes} records={fusionRecords} ownedHeroes={ownedHeroes}
-            transcendShards={transcendShards} onBack={() => setMainTab("summon")} onFusion={performFusion}
+            transcendShards={transcendShards} onBack={() => navigateHub("summon")} onFusion={performFusion}
           />}
 
           {mainTab === "shop" && <ShopPanel />}
-          <KingdomNav tab={mainTab} disabled={summonPhase !== "idle"} onNavigate={tab => { setMainTab(tab); if (tab === "battle") { setSelectedLobbyStage(null); setLobbyFormationOpen(false); } if (tab === "summon") setSummonMessage(""); if (tab === "heroes") setHeroMode("upgrade"); }} />
+          <KingdomNav tab={mainTab} disabled={summonPhase !== "idle"} onNavigate={navigateHub} />
         </section>
       </main>
     );
