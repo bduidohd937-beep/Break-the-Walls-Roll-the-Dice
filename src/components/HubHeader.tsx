@@ -38,10 +38,10 @@ export function HubHeader(p: Props) {
       <span>🪙 Game Gold <b>{p.gold.toLocaleString()}</b></span>
       <span>🏆 클리어 <b>{p.clearedCount}/{p.totalStages}</b></span>
     </div>
-    <div className="hub-next-actions">
+    {p.tab === "home" && <div className="hub-next-actions">
       <div><small>다음 목표</small><strong>{p.nextStageLabel}</strong><span>수령 가능 목표 {p.claimableGoals}개 · 저장소 {p.storageCount}명</span></div>
       <button type="button" disabled={!p.canNavigate} onClick={p.onBattle}>⚔️ 전장 선택</button>
       <button type="button" disabled={!p.canNavigate} onClick={p.onStorage}>📦 저장소 {p.storageCount}</button>
-    </div>
+    </div>}
   </header>;
 }

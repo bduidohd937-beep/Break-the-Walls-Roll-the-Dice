@@ -1,6 +1,7 @@
 import React from "react";
 import type { Unit } from "../game/types";
 import { ELEMENT_CLASS, ELEMENT_LABEL, clamp } from "../game/constants";
+import { HeroSprite } from "./HeroSprite";
 
 export function BattleUnit({ unit }: { unit: Unit }) {
   return (
@@ -11,7 +12,7 @@ export function BattleUnit({ unit }: { unit: Unit }) {
     >
       <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>
       <div className="unit-sprite">
-        {unit.sprite}<span className="unit-aura" />
+        <HeroSprite hero={unit} attacking={unit.attackFlash > 0} /><span className="unit-aura" />
         {unit.knockbackCount > 0 && <span className="knockback-badge">↩ {unit.knockbackCount}/3</span>}
       </div>
       <div className="unit-name">{unit.name}</div>
