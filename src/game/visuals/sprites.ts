@@ -3,15 +3,21 @@ import type { Unit } from "../types";
 
 export type BattleDeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; duration: number; unit?: Unit };
 
-type Frame = readonly [column: number, y: number];
-type SpriteSheet = {
+export type Frame = readonly [column: number, y: number];
+export type SpriteSheet = {
   image: string;
   idle: Frame[];
   walk: Frame[];
   attack: Frame[];
   hit: Frame[];
-  death: Frame[];
-  deathDuration: number;
+  death: {
+    fall: Frame[];
+    corpse: Frame;
+    soul: Frame;
+    fallSeconds: number;
+    corpseSeconds: number;
+    soulSeconds: number;
+  };
 };
 
 const row = (y: number, count: number): Frame[] => Array.from({ length: count }, (_, x) => [x, y]);
@@ -23,10 +29,19 @@ export const UNIT_SPRITES: Record<string, SpriteSheet> = {
     walk: row(48, 7),
     attack: row(92, 7),
     hit: [[5, 132], [6, 132], [7, 132]],
-    // The atlas finishes with the fallen body fading and its spirit rising.
-    death: [...row(176, 8).slice(3), ...row(224, 6)],
-    deathDuration: 1.4,
+    death: {
+      fall: [...row(176, 8).slice(4), [0, 224]],
+      corpse: [0, 224],
+      // Only the upper part of this original frame contains the rising soul.
+      soul: [3, 224],
+      fallSeconds: 0.9,
+      corpseSeconds: 0.3,
+      soulSeconds: 0.6,
+    },
   },
 };
 
-export const spriteDeathDuration = (id: string) => UNIT_SPRITES[id]?.deathDuration ?? 0.42;
+export const spriteDeathDuration = (id: string) => {
+  const death = UNIT_SPRITES[id]?.death;
+  return death ? Math.round((death.fallSeconds + death.corpseSeconds + death.soulSeconds) * 1000) / 1000 : 0.42;
+};

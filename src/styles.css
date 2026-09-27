@@ -50,6 +50,9 @@ button { font: inherit; }
 .unit-pixel-sprite.state-attack{animation-duration:.16s;animation-timing-function:steps(7)}
 .unit-pixel-sprite.state-hit{animation-duration:.14s;animation-timing-function:steps(3)}
 .unit-pixel-sprite.state-death{animation:none}
+.sprite-death{position:relative;display:grid;place-items:center;width:var(--sprite-size,64px);height:calc(var(--sprite-size,64px) * 1.375);pointer-events:none}
+.sprite-death .death-corpse{transform:translateY(calc(var(--sprite-size) * .375))}
+.sprite-death .death-soul{position:absolute;top:calc(var(--sprite-size) * .375);left:0;height:calc(var(--sprite-size) * .55);animation:none;transform:translateY(calc(var(--soul-rise) * -1));pointer-events:none}
 .unit-sprite .unit-pixel-sprite{--sprite-size:64px}
 .formation-hero .unit-pixel-sprite,.formation-slot .unit-pixel-sprite,.deck-builder-card .unit-pixel-sprite,.storage-hero .unit-pixel-sprite{--sprite-size:32px}
 .hero-detail-head .unit-pixel-sprite,.reveal-sprite .unit-pixel-sprite{--sprite-size:64px}
