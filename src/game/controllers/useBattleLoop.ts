@@ -3,9 +3,10 @@ import type { Unit } from "../types";
 import { BOSS_ENEMY_KEYS, STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
-import { updateKnockback, applyKnockback } from "../combat/knockback";
+import { applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
-import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
+import { incomingDamage, outgoingDamage } from "../combat/damage";
+import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 
@@ -46,42 +47,8 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         return next;
       });
 
-      let nextHeroes = heroesRef.current.map((u) => {
-        const unit = updateKnockback({
-          ...u,
-          attackTimer: Math.max(0, u.attackTimer - dt),
-          hitFlash: Math.max(0, u.hitFlash - 0.05),
-          attackFlash: Math.max(0, u.attackFlash - 0.05),
-          attackAnimationTimer: Math.max(0, (u.attackAnimationTimer ?? 0) - dt),
-          specialTimer: Math.max(0, u.specialTimer - dt),
-        }, dt);
-        const healed = Math.min(unit.hp, unit.currentHp + regenAmount(unit, dt));
-        if (unit.burnTimer <= 0) return { ...unit, currentHp: healed };
-        const burnTick = Math.min(unit.burnTimer, dt);
-        return {
-          ...unit,
-          currentHp: Math.max(0, healed - unit.burnDamage * burnTick),
-          burnTimer: Math.max(0, unit.burnTimer - dt),
-        };
-      });
-
-      let nextEnemies = enemiesRef.current.map((u) => {
-        const unit = updateKnockback({
-          ...u,
-          attackTimer: Math.max(0, u.attackTimer - dt),
-          hitFlash: Math.max(0, u.hitFlash - 0.05),
-          attackFlash: Math.max(0, u.attackFlash - 0.05),
-          attackAnimationTimer: Math.max(0, (u.attackAnimationTimer ?? 0) - dt),
-          slowTimer: Math.max(0, u.slowTimer - dt),
-        }, dt);
-        if (unit.burnTimer <= 0) return unit;
-        const burnTick = Math.min(unit.burnTimer, dt);
-        return {
-          ...unit,
-          currentHp: Math.max(0, unit.currentHp - unit.burnDamage * burnTick),
-          burnTimer: Math.max(0, unit.burnTimer - dt),
-        };
-      });
+      let nextHeroes = heroesRef.current.map((unit) => advanceHeroStatus(unit, dt));
+      let nextEnemies = enemiesRef.current.map((unit) => advanceEnemyStatus(unit, dt));
 
       // Spawn the current wave with gentle per-wave scaling.
       const stage = STAGES[stageRef.current];

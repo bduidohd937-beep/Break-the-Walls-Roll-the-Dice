@@ -3,6 +3,7 @@ import type { Unit } from "../types";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "./collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "./damage";
 import { applyKnockback, updateKnockback } from "./knockback";
+import { advanceEnemyStatus, advanceHeroStatus } from "./statusTick";
 
 function unit(overrides: Partial<Unit> = {}): Unit {
   return {
@@ -85,6 +86,45 @@ describe("knockback rules", () => {
     const result = updateKnockback(moving, 0.22);
     expect(result.knockbackTimer).toBe(0);
     expect(result.x).toBeCloseTo(57);
+  });
+});
+
+describe("unit status ticks", () => {
+  it("updates hero timers, regeneration, and burn in the existing order", () => {
+    const result = advanceHeroStatus(unit({
+      currentHp: 300,
+      ability: "regen",
+      abilityValue: 0.1,
+      attackTimer: 1,
+      specialTimer: 2,
+      burnTimer: 0.5,
+      burnDamage: 20
+    }), 0.5);
+    expect(result.attackTimer).toBeCloseTo(0.5);
+    expect(result.specialTimer).toBeCloseTo(1.5);
+    expect(result.currentHp).toBeCloseTo(310);
+    expect(result.burnTimer).toBe(0);
+  });
+
+  it("updates enemy slow and burn timers without applying regeneration", () => {
+    const result = advanceEnemyStatus(unit({
+      team: "enemy",
+      currentHp: 300,
+      ability: "regen",
+      abilityValue: 0.1,
+      slowTimer: 1,
+      burnTimer: 1,
+      burnDamage: 20
+    }), 0.5);
+    expect(result.slowTimer).toBeCloseTo(0.5);
+    expect(result.currentHp).toBeCloseTo(290);
+    expect(result.burnTimer).toBeCloseTo(0.5);
+  });
+
+  it("keeps visual flash decay tied to the fixed render tick", () => {
+    const result = advanceHeroStatus(unit({ hitFlash: 0.2, attackFlash: 0.2 }), 0.25);
+    expect(result.hitFlash).toBeCloseTo(0.15);
+    expect(result.attackFlash).toBeCloseTo(0.15);
   });
 });
 
