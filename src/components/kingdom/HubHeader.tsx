@@ -1,6 +1,5 @@
 import { FullscreenToggle } from "../shared/FullscreenToggle";
-
-export type HubTab = "home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion" | "shop";
+import type { HubTab } from "../../game/controllers/useHubNavigation";
 
 type Props = {
   tab: HubTab; devMode: boolean; kingdomLevel: number; gems: number; gold: number;

@@ -10,7 +10,7 @@ import { SummonPanel } from "./components/summon/SummonPanel";
 import { StoragePanel } from "./components/heroes/StoragePanel";
 import { FusionPanel } from "./components/heroes/FusionPanel";
 import { BattleScreen } from "./components/battle/BattleScreen";
-import { HubHeader, type HubTab } from "./components/kingdom/HubHeader";
+import { HubHeader } from "./components/kingdom/HubHeader";
 import { KingdomNav } from "./components/kingdom/KingdomNav";
 import { ShopPanel } from "./components/kingdom/ShopPanel";
 import { InventoryPanel } from "./components/kingdom/InventoryPanel";
@@ -27,6 +27,7 @@ import { useSummonController } from "./game/controllers/useSummonController";
 import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
 import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
 import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
+import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigation";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
 import { savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
 
@@ -61,12 +62,13 @@ function App() {
     const saved = savedIds(loadJson(STORAGE_KEYS.deckIds, []), undefined, 10);
     return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
   });
-  const [mainTab, setMainTab] = useState<HubTab>("home");
-  const [hubSettingsOpen, setHubSettingsOpen] = useState(false);
-  const [selectedLobbyStage, setSelectedLobbyStage] = useState<number | null>(null);
-  const [lobbyFormationOpen, setLobbyFormationOpen] = useState(false);
-  const hubScrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { hubScrollRef.current?.scrollTo(0, 0); }, [mainTab]);
+  const {
+    mainTab, setMainTab,
+    hubSettingsOpen, setHubSettingsOpen,
+    selectedLobbyStage, setSelectedLobbyStage,
+    lobbyFormationOpen, setLobbyFormationOpen,
+    hubScrollRef
+  } = useHubNavigation();
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
     const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {});

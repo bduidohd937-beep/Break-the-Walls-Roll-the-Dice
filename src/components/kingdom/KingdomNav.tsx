@@ -1,4 +1,4 @@
-import type { HubTab } from "./HubHeader";
+import type { HubTab } from "../../game/controllers/useHubNavigation";
 
 const destinations = [
   { id:"heroes", label:"영웅", icon:"♜" },
