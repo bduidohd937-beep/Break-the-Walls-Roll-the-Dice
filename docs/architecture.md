@@ -19,7 +19,12 @@ src/
   game/types.ts        게임 전역 타입
   App.tsx              화면과 시스템을 조립하는 애플리케이션 루트
   main.tsx             React 진입점과 개발용 스프라이트 화면 분기
-  styles.css           현재 전역 스타일 진입점
+  styles/index.css     전역 스타일 진입점과 로드 순서
+  styles/base.css      공용 토큰·기본 화면·초기 UI 스타일
+  styles/battle.css    전투 연출·배치·전투 경제 스타일
+  styles/features.css  영웅·소환·채집·성장 기능 스타일
+  styles/hub.css       왕국 허브 셸과 메뉴 스타일
+  styles/responsive.css 모바일 가로 화면과 반응형 보정
 ```
 
 ## 의존 방향
@@ -59,8 +64,8 @@ main → app/root → feature components → controllers → systems/combat → 
 
 ## 다음 구조 개선 후보
 
-- `styles.css`를 기본, 허브, 전투, 반응형 스타일로 분리
 - `components`를 전투, 왕국, 영웅, 소환 기능 폴더로 이동
+- 공용 HUD와 전체화면 버튼을 공유 컴포넌트 폴더로 이동
 - `App.tsx`에서 프로필 상태와 화면 조립 분리
 - `useBattleLoop.ts`에서 순수 계산과 React 타이머 제어 분리
 - 저장 데이터와 전투 경제에 대한 최소 회귀 테스트 추가

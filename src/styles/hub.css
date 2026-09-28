@@ -1,0 +1,55 @@
+/* Kingdom shell: each landmark, HUD icon and menu icon can receive a PNG background later. */
+.stage-select-shell{background:radial-gradient(ellipse at 50% 25%,#263c4d 0,#0a121b 70%)}
+.stage-select-card.main-hub-card{display:flex;flex-direction:column;overflow-y:auto;background:#0a1119;border:2px solid #614d30;border-radius:2px;box-shadow:inset 0 0 0 3px #192633,0 16px 40px #000a;padding:0 22px 92px}
+.kingdom-hud{position:relative;z-index:5;display:flex;flex-shrink:0;justify-content:space-between;align-items:start;gap:14px;min-height:78px;margin:0 -22px 14px;padding:12px 18px;background:linear-gradient(#202b35,#0d161e);border-bottom:3px solid #9a7541;box-shadow:0 6px 0 #0005}
+.kingdom-hud-level{width:190px;max-width:34%;font-size:14px;color:#f7d58d;text-shadow:0 2px #000}
+.kingdom-hud-level small{display:block;color:#aab9bd;font-size:9px;margin-top:4px}
+.kingdom-hud-track{height:9px;margin-top:8px;background:#0c1118;border:1px solid #897047;box-shadow:inset 0 2px 3px #0009}
+.kingdom-hud-track span{display:block;height:100%;background:linear-gradient(90deg,#8d6128,#efbe65)}
+.kingdom-hud-location{align-self:center;color:#e6d0a0;font-size:19px}
+.kingdom-hud-wallet{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.hud-currency,.hud-settings{min-height:38px;padding:7px 10px;background:#101d28;border:2px solid #5d5140;color:#d5dee5;font-size:11px;font-weight:900;box-shadow:inset 0 0 0 1px #202b34}
+.hud-currency b{color:#f5e6b8;margin-left:4px}
+.hud-icon{display:inline-block;vertical-align:middle;width:13px;height:13px;margin-right:3px;background-size:contain;background-repeat:no-repeat;image-rendering:pixelated}
+.hud-gold{background:#dcb653;border:2px solid #785726;border-radius:50%}
+.hud-gem{background:#3f9ff0;border:2px solid #accfff;clip-path:polygon(25% 0,75% 0,100% 38%,50% 100%,0 38%)}
+.hud-settings{cursor:pointer;font-size:20px;line-height:16px;color:#e6d6af}
+.kingdom-return,.kingdom-scene-back{align-self:flex-start;margin:2px 0 12px;padding:9px 15px;border:1px solid #8b754f;background:#202934;color:#f1ddad;cursor:pointer}
+.kingdom-home{margin-top:0;gap:10px}.kingdom-home .kingdom-section-nav{order:2;margin-top:6px}.kingdom-home .kingdom-scene-back{order:0}
+.kingdom-home .kingdom-scene,.kingdom-home .kingdom-scene-footer{order:1}
+.kingdom-section-nav button{background:#1b252d;border-color:#695536;color:#ceb98f}
+.kingdom-section-nav button[aria-current="page"]{background:#423219;border-color:#c29748}
+.kingdom-scene{position:relative;height:clamp(360px,57vh,620px);overflow:hidden;isolation:isolate;border:3px solid #5e5038;box-shadow:inset 0 0 0 3px #14202a,0 5px #090d12;background:linear-gradient(#324b61 0 48%,#3b5845 48% 73%,#283d2c 73%);image-rendering:pixelated}
+.kingdom-scene-sky{position:absolute;inset:15% 0 37%;background:linear-gradient(150deg,transparent 48%,#293c4a 49% 61%,transparent 62%) 0 0/34% 100%,linear-gradient(40deg,transparent 47%,#435865 48% 65%,transparent 66%) 0 0/32% 100%;opacity:.7}
+.kingdom-scene-road{position:absolute;bottom:-12%;left:39%;width:23%;height:52%;background:#79684f;clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);box-shadow:inset 0 0 0 10px #5a503b}
+.scene-landmark{position:absolute;z-index:2;display:grid;place-items:center;min-width:74px;min-height:75px;padding:2px 8px;background:transparent;border:0;color:#f9e7b4;cursor:pointer;filter:drop-shadow(0 6px 2px #0007)}
+.scene-landmark i{font-style:normal;font-size:clamp(38px,5vw,65px);line-height:1.1;image-rendering:pixelated}
+.scene-landmark span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:max-content;max-width:135px;padding:6px 9px;border:1px solid #ad8749;background:#101923ed;color:#ffe4a0;font-size:11px;font-weight:900;line-height:1.4;text-align:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s}
+.scene-landmark:hover span,.scene-landmark:focus-visible span{opacity:1;visibility:visible}
+.scene-landmark:hover,.scene-landmark:focus-visible{filter:drop-shadow(0 0 8px #f6d179)}
+.scene-castle{left:50%;top:36%;transform:translateX(-50%)}.scene-castle i{font-size:clamp(85px,12vw,145px)}
+.scene-lumber{left:13%;top:55%}.scene-quarry{right:14%;top:58%}.scene-vault{left:27%;top:26%}.scene-training{right:26%;top:28%}
+.kingdom-scene-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 10px;background:#16242c;border:1px solid #5c5138;color:#ead6aa;font-size:11px}
+.kingdom-scene-footer span{margin-right:auto}.kingdom-scene-footer button,.kingdom-battle-lobby button,.inventory-filters button{padding:8px 12px;border:1px solid #9b7d48;background:#30271b;color:#f2dfb3;cursor:pointer}
+.kingdom-bottom-nav{position:sticky;z-index:30;bottom:-92px;margin:auto -22px -92px;padding:7px 12px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;min-height:78px;border-top:3px solid #8b6b3c;background:#0b141d;box-shadow:0 -5px 15px #0008}
+.kingdom-menu-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;background:linear-gradient(#303539,#121d24);border:2px solid #886a3d;box-shadow:inset 0 0 0 2px #17222b,0 3px #000;color:#dfcfac;cursor:pointer;font-weight:900;font-size:12px;image-rendering:pixelated}
+.kingdom-menu-button.active{background:linear-gradient(#6c5432,#30251a);border-color:#efc673;color:#fff4ca}.kingdom-menu-button:disabled{opacity:.45;cursor:default}
+.kingdom-menu-button.primary{transform:scale(1.1);border-color:#dbac60;box-shadow:inset 0 0 0 2px #60451d,0 0 12px #c08b3370}
+.kingdom-menu-icon{font-style:normal;font-size:23px;line-height:25px;width:30px;height:27px;background-size:contain;background-position:center;background-repeat:no-repeat;image-rendering:pixelated}
+.kingdom-placeholder-panel,.kingdom-inventory,.kingdom-battle-lobby{padding:18px;margin:4px 0 16px;background:#101c25;border:2px solid #6b573b;color:#e9dcbd}
+.shop-shelves{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.shop-shelves>div,.inventory-slot,.kingdom-chapter{padding:18px;border:1px solid #665638;background:#17232b;color:#ddcb9f}.shop-shelves h3{margin:0 0 20px}.shop-shelves span{color:#9eaeaf}
+.inventory-filters{display:flex;gap:8px;flex-wrap:wrap}.inventory-filters button.active{border-color:#f1c271;background:#584126}.kingdom-inventory .storage-screen{margin-top:12px}
+.kingdom-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:14px}.kingdom-panel-heading h2{margin:5px 0 14px}.kingdom-chapter{margin-bottom:12px}.kingdom-chapter small{display:block;margin-top:6px}.battle-lobby-deck{display:flex;gap:6px;flex-wrap:wrap;padding:12px;margin:12px 0;background:#0d151c;border:1px solid #52513a}.battle-lobby-deck span{padding:8px;border:1px solid #4d6170;background:#202e37}.battle-lobby-launch{display:block;margin:18px 0 2px;padding:14px 32px!important;background:#674319!important;font-weight:900}
+.hub-settings-overlay{position:fixed;z-index:90;inset:0;display:grid;place-items:center;background:#000a}.hub-settings-panel{display:grid;gap:10px;min-width:min(340px,92vw);padding:22px;background:#15222d;border:3px solid #ae8646}.hub-settings-panel button{padding:10px;background:#30281e;border:1px solid #a8874d;color:#ffe6ae;cursor:pointer}
+@media(max-width:800px){.stage-select-card.main-hub-card{padding:0 10px 80px}.kingdom-hud{margin:0 -10px 12px;padding:8px;flex-wrap:wrap}.kingdom-hud-wallet{gap:3px}.hud-currency{font-size:9px;padding:5px}.kingdom-hud-location{display:none}.kingdom-bottom-nav{margin: auto -10px -80px;bottom:-80px;min-height:64px;padding:5px;gap:2px}.kingdom-menu-button{font-size:10px}.kingdom-menu-icon{font-size:18px}.scene-landmark{min-width:55px;min-height:54px}.scene-lumber{left:4%}.scene-quarry{right:4%}.scene-vault{left:22%}.scene-training{right:20%}.shop-shelves{grid-template-columns:1fr}}
+.summon-menu-wallet{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.summon-menu-wallet span{padding:9px 15px;border:1px solid #786038;background:#132334;color:#e8d49e}
+.stage-select-card.main-hub-card{padding-bottom:0}
+.kingdom-bottom-nav{bottom:0;margin: auto -22px 0;flex-shrink:0}
+@media(max-width:800px){.stage-select-card.main-hub-card{padding-bottom:0}.kingdom-bottom-nav{bottom:0;margin:auto -10px 0}}
+.hub-tab-content{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-bottom:8px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.fullscreen-toggle{display:grid;place-items:center;min-width:38px;min-height:38px;padding:5px;border:2px solid #5d5140;background:#101d28;color:#f3dfae;font-size:19px;font-weight:1000;line-height:1;cursor:pointer;box-shadow:inset 0 0 0 1px #202b34}
+.fullscreen-toggle:active{transform:translateY(1px);filter:brightness(1.2)}
+.hud-fullscreen{flex:0 0 auto}
+.battle-fullscreen{flex:0 0 28px;min-width:28px;min-height:26px;padding:3px;font-size:14px}
+.hero-management.upgrade-only{display:block}.hero-management.upgrade-only .hero-roster{width:100%}.hero-management.upgrade-only .hero-detail{max-width:100%}
+.hero-mode-tabs{display:flex;justify-content:space-between;align-items:center}.hero-mode-tabs>b{padding:12px;color:#ffe3a5}
