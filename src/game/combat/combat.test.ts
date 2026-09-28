@@ -4,6 +4,10 @@ import { resolveFrontlineCollision, resolveSameTeamSpacing } from "./collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "./damage";
 import { applyKnockback, updateKnockback } from "./knockback";
 import { advanceEnemyStatus, advanceHeroStatus } from "./statusTick";
+import { spawnWaveEnemy } from "./waveSpawner";
+import { ENEMY_MAP, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
+import { STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
+import type { Wave, WaveMeta } from "../types";
 
 function unit(overrides: Partial<Unit> = {}): Unit {
   return {
@@ -148,5 +152,67 @@ describe("battlefield collision rules", () => {
       [unit({ uid: 2, team: "enemy", x: 51 })]
     );
     expect(result.heroes[0].x).toBe(52);
+  });
+});
+
+describe("wave spawning rules", () => {
+  const wave: Wave = [
+    { enemy: "goblin", count: 2, gap: 0.4 },
+    { enemy: "orc", count: 1 }
+  ];
+
+  it("does not spawn before the timer reaches zero", () => {
+    const result = spawnWaveEnemy({
+      stageIndex: 0,
+      waveIndex: 0,
+      wave,
+      waveMeta: { name: "test", reward: 0 },
+      spawnedInWave: 0,
+      spawnTimer: 0.1,
+      uid: 1000,
+      random: () => 0
+    });
+    expect(result.enemy).toBeUndefined();
+    expect(result.totalInWave).toBe(3);
+    expect(result.spawnedInWave).toBe(0);
+  });
+
+  it("preserves grouped enemy order and the default spawn gap", () => {
+    const values = [0.5, 0.2];
+    const result = spawnWaveEnemy({
+      stageIndex: 0,
+      waveIndex: 0,
+      wave,
+      waveMeta: { name: "test", reward: 0 },
+      spawnedInWave: 2,
+      spawnTimer: 0,
+      uid: 1002,
+      random: () => values.shift() ?? 0
+    });
+    expect(result.enemy?.id).toBe(ENEMY_MAP.orc.id);
+    expect(result.enemy?.x).toBe(92);
+    expect(result.enemy?.attackTimer).toBeCloseTo(0.1);
+    expect(result.spawnedInWave).toBe(3);
+    expect(result.spawnTimer).toBe(0.8);
+  });
+
+  it("applies the current stage, wave, and boss stat multipliers", () => {
+    const waveMeta: WaveMeta = { name: "boss", reward: 0, boss: true };
+    const stageIndex = 2;
+    const waveIndex = 1;
+    const result = spawnWaveEnemy({
+      stageIndex,
+      waveIndex,
+      wave: [{ enemy: "goblin", count: 1 }],
+      waveMeta,
+      spawnedInWave: 0,
+      spawnTimer: 0,
+      uid: 1000,
+      random: () => 0
+    });
+    const hpScale = 1 + stageIndex * STAGE_HP_SCALE + waveIndex * WAVE_HP_SCALE + 0.35;
+    const atkScale = 1 + stageIndex * STAGE_ATK_SCALE + waveIndex * WAVE_ATK_SCALE + 0.15;
+    expect(result.enemy?.hp).toBe(Math.round(ENEMY_MAP.goblin.hp * hpScale));
+    expect(result.enemy?.atk).toBe(Math.round(ENEMY_MAP.goblin.atk * atkScale));
   });
 });

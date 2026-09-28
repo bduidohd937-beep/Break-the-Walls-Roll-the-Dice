@@ -7,6 +7,7 @@ import { applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage } from "../combat/damage";
 import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
+import { spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 
@@ -54,22 +55,21 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       const stage = STAGES[stageRef.current];
       const wave = stage.waves[waveRef.current];
       const waveMeta = stage.waveMeta[waveRef.current];
-      const totalInWave = wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
-      if (wave && spawnRef.current < totalInWave && spawnTimerRef.current <= 0) {
-        const sequence = wave.flatMap((group) => Array.from({ length: group.count }, () => group));
-        const group = sequence[spawnRef.current];
-        const baseEnemy = ENEMY_MAP[group.enemy];
-        const hpScale = 1 + stageRef.current * STAGE_HP_SCALE + waveRef.current * WAVE_HP_SCALE + (waveMeta?.boss ? 0.35 : 0);
-        const atkScale = 1 + stageRef.current * STAGE_ATK_SCALE + waveRef.current * WAVE_ATK_SCALE + (waveMeta?.boss ? 0.15 : 0);
-        const enemyDef = {
-          ...baseEnemy,
-          hp: Math.round(baseEnemy.hp * hpScale),
-          atk: Math.round(baseEnemy.atk * atkScale),
-        };
-        const uid = 1000 + uidRef.current++;
-        nextEnemies.push(makeUnit(enemyDef, "enemy", 90 + Math.random() * 4, uid));
-        spawnRef.current += 1;
-        spawnTimerRef.current = group.gap ?? 0.8;
+      const spawnResult = spawnWaveEnemy({
+        stageIndex: stageRef.current,
+        waveIndex: waveRef.current,
+        wave,
+        waveMeta,
+        spawnedInWave: spawnRef.current,
+        spawnTimer: spawnTimerRef.current,
+        uid: 1000 + uidRef.current
+      });
+      const totalInWave = spawnResult.totalInWave;
+      if (spawnResult.enemy) {
+        nextEnemies.push(spawnResult.enemy);
+        uidRef.current += 1;
+        spawnRef.current = spawnResult.spawnedInWave;
+        spawnTimerRef.current = spawnResult.spawnTimer;
       }
 
       const bossMechanic = stage.bossMechanic;
