@@ -11,6 +11,9 @@ export type RemovableEffectMeta = { removable?: boolean; sourceUid?: number; sou
 export type TimedShield = { amount: number; remaining: number } & RemovableEffectMeta;
 export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; value: number; remaining: number } & RemovableEffectMeta;
 export type TimedDamageTakenModifier = { multiplier: number; remaining: number } & RemovableEffectMeta;
+export type TimedStatRateModifier = { mode: ModifierMode; value: number; remaining: number } & RemovableEffectMeta;
+export type TimedDamageDealtModifier = { multiplier: number; remaining: number } & RemovableEffectMeta;
+export type TimedCooldownModifier = { multiplier: number; remaining: number } & RemovableEffectMeta;
 export type AbilityStatusId = "STUN" | "SLOW";
 export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number; removable?: boolean };
 export type PeriodicEffectId = "DOT" | "HOT";
@@ -21,6 +24,10 @@ export type AbilityEffectState = {
   damageTakenModifiers: readonly TimedDamageTakenModifier[];
   statuses: readonly TimedAbilityStatus[];
   periodicEffects: readonly TimedPeriodicEffect[];
+  attackSpeedModifiers: readonly TimedStatRateModifier[];
+  moveSpeedModifiers: readonly TimedStatRateModifier[];
+  damageDealtModifiers: readonly TimedDamageDealtModifier[];
+  cooldownModifiers: readonly TimedCooldownModifier[];
   baseStats?: { atk: number; def: number; attackInterval: number; speed: number };
 };
 
@@ -88,7 +95,11 @@ export type EffectDefinition =
   | ({ type: "DISPEL"; count: number } & TaggedEffect)
   | ({ type: "SUMMON"; summonUnitId: string; count: number; duration?: number } & TaggedEffect)
   | ({ type: "REVIVE"; amount: ScalingDefinition } & TaggedEffect)
-  | ({ type: "RESOURCE_CHANGE"; resource: string; amount: ScalingDefinition } & TaggedEffect);
+  | ({ type: "RESOURCE_CHANGE"; resource: string; amount: ScalingDefinition } & TaggedEffect)
+  | ({ type: "ATTACK_SPEED_MODIFIER"; mode: ModifierMode; value: ScalingDefinition; duration: number } & TaggedEffect)
+  | ({ type: "MOVE_SPEED_MODIFIER"; mode: ModifierMode; value: ScalingDefinition; duration: number } & TaggedEffect)
+  | ({ type: "DAMAGE_DEALT_MODIFIER"; multiplier: number; duration: number } & TaggedEffect)
+  | ({ type: "COOLDOWN_MODIFIER"; multiplier: number; duration: number } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;

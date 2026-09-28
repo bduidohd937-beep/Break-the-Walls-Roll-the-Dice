@@ -2,7 +2,7 @@ import { applyAbilityKnockback } from "../knockback";
 import { calculateScaling } from "./scaling";
 import type { AbilityEffectState, AbilityStatusId, AbilityUnit, EffectDefinition, ModifiableStat, StatusId } from "./types";
 
-const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [], statuses: [], periodicEffects: [] });
+const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [], statuses: [], periodicEffects: [], attackSpeedModifiers: [], moveSpeedModifiers: [], damageDealtModifiers: [], cooldownModifiers: [] });
 
 export function hasAbilityStatus(unit: AbilityUnit, status: AbilityStatusId): boolean {
   return Boolean(unit.abilityEffectState?.statuses.some((entry) => entry.id === status && entry.remaining > 0));
@@ -11,7 +11,10 @@ export function hasAbilityStatus(unit: AbilityUnit, status: AbilityStatusId): bo
 export function effectiveMoveSpeed(unit: AbilityUnit): number {
   const slows = unit.abilityEffectState?.statuses.filter((entry) => entry.id === "SLOW" && entry.remaining > 0) ?? [];
   const multiplier = slows.length === 0 ? 1 : Math.min(...slows.map((entry) => entry.potency));
-  return unit.speed * Math.max(0, multiplier);
+  const modifiers = unit.abilityEffectState?.moveSpeedModifiers ?? [];
+  const flat = modifiers.filter((entry) => entry.mode === "FLAT").reduce((sum, entry) => sum + entry.value, 0);
+  const percent = modifiers.filter((entry) => entry.mode === "PERCENT").reduce((product, entry) => product * (1 + entry.value), 1);
+  return Math.max(0, (unit.speed + flat) * percent * Math.max(0, multiplier));
 }
 
 function effectiveStat(unit: AbilityUnit, stat: ModifiableStat, state: AbilityEffectState): number {
@@ -19,7 +22,12 @@ function effectiveStat(unit: AbilityUnit, stat: ModifiableStat, state: AbilityEf
   const modifiers = state.statModifiers.filter((modifier) => modifier.stat === stat);
   const flat = modifiers.filter((modifier) => modifier.mode === "FLAT").reduce((sum, modifier) => sum + modifier.value, 0);
   const percent = modifiers.filter((modifier) => modifier.mode === "PERCENT").reduce((product, modifier) => product * (1 + modifier.value), 1);
-  if (stat === "ASPD") return 1 / Math.max(0.05, (1 / base.attackInterval + flat) * percent);
+  if (stat === "ASPD") {
+    const rateModifiers = state.attackSpeedModifiers;
+    const rateFlat = rateModifiers.filter((entry) => entry.mode === "FLAT").reduce((sum, entry) => sum + entry.value, 0);
+    const ratePercent = rateModifiers.filter((entry) => entry.mode === "PERCENT").reduce((product, entry) => product * (1 + entry.value), 1);
+    return 1 / Math.max(0.05, (1 / base.attackInterval + flat + rateFlat) * percent * ratePercent);
+  }
   const value = stat === "ATK" ? base.atk : stat === "DEF" ? base.def : base.speed;
   return Math.max(0, (value + flat) * percent);
 }
@@ -36,7 +44,7 @@ function applyEffectiveStats(unit: AbilityUnit, state: AbilityEffectState): Abil
 }
 
 function compactEffectState(unit: AbilityUnit, state: AbilityEffectState): AbilityUnit {
-  const hasEffects = state.shields.length + state.statModifiers.length + state.damageTakenModifiers.length + state.statuses.length + state.periodicEffects.length > 0;
+  const hasEffects = state.shields.length + state.statModifiers.length + state.damageTakenModifiers.length + state.statuses.length + state.periodicEffects.length + state.attackSpeedModifiers.length + state.moveSpeedModifiers.length + state.damageDealtModifiers.length + state.cooldownModifiers.length > 0;
   if (hasEffects) return applyEffectiveStats(unit, state);
   return {
     ...unit,
@@ -87,10 +95,11 @@ function removeDispelEffects(unit: AbilityUnit, count: number): AbilityUnit {
   return compactEffectState(unit, { ...state, statModifiers, shields, damageTakenModifiers });
 }
 
-export function resolveAbilityDamage(target: AbilityUnit, rawDamage: number): { unit: AbilityUnit; hpDamage: number } {
+export function resolveAbilityDamage(target: AbilityUnit, rawDamage: number, source?: AbilityUnit): { unit: AbilityUnit; hpDamage: number } {
   const state = target.abilityEffectState ?? emptyEffectState();
   const multiplier = state.damageTakenModifiers.reduce((product, modifier) => product * modifier.multiplier, 1);
-  let remainingDamage = Math.max(0, rawDamage * multiplier);
+  const dealtMultiplier = source?.abilityEffectState?.damageDealtModifiers.reduce((product, modifier) => product * modifier.multiplier, 1) ?? 1;
+  let remainingDamage = Math.max(0, rawDamage * dealtMultiplier * multiplier);
   const shields = state.shields.map((shield) => ({ ...shield }));
   for (const shield of shields) {
     const absorbed = Math.min(shield.amount, remainingDamage);
@@ -113,9 +122,13 @@ export function advanceAbilityEffectDurations(unit: AbilityUnit, dt: number): Ab
     statModifiers: state.statModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     damageTakenModifiers: state.damageTakenModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
     ,statuses: state.statuses.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
-    periodicEffects: state.periodicEffects.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
+    periodicEffects: state.periodicEffects.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    attackSpeedModifiers: state.attackSpeedModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    moveSpeedModifiers: state.moveSpeedModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    damageDealtModifiers: state.damageDealtModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    cooldownModifiers: state.cooldownModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
   };
-  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length + nextState.statuses.length + nextState.periodicEffects.length > 0;
+  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length + nextState.statuses.length + nextState.periodicEffects.length + nextState.attackSpeedModifiers.length + nextState.moveSpeedModifiers.length + nextState.damageDealtModifiers.length + nextState.cooldownModifiers.length > 0;
   const restored = applyEffectiveStats(unit, nextState);
   return active ? restored : {
     ...restored,
@@ -184,7 +197,7 @@ export type EffectHandlerRegistry = {
 
 export const defaultEffectHandlers: EffectHandlerRegistry = {
   DAMAGE: (effect, { caster, target }) => {
-    const resolved = resolveAbilityDamage(target, calculateScaling(effect.amount, caster, target));
+    const resolved = resolveAbilityDamage(target, calculateScaling(effect.amount, caster, target), caster);
     return { ...resolved.unit, currentHp: Math.max(0, target.currentHp - resolved.hpDamage) };
   },
   HEAL: (effect, { caster, target }) => target.currentHp <= 0 ? target : ({
@@ -265,6 +278,25 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     };
   },
   RESOURCE_CHANGE: (effect, { target }) => target
+  ,ATTACK_SPEED_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    const next = { mode: effect.mode, value: calculateScaling(effect.value, caster, target), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId };
+    const baseStats = state.baseStats ?? { atk: target.atk, def: target.def ?? 0, attackInterval: target.attackInterval, speed: target.speed };
+    return applyEffectiveStats(target, { ...state, baseStats, attackSpeedModifiers: [...state.attackSpeedModifiers, next] });
+  },
+  MOVE_SPEED_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    const next = { mode: effect.mode, value: calculateScaling(effect.value, caster, target), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId };
+    return { ...target, abilityEffectState: { ...state, moveSpeedModifiers: [...state.moveSpeedModifiers, next] } };
+  },
+  DAMAGE_DEALT_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    return { ...target, abilityEffectState: { ...state, damageDealtModifiers: [...state.damageDealtModifiers, { multiplier: Math.max(0, effect.multiplier), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId }] } };
+  },
+  COOLDOWN_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    return { ...target, abilityEffectState: { ...state, cooldownModifiers: [...state.cooldownModifiers, { multiplier: Math.max(0.05, effect.multiplier), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId }] } };
+  }
 };
 
 export function executeEffect(

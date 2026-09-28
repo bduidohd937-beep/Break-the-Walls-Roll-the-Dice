@@ -54,7 +54,7 @@ describe("CLEANSE and DISPEL effects", () => {
   it("preserves effects marked non-removable for future immunity rules", () => {
     const target = unit(2, "enemy");
     const state: AbilityEffectState = {
-      shields: [{ amount: 100, remaining: 3, removable: false }], statModifiers: [], damageTakenModifiers: [], statuses: [], periodicEffects: []
+      shields: [{ amount: 100, remaining: 3, removable: false }], statModifiers: [], damageTakenModifiers: [], statuses: [], periodicEffects: [], attackSpeedModifiers: [], moveSpeedModifiers: [], damageDealtModifiers: [], cooldownModifiers: []
     };
     const dispelled = apply({ ...target, abilityEffectState: state }, { type: "DISPEL", count: 1 });
     expect(dispelled.abilityEffectState?.shields).toHaveLength(1);

@@ -268,7 +268,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
             const hpBeforeHit = nextHeroes[hitIndex].currentHp;
             const isPrimaryTarget = targetUid === target.uid;
             const impactAtk = enemy.attackType === "splash" && !isPrimaryTarget ? attackDamage * 0.65 : attackDamage;
-            const resolvedDamage = resolveAbilityDamage(nextHeroes[hitIndex], damage);
+            const resolvedDamage = resolveAbilityDamage(nextHeroes[hitIndex], damage, enemy);
             const hitHero = applyKnockback(
               resolvedDamage.unit,
               nextHeroes[hitIndex].currentHp - resolvedDamage.hpDamage,

@@ -123,7 +123,8 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
           if (!below || wasBelow) continue;
         } else if (trigger.type === "ON_INTERVAL") {
           if (event.type !== "ON_INTERVAL") continue;
-          const elapsed = (intervalElapsed.get(binding.key) ?? 0) + event.elapsedSeconds;
+          const cooldownMultiplier = caster.abilityEffectState?.cooldownModifiers.reduce((product, modifier) => product * modifier.multiplier, 1) ?? 1;
+          const elapsed = (intervalElapsed.get(binding.key) ?? 0) + event.elapsedSeconds / Math.max(0.05, cooldownMultiplier);
           activationCount = Math.floor(elapsed / Math.max(0.001, trigger.intervalSeconds));
           intervalElapsed.set(binding.key, elapsed - activationCount * trigger.intervalSeconds);
           if (activationCount === 0) continue;
