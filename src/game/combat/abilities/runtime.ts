@@ -1,5 +1,5 @@
 import { meetsAbilityCondition } from "./conditions";
-import { advanceAbilityEffectDurations, defaultEffectHandlers, executeEffect, legacyStatusHandlers, type EffectHandlerRegistry, type StatusHandlerRegistry } from "./effects";
+import { applyPeriodicEffects, defaultEffectHandlers, executeEffect, legacyStatusHandlers, type EffectHandlerRegistry, type StatusHandlerRegistry } from "./effects";
 import { selectAbilityTargets } from "./targeting";
 import type {
   AbilityActivation,
@@ -66,15 +66,24 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
       const candidates = byEvent.get(event.type) ?? [];
       const shouldAdvanceEffects = event.type === "ON_INTERVAL" && temporaryEffectUids.size > 0;
       if (candidates.length === 0 && !shouldAdvanceEffects) return { units: battlefield.units, activations: [], applications: [] };
+      const applications: AbilityEffectApplication[] = [];
       const units = new Map<number, AbilityUnit>(battlefield.units.map((unit) => {
-        const next = shouldAdvanceEffects && temporaryEffectUids.has(unit.uid)
-          ? advanceAbilityEffectDurations(unit, event.elapsedSeconds)
-          : { ...unit };
+        let next = { ...unit };
+        if (shouldAdvanceEffects && temporaryEffectUids.has(unit.uid)) {
+          const ticked = applyPeriodicEffects(unit, event.elapsedSeconds);
+          next = ticked.unit;
+          for (const application of ticked.applications) applications.push({
+            abilityId: application.abilityId ?? `periodic:${application.effectType}`,
+            ownerUid: application.ownerUid,
+            targetUid: unit.uid,
+            effectType: application.effectType,
+            hpDelta: application.hpDelta
+          });
+        }
         if (shouldAdvanceEffects && !next.abilityEffectState) temporaryEffectUids.delete(unit.uid);
         return [unit.uid, next];
       }));
       const activations: AbilityActivation[] = [];
-      const applications: AbilityEffectApplication[] = [];
 
       for (const binding of candidates) {
         if (event.casterUid !== undefined && binding.ownerUid !== event.casterUid) continue;

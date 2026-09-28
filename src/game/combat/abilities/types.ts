@@ -12,11 +12,14 @@ export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; valu
 export type TimedDamageTakenModifier = { multiplier: number; remaining: number };
 export type AbilityStatusId = "STUN" | "SLOW";
 export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number };
+export type PeriodicEffectId = "DOT" | "HOT";
+export type TimedPeriodicEffect = { id: PeriodicEffectId; amount: number; interval: number; elapsed: number; remaining: number; sourceUid: number; sourceAbilityId?: string };
 export type AbilityEffectState = {
   shields: readonly TimedShield[];
   statModifiers: readonly TimedStatModifier[];
   damageTakenModifiers: readonly TimedDamageTakenModifier[];
   statuses: readonly TimedAbilityStatus[];
+  periodicEffects: readonly TimedPeriodicEffect[];
   baseStats?: { atk: number; def: number; attackInterval: number; speed: number };
 };
 
@@ -72,7 +75,9 @@ export type EffectDefinition =
   | ({ type: "APPLY_STATUS"; status: StatusId; duration: number; potency?: ScalingDefinition } & TaggedEffect)
   | ({ type: "SHIELD"; amount: ScalingDefinition; duration: number } & TaggedEffect)
   | ({ type: "STAT_MODIFIER"; stat: ModifiableStat; mode: ModifierMode; value: ScalingDefinition; duration: number } & TaggedEffect)
-  | ({ type: "DAMAGE_TAKEN_MODIFIER"; multiplier: number; duration: number } & TaggedEffect);
+  | ({ type: "DAMAGE_TAKEN_MODIFIER"; multiplier: number; duration: number } & TaggedEffect)
+  | ({ type: "DOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
+  | ({ type: "HOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;

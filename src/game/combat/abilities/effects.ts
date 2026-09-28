@@ -2,7 +2,7 @@ import { applyAbilityKnockback } from "../knockback";
 import { calculateScaling } from "./scaling";
 import type { AbilityEffectState, AbilityStatusId, AbilityUnit, EffectDefinition, ModifiableStat, StatusId } from "./types";
 
-const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [], statuses: [] });
+const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [], statuses: [], periodicEffects: [] });
 
 export function hasAbilityStatus(unit: AbilityUnit, status: AbilityStatusId): boolean {
   return Boolean(unit.abilityEffectState?.statuses.some((entry) => entry.id === status && entry.remaining > 0));
@@ -60,9 +60,10 @@ export function advanceAbilityEffectDurations(unit: AbilityUnit, dt: number): Ab
     shields: state.shields.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     statModifiers: state.statModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     damageTakenModifiers: state.damageTakenModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
-    ,statuses: state.statuses.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
+    ,statuses: state.statuses.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    periodicEffects: state.periodicEffects.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
   };
-  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length + nextState.statuses.length > 0;
+  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length + nextState.statuses.length + nextState.periodicEffects.length > 0;
   const restored = applyEffectiveStats(unit, nextState);
   return active ? restored : {
     ...restored,
@@ -72,6 +73,30 @@ export function advanceAbilityEffectDurations(unit: AbilityUnit, dt: number): Ab
     speed: nextState.baseStats?.speed ?? restored.speed,
     abilityEffectState: undefined
   };
+}
+
+export function applyPeriodicEffects(unit: AbilityUnit, dt: number): { unit: AbilityUnit; applications: Array<{ ownerUid: number; abilityId?: string; effectType: "DOT" | "HOT"; hpDelta: number }> } {
+  const state = unit.abilityEffectState;
+  if (!state || state.periodicEffects.length === 0) return { unit: advanceAbilityEffectDurations(unit, dt), applications: [] };
+  const original = state.periodicEffects;
+  let next = advanceAbilityEffectDurations(unit, dt);
+  const applications: Array<{ ownerUid: number; abilityId?: string; effectType: "DOT" | "HOT"; hpDelta: number }> = [];
+  for (const effect of original) {
+    const activeDelta = Math.min(dt, effect.remaining);
+    const ticks = Math.floor((effect.elapsed + activeDelta) / effect.interval) - Math.floor(effect.elapsed / effect.interval);
+    for (let index = 0; index < ticks; index++) {
+      if (next.currentHp <= 0) continue;
+      const before = next.currentHp;
+      if (effect.id === "DOT") {
+        const resolved = resolveAbilityDamage(next, effect.amount);
+        next = { ...resolved.unit, currentHp: Math.max(0, next.currentHp - resolved.hpDamage) };
+      } else {
+        next = { ...next, currentHp: Math.min(next.hp, next.currentHp + effect.amount) };
+      }
+      applications.push({ ownerUid: effect.sourceUid, abilityId: effect.sourceAbilityId, effectType: effect.id, hpDelta: next.currentHp - before });
+    }
+  }
+  return { unit: next, applications };
 }
 
 export type StatusHandler = (target: AbilityUnit, duration: number, potency: number) => AbilityUnit;
@@ -156,6 +181,16 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
   DAMAGE_TAKEN_MODIFIER: (effect, { target }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
     return { ...target, abilityEffectState: { ...state, damageTakenModifiers: [...state.damageTakenModifiers, { multiplier: Math.max(0, effect.multiplier), remaining: effect.duration }] } };
+  },
+  DOT: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    const periodic = { id: "DOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId };
+    return { ...target, abilityEffectState: { ...state, periodicEffects: [...state.periodicEffects, periodic] } };
+  },
+  HOT: (effect, { caster, target, sourceAbilityId }) => {
+    const state = target.abilityEffectState ?? emptyEffectState();
+    const periodic = { id: "HOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId };
+    return { ...target, abilityEffectState: { ...state, periodicEffects: [...state.periodicEffects, periodic] } };
   }
 };
 
