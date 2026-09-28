@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, GRANTED_HERO_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, GRANTED_HERO_IDS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/kingdom/KingdomPanel";
@@ -26,32 +26,23 @@ import { useGatheringController } from "./game/controllers/useGatheringControlle
 import { useSummonController } from "./game/controllers/useSummonController";
 import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
 import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
+import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
-import { savedClears, savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
+import { savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 const DEV_FACILITY_LEVEL = 10; // Facilities currently have no level cap.
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
-  const [unlockedStage, setUnlockedStage] = useState(() => {
-    const saved = loadNumber(STORAGE_KEYS.unlockedStage, 1);
-    return DEV_MODE ? STAGES.length : clamp(Math.floor(saved) || 1, 1, STAGES.length);
-  });
-  const [kingdomGold, setKingdomGold] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.kingdomGold, DEV_MODE ? 99999999 : 0)));
-  const [gems, setGems] = useState(() => {
-    return Math.max(0, loadNumber(STORAGE_KEYS.gems, DEV_MODE ? 99999999 : INITIAL_GEMS));
-  });
-  const [unitLevels, setUnitLevels] = useState<Record<string, number>>(() => {
-    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.unitLevels, {});
-    return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 10])) : savedCounts(saved, 10);
-  });
-  const [clearedStages, setClearedStages] = useState<number[]>(() => savedClears(loadJson(STORAGE_KEYS.clearedStages, [])));
-  const [claimedGoals, setClaimedGoals] = useState<string[]>(() => savedIds(loadJson(STORAGE_KEYS.claimedGoals, []), new Set(["first-clear", "gather-start", "kingdom-2", "hero-roster", "hero-growth", "facility-growth", "stage-10", "morgar"])));
-  useEffect(() => { saveNumber(STORAGE_KEYS.unlockedStage, unlockedStage); }, [unlockedStage]);
-  useEffect(() => { saveNumber(STORAGE_KEYS.kingdomGold, kingdomGold); }, [kingdomGold]);
-  useEffect(() => { saveNumber(STORAGE_KEYS.gems, gems); }, [gems]);
-  useEffect(() => { saveJson(STORAGE_KEYS.clearedStages, clearedStages); }, [clearedStages]);
+  const {
+    unlockedStage, setUnlockedStage,
+    kingdomGold, setKingdomGold,
+    gems, setGems,
+    unitLevels, setUnitLevels,
+    clearedStages, setClearedStages,
+    claimedGoals, setClaimedGoals
+  } = usePlayerProgress();
   const [battleGold, setBattleGold] = useState(300);
   const [economyLevel, setEconomyLevel] = useState(1);
   const [waveIndex, setWaveIndex] = useState(0);

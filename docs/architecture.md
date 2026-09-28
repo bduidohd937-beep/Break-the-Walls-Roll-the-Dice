@@ -46,6 +46,7 @@ main → app/root → feature components → controllers → systems/combat → 
 - 저장 키 문자열은 `game/storage.ts`에서만 정의합니다.
 - 영웅과 스테이지의 안정적인 ID는 저장 데이터 호환성이 있으므로 이름을 바꾸지 않습니다.
 - 이미지 교체는 `game/visuals`의 매핑을 통해 연결하고 전투 규칙에 파일 경로를 넣지 않습니다.
+- 플레이어 진행 저장 상태는 `game/controllers/usePlayerProgress.ts`에서 기존 저장 키와 검증 규칙을 그대로 사용합니다.
 
 ## 대규모 정돈 순서
 
