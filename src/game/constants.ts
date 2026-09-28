@@ -5,7 +5,7 @@ import { UNIT_SPRITE_CONFIGS } from "./visuals/sprites";
 export const HEROES: UnitDef[] = [
   { id: "goblin", name: "고블린", sprite: "👺", element: "neutral", hp: 90, atk: 14, speed: 48, range: 34, rangeType: "melee", attackType: "single", attackInterval: 0.9, cost: 50, cooldown: 2.5, role: "근접" },
   { id: "fireGoblin", name: "화염 고블린", sprite: "👺", element: "fire", hp: 82, atk: 24, speed: 43, range: 120, rangeType: "ranged", attackType: "single", attackInterval: 1.2, cost: 90, cooldown: 4, role: "원거리", effect: "burn" },
-  { id: "shield", name: "철갑 방패병", sprite: "🛡️", element: "neutral", hp: 260, atk: 22, speed: 30, range: 32, rangeType: "melee", attackType: "single", attackInterval: 1.3, cost: 150, cooldown: 6, role: "탱커", ability: "guard", abilityValue: 0.22 },
+  { id: "shield", name: "철갑 방패병", sprite: "🛡️", element: "neutral", hp: 260, atk: 22, speed: 30, range: 32, rangeType: "melee", attackType: "single", attackInterval: 1.3, cost: 150, cooldown: 6, role: "탱커", ability: "guard", abilityValue: 0.22, spriteConfig: UNIT_SPRITE_CONFIGS.shield },
   { id: "archer", name: "왕국 궁수", sprite: "🏹", element: "neutral", hp: 120, atk: 38, speed: 38, range: 190, rangeType: "ranged", attackType: "single", attackInterval: 1.35, cost: 180, cooldown: 7, role: "원거리" },
   { id: "knight", name: "왕국 기사", sprite: "⚔️", element: "neutral", hp: 430, atk: 65, speed: 34, range: 40, rangeType: "melee", attackType: "single", attackInterval: 1.5, cost: 400, cooldown: 10, role: "근접 딜러" },
   { id: "mage", name: "불꽃 마법사", sprite: "🧙", element: "fire", hp: 150, atk: 82, speed: 28, range: 210, rangeType: "ranged", attackInterval: 1.9, cost: 500, cooldown: 12, role: "광역 마법", effect: "burn", attackType: "splash", splashRadius: 12 },

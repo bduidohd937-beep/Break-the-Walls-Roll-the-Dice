@@ -6,6 +6,11 @@ import hero001Move from "../../assets/heroes/hero-001/lv01/move.png";
 import hero001Attack from "../../assets/heroes/hero-001/lv01/attack.png";
 import hero001Hit from "../../assets/heroes/hero-001/lv01/hit.png";
 import hero001Death from "../../assets/heroes/hero-001/lv01/death.png";
+import hero002Idle from "../../assets/heroes/hero-002/lv01/idle.png";
+import hero002Move from "../../assets/heroes/hero-002/lv01/move.png";
+import hero002Attack from "../../assets/heroes/hero-002/lv01/attack.png";
+import hero002Hit from "../../assets/heroes/hero-002/lv01/hit.png";
+import hero002Death from "../../assets/heroes/hero-002/lv01/death.png";
 import type { Unit } from "../types";
 import type { SpriteConfig } from "../types";
 
@@ -59,6 +64,16 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
       attack: { asset: hero001Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 4, projectileSpawnFrame: 4 },
       hit: { asset: hero001Hit, frameCount: 3, fps: 12, loop: false },
       death: { asset: hero001Death, frameCount: 6, fps: 10, loop: false },
+    },
+  },
+  shield: {
+    frameWidth: 128, frameHeight: 128, scale: 1.5, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    animations: {
+      idle: { asset: hero002Idle, frameCount: 4, fps: 6, loop: true },
+      move: { asset: hero002Move, frameCount: 6, fps: 10, loop: true },
+      attack: { asset: hero002Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 4 },
+      hit: { asset: hero002Hit, frameCount: 3, fps: 12, loop: false },
+      death: { asset: hero002Death, frameCount: 6, fps: 10, loop: false },
     },
   },
 };

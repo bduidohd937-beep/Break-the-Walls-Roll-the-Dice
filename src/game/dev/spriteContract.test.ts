@@ -24,4 +24,25 @@ describe("sprite asset contract", () => {
     const duration = config.animations.attack!.frameCount / config.animations.attack!.fps;
     expect(duration / 5).toBeCloseTo(duration * 0.2);
   });
+  it("validates HERO_002 production shield-bash animation contract", () => {
+    const config = UNIT_SPRITE_CONFIGS.shield;
+    expect(config).toMatchObject({ frameWidth: 128, frameHeight: 128, scale: 1.5, pivotX: 0.5, pivotY: 1, facing: "RIGHT" });
+    expect(config.animations).toMatchObject({
+      idle: { frameCount: 4, fps: 6 },
+      move: { frameCount: 6, fps: 10 },
+      attack: { frameCount: 6, fps: 12, impactFrame: 4 },
+      hit: { frameCount: 3, fps: 12 },
+      death: { frameCount: 6, fps: 10 },
+    });
+    const issues: { path: string; message: string }[] = [];
+    validateSpriteConfig({ id: "hero002", name: "hero002", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: config }, "hero002", issues);
+    expect(issues).toEqual([]);
+  });
+  it("keeps HERO_002 render scale separate from gameplay stats at 1x and 5x", () => {
+    const config = UNIT_SPRITE_CONFIGS.shield;
+    const duration = config.animations.attack!.frameCount / config.animations.attack!.fps;
+    expect(config.scale).toBe(1.5);
+    expect(duration).toBe(0.5);
+    expect(duration / 5).toBeCloseTo(duration * 0.2);
+  });
 });
