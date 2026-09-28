@@ -33,7 +33,7 @@ import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import { useHeroFormation } from "./game/controllers/useHeroFormation";
 import { useBattleViewState } from "./game/controllers/useBattleViewState";
 import type { BattleReward, DamagePopup } from "./game/combat/types";
-import { createCombatAbilityIntegration } from "./game/combat/abilities";
+import { createCombatAbilityIntegration, resolveAbilityDefinitions } from "./game/combat/abilities";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
 
 function App() {
@@ -204,6 +204,7 @@ function App() {
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     const deployed = makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid);
     const deployedHeroes = [...heroesRef.current, deployed];
+    abilityIntegrationRef.current.registerUnitAbilities(deployed.uid, resolveAbilityDefinitions(deployed.abilityIds));
     if (abilityIntegrationRef.current.hasAbilities()) {
       const abilityResult = abilityIntegrationRef.current.publish({
         type: "UNIT_DEPLOYED",

@@ -26,6 +26,7 @@ export type UnitDef = {
   ability?: AbilityType;
   abilityValue?: number;
   targetPriority?: TargetPriority;
+  abilityIds?: readonly string[];
 };
 
 export type Unit = UnitDef & {
