@@ -7,9 +7,9 @@ export function incomingDamage(target: Unit, rawDamage: number): number {
   return rawDamage;
 }
 
-export function outgoingDamage(attacker: Unit, target: Unit, baseDamage: number): number {
+export function outgoingDamage(attacker: Unit, target: Unit, baseDamage: number, random: () => number = Math.random): number {
   let damage = baseDamage;
-  if (attacker.ability === "crit" && Math.random() < (attacker.abilityValue ?? 0)) damage *= 2;
+  if (attacker.ability === "crit" && random() < (attacker.abilityValue ?? 0)) damage *= 2;
   if (attacker.ability === "execute" && target.currentHp / target.hp <= (attacker.abilityValue ?? 0.25)) damage *= 1.5;
   if (attacker.element === "fire" && target.element === "dark") damage *= 1.25;
   return damage;

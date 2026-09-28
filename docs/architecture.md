@@ -52,6 +52,7 @@ main → app/root → feature components → controllers → systems/combat → 
 - 소환 보관함·영혼·파편·천장 기록은 `game/controllers/useSummonProfile.ts`에서 기존 저장 형식을 유지합니다.
 - 출전 덱 저장과 영웅 편성 UI 상태는 `game/controllers/useHeroFormation.ts`에서 관리합니다.
 - 전투 안내·배속·일시정지·덱 페이지 같은 화면 상태는 `game/controllers/useBattleViewState.ts`에서 관리합니다.
+- 전투 프레임의 공용 상태·이벤트 타입은 `game/combat/types.ts`에서 정의하고 순수 전투 계산 테스트로 보호합니다.
 
 ## 대규모 정돈 순서
 

@@ -7,12 +7,11 @@ import { updateKnockback, applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "../combat/damage";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
+import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
-type DamagePopup = { id:number; x:number; value:number; critical:boolean };
-type BattleState = "stageSelect"|"playing"|"victory"|"defeat";
-export type BattleReward = { gold: number; gems: number; firstClear: boolean };
+export type { BattleReward } from "../combat/types";
 type BattleLoopContext = {
   battleState: BattleState; paused:boolean; gameSpeed:number; battleGoldMax:number; goldPerSecond:number; clearedStages:number[];
   setCastleHit:Setter<"our"|"enemy"|null>; setDamagePopups:Setter<DamagePopup[]>; setDeathEffects:Setter<BattleDeathEffect[]>; setBattleGold:Setter<number>;

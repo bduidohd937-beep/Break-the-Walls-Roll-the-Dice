@@ -25,16 +25,15 @@ import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
 import { useGatheringProduction } from "./game/controllers/useGatheringProduction";
-import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
+import { useBattleLoop } from "./game/controllers/useBattleLoop";
 import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
 import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigation";
 import { useKingdomProfile } from "./game/controllers/useKingdomProfile";
 import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import { useHeroFormation } from "./game/controllers/useHeroFormation";
 import { useBattleViewState } from "./game/controllers/useBattleViewState";
+import type { BattleReward, DamagePopup } from "./game/combat/types";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
-
-type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
