@@ -1,4 +1,4 @@
-import { clamp } from "../../constants";
+import { applyAbilityKnockback } from "../knockback";
 import { calculateScaling } from "./scaling";
 import type { AbilityEffectState, AbilityUnit, EffectDefinition, ModifiableStat, StatusId } from "./types";
 
@@ -98,22 +98,13 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     const resolved = resolveAbilityDamage(target, calculateScaling(effect.amount, caster, target));
     return { ...resolved.unit, currentHp: Math.max(0, target.currentHp - resolved.hpDamage) };
   },
-  HEAL: (effect, { caster, target }) => ({
+  HEAL: (effect, { caster, target }) => target.currentHp <= 0 ? target : ({
     ...target,
     currentHp: Math.min(target.hp, target.currentHp + calculateScaling(effect.amount, caster, target))
   }),
   KNOCKBACK: (effect, { caster, target }) => {
     const distance = Math.max(0, calculateScaling(effect.distance, caster, target));
-    const direction = caster.team === "hero" ? 1 : -1;
-    return {
-      ...target,
-      knockbackTimer: 0.22,
-      knockbackFromX: target.x,
-      knockbackTargetX: clamp(target.x + direction * distance, 9, 87),
-      attackTimer: Math.max(target.attackTimer, 0.35),
-      attackFlash: 0,
-      knockbackCount: target.knockbackCount + 1
-    };
+    return applyAbilityKnockback(target, distance, caster.team);
   },
   APPLY_STATUS: (effect, { caster, target, statusHandlers }) => {
     const handler = statusHandlers[effect.status];

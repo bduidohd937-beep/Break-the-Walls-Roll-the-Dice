@@ -142,6 +142,12 @@ describe("ability scaling and effects", () => {
     expect(result.units.find((entry) => entry.uid === 2)?.currentHp).toBe(700);
   });
 
+  it("does not heal a defeated unit", () => {
+    const target = unit({ uid: 2, currentHp: 0, alive: false });
+    const result = execute({ type: "HEAL", amount: { components: [{ source: "FLAT", coefficient: 100 }] } }, unit(), target);
+    expect(result.units.find((entry) => entry.uid === 2)).toMatchObject({ currentHp: 0, alive: false });
+  });
+
   it("adds multiple scaling components", () => {
     const amount = calculateScaling({ components: [
       { source: "CASTER_ATK", coefficient: 1 },
@@ -158,6 +164,16 @@ describe("ability scaling and effects", () => {
       knockbackFromX: 20,
       knockbackTargetX: 28
     });
+  });
+
+  it("pushes an enemy away from a hero and a hero away from an enemy", () => {
+    const enemyTarget = unit({ uid: 2, team: "enemy", x: 50 });
+    const enemyResult = execute({ type: "KNOCKBACK", distance: flat(8) }, unit({ team: "hero", x: 20 }), enemyTarget);
+    expect(enemyResult.units.find((entry) => entry.uid === 2)?.knockbackTargetX).toBe(58);
+
+    const heroTarget = unit({ uid: 2, team: "hero", x: 50 });
+    const heroResult = execute({ type: "KNOCKBACK", distance: flat(8) }, unit({ team: "enemy", x: 80 }), heroTarget);
+    expect(heroResult.units.find((entry) => entry.uid === 2)?.knockbackTargetX).toBe(42);
   });
 
   it("adapts APPLY_STATUS to the existing burn fields", () => {

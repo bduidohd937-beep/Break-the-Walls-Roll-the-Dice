@@ -47,6 +47,21 @@ export function applyKnockback(
   };
 }
 
+/** Applies an ability-driven displacement using the same movement fields as damage knockback. */
+export function applyAbilityKnockback(target: Unit, distance: number, attackerTeam: Team): Unit {
+  const direction = attackerTeam === "hero" ? 1 : -1;
+  return {
+    ...target,
+    knockbackTimer: 0.22,
+    knockbackFromX: target.x,
+    knockbackTargetX: clamp(target.x + direction * Math.max(0, distance), 9, 87),
+    attackTimer: Math.max(target.attackTimer, 0.35),
+    hitFlash: 0,
+    attackFlash: 0,
+    knockbackCount: target.knockbackCount + 1,
+  };
+}
+
 
 export function updateKnockback(unit: Unit, dt: number): Unit {
   if (unit.knockbackTimer <= 0) return unit;
