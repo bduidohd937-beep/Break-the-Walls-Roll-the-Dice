@@ -104,6 +104,21 @@ export function createCombatAbilityIntegration(
       droppedByDepthLimit ||= chained.droppedByDepthLimit;
       resourceChanges.push(...(chained.resourceChanges ?? []));
     }
+    for (const before of units) {
+      const after = nextUnits.find((unit) => unit.uid === before.uid);
+      if (!after) continue;
+      const previous = before.abilityEffectState?.statuses ?? [];
+      const current = after.abilityEffectState?.statuses ?? [];
+      for (const status of previous) {
+        if (current.some((entry) => entry.id === status.id && entry.sourceUid === status.sourceUid && entry.sourceAbilityId === status.sourceAbilityId)) continue;
+        const reason = result.applications.some((application) => application.targetUid === before.uid && application.effectType === "CLEANSE") ? "CLEANSED" : "EXPIRED";
+        const removed = publishInternal({ type: "STATUS_REMOVED", targetUid: before.uid, sourceUid: status.sourceUid, status: status.id, reason, eventId: generatedEventId--, origin: "STATUS", originAbilityId: status.sourceAbilityId, chainDepth: depth + 1 }, nextUnits, depth + 1, false);
+        nextUnits = removed.units;
+        activationCount += removed.activationCount;
+        droppedByDepthLimit ||= removed.droppedByDepthLimit;
+        resourceChanges.push(...(removed.resourceChanges ?? []));
+      }
+    }
     return { units: nextUnits, activationCount, droppedByDepthLimit, resourceChanges };
   }
 
@@ -149,7 +164,9 @@ export function createCombatAbilityIntegration(
         finalizedDeaths.add(event.unitUid);
         const killerUid = event.killerUid ?? lastDamageSource.get(event.unitUid);
         if (killerUid !== undefined) merge(apply({ type: "ON_KILL", casterUid: killerUid, currentTargetUid: event.unitUid, meta }, result.units));
-        merge(apply({ type: "ON_DEATH", casterUid: event.unitUid, currentTargetUid: killerUid, meta }, result.units));
+        for (const ownerUid of registeredOwnerUids) {
+          if (result.units.some((unit) => unit.uid === ownerUid)) merge(apply({ type: "ON_DEATH", casterUid: ownerUid, eventUnitUid: event.unitUid, currentTargetUid: killerUid, meta }, result.units));
+        }
         lastDamageSource.delete(event.unitUid);
         break;
       }
@@ -158,6 +175,9 @@ export function createCombatAbilityIntegration(
         break;
       case "STATUS_APPLIED":
         merge(apply({ type: "ON_STATUS_APPLIED", casterUid: event.sourceUid, currentTargetUid: event.targetUid, status: event.status, duration: event.duration, potency: event.potency, meta }, result.units));
+        break;
+      case "STATUS_REMOVED":
+        merge(apply({ type: "ON_STATUS_REMOVED", casterUid: event.sourceUid, currentTargetUid: event.targetUid, status: event.status, reason: event.reason, meta }, result.units));
         break;
       case "SIMULATION_TICK":
         merge(apply({ type: "ON_INTERVAL", elapsedSeconds: event.deltaSeconds, meta }, result.units));

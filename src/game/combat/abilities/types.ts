@@ -56,6 +56,7 @@ export type TriggerDefinition =
   | { type: "ON_DEATH" }
   | { type: "ON_REVIVE" }
   | { type: "ON_STATUS_APPLIED"; status?: AbilityStatusId }
+  | { type: "ON_STATUS_REMOVED"; status?: AbilityStatusId; reason?: "EXPIRED" | "CLEANSED" | "REMOVED" }
   | { type: "ON_HP_BELOW"; hpPercent: number }
   | { type: "ON_INTERVAL"; intervalSeconds: number };
 
@@ -64,7 +65,9 @@ export type ConditionDefinition =
   | { type: "SELF_HP_BELOW"; hpPercent: number }
   | { type: "TARGET_HP_BELOW"; hpPercent: number }
   | { type: "TARGET_HAS_TAG"; tag: AbilityTag }
-  | { type: "TARGET_HAS_STATUS"; status: StatusId };
+  | { type: "TARGET_HAS_STATUS"; status: StatusId }
+  | { type: "EVENT_UNIT_RELATION"; relation: "SELF" | "ALLY" | "ENEMY" };
+  
 
 export type TargetLimits = { range?: number; maxTargets?: number };
 export type TargetDefinition =
@@ -118,10 +121,11 @@ export type AbilityDefinition = {
 export type AbilityBinding = { ownerUid: number; ability: AbilityDefinition };
 
 export type AbilityEvent =
-  | { type: "ON_DEPLOY" | "ON_ATTACK" | "ON_HIT_DEALT" | "ON_HIT_RECEIVED" | "ON_KILL" | "ON_DEATH" | "ON_HP_BELOW"; casterUid: number; currentTargetUid?: number; meta?: AbilityEventMeta }
-  | { type: "ON_REVIVE"; casterUid: number; currentTargetUid?: number; meta?: AbilityEventMeta }
-  | { type: "ON_STATUS_APPLIED"; casterUid: number; currentTargetUid: number; status: AbilityStatusId; duration: number; potency: number; meta?: AbilityEventMeta }
-  | { type: "ON_INTERVAL"; elapsedSeconds: number; casterUid?: number; currentTargetUid?: number; meta?: AbilityEventMeta };
+  | { type: "ON_DEPLOY" | "ON_ATTACK" | "ON_HIT_DEALT" | "ON_HIT_RECEIVED" | "ON_KILL" | "ON_DEATH" | "ON_HP_BELOW"; casterUid: number; currentTargetUid?: number; eventUnitUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_REVIVE"; casterUid: number; currentTargetUid?: number; eventUnitUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_STATUS_APPLIED"; casterUid: number; currentTargetUid: number; status: AbilityStatusId; duration: number; potency: number; eventUnitUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_STATUS_REMOVED"; casterUid: number; currentTargetUid: number; status: AbilityStatusId; reason: "EXPIRED" | "CLEANSED" | "REMOVED"; eventUnitUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_INTERVAL"; elapsedSeconds: number; casterUid?: number; currentTargetUid?: number; eventUnitUid?: number; meta?: AbilityEventMeta };
 
 export type AbilityEventOrigin = "BASIC_ATTACK" | "ABILITY" | "STATUS" | "SYSTEM";
 export type AbilityEventMeta = {

@@ -111,3 +111,24 @@ main → app/root → feature components → controllers → systems/combat → 
 - `App.tsx`에서 프로필 상태와 화면 조립 분리
 - `useBattleLoop.ts`에서 순수 계산과 React 타이머 제어 분리
 - 저장 데이터와 전투 경제에 대한 최소 회귀 테스트 추가
+# Ability Framework v1 final audit
+
+The combat ability framework is data-driven through Trigger, Condition, Target, Effect, and Scaling definitions. Runtime state is keyed by unit UID and advances on simulation delta.
+
+## Supported
+
+- Triggers: deploy, attack, attack count, hit dealt/received, hit counters, kill, death, revive, status applied/removed, HP threshold, interval.
+- Conditions: always, self/target HP thresholds, tags, statuses, and event-unit relation (SELF/ALLY/ENEMY).
+- Targets: self, current target, nearest enemy, lowest-health ally, lowest-health-percent ally, in-range allies/enemies, dead ally.
+- Effects: damage, heal, knockback, status application, shield, stat and attack/move speed modifiers, damage dealt/taken modifiers, cooldown modifier, DOT/HOT, cleanse/dispel, summon, revive, and resource change.
+- Scaling: caster/target attack, defense, max/current/lost HP, and flat components.
+- Status/runtime: UID-isolated STUN/SLOW, duration and removal events, deterministic immunity, duration multipliers, knockback immunity, summon ownership/lifetime, chain-depth protection.
+- Events: combat event integration preserves resource changes and propagates ability events safely.
+
+## Deferred
+
+Probabilistic resistance, seeded RNG policy, and new special status behavior such as FREEZE, SILENCE, FEAR, CHARM, SHOCK, POISON, CURSE, and ROOT remain deferred.
+
+## Content-driven extension
+
+Future content may add status-specific action constraints, richer event conditions, and roster data without introducing character ID/name branches in combat code.

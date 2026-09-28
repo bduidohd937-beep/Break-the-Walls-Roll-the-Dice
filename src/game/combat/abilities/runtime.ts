@@ -104,6 +104,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
       for (const binding of candidates) {
         if (event.casterUid !== undefined && binding.ownerUid !== event.casterUid) continue;
         if (event.type === "ON_STATUS_APPLIED" && binding.ability.trigger.type === "ON_STATUS_APPLIED" && binding.ability.trigger.status && binding.ability.trigger.status !== event.status) continue;
+        if (event.type === "ON_STATUS_REMOVED" && binding.ability.trigger.type === "ON_STATUS_REMOVED" && ((binding.ability.trigger.status && binding.ability.trigger.status !== event.status) || (binding.ability.trigger.reason && binding.ability.trigger.reason !== event.reason))) continue;
         let caster = units.get(binding.ownerUid);
         if (!caster) continue;
         const trigger = binding.ability.trigger;
@@ -135,7 +136,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
           caster = units.get(binding.ownerUid);
           if (!caster || (caster.currentHp <= 0 && trigger.type !== "ON_DEATH")) break;
           const selectedTargets = selectAbilityTargets(binding.ability.target, caster, [...units.values()], event.currentTargetUid)
-            .filter((target) => meetsAbilityCondition(binding.ability.condition, caster!, target));
+            .filter((target) => meetsAbilityCondition(binding.ability.condition, caster!, target, event.eventUnitUid ? units.get(event.eventUnitUid) : undefined));
           if (selectedTargets.length === 0) continue;
 
           for (const selectedTarget of selectedTargets) {

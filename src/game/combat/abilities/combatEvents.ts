@@ -16,6 +16,7 @@ export type CombatEvent =
   | ({ type: "UNIT_DEATH"; unitUid: number; killerUid?: number } & CombatEventMeta)
   | ({ type: "UNIT_REVIVED"; unitUid: number; sourceUid?: number } & CombatEventMeta)
   | ({ type: "STATUS_APPLIED"; targetUid: number; sourceUid: number; status: AbilityStatusId; duration: number; potency: number } & CombatEventMeta)
+  | ({ type: "STATUS_REMOVED"; targetUid: number; sourceUid: number; status: AbilityStatusId; reason: "EXPIRED" | "CLEANSED" | "REMOVED" } & CombatEventMeta)
   | ({ type: "SIMULATION_TICK"; deltaSeconds: number } & CombatEventMeta)
   | ({ type: "CASTLE_ATTACK"; attackerUid: number; castle: "hero" | "enemy"; actualDamage: number } & CombatEventMeta);
 

@@ -11,7 +11,7 @@ const unit = (uid: number, team: "hero" | "enemy", currentHp = 1000): AbilityUni
   alive: currentHp > 0, burnTimer: 0, burnDamage: 0, slowTimer: 0, slowMultiplier: 1, specialTimer: 0
 });
 const flat = (coefficient: number) => ({ components: [{ source: "FLAT" as const, coefficient }] });
-const def = (id: string, trigger: AbilityDefinition["trigger"], target: AbilityDefinition["target"], effects: AbilityDefinition["effects"]): AbilityDefinition => ({ id, trigger, target, effects });
+const def = (id: string, trigger: AbilityDefinition["trigger"], target: AbilityDefinition["target"], effects: AbilityDefinition["effects"], condition?: AbilityDefinition["condition"]): AbilityDefinition => ({ id, trigger, target, effects, condition });
 
 describe("generic Ability Framework gaps", () => {
   it("preserves RESOURCE_CHANGE through nested integration dispatch", () => {
@@ -50,5 +50,25 @@ describe("generic Ability Framework gaps", () => {
     const slowed = executeEffect({ type: "APPLY_STATUS", status: "slow", duration: 4, potency: flat(0.5) }, { caster, target, statusHandlers: {} });
     expect(slowed.abilityEffectState?.statuses[0].remaining).toBe(2);
     expect(executeEffect({ type: "KNOCKBACK", distance: flat(10) }, { caster, target, statusHandlers: {} }).knockbackTargetX).toBe(target.knockbackTargetX);
+  });
+
+  it("supports SELF, ALLY, and ENEMY event-unit relations", () => {
+    const integration = createCombatAbilityIntegration([
+      { ownerUid: 1, ability: def("ally-death", { type: "ON_DEATH" }, { type: "SELF" }, [{ type: "SHIELD", amount: flat(1), duration: 2 }], { type: "EVENT_UNIT_RELATION", relation: "ALLY" }) },
+      { ownerUid: 1, ability: def("enemy-death", { type: "ON_DEATH" }, { type: "SELF" }, [{ type: "HEAL", amount: flat(1) }], { type: "EVENT_UNIT_RELATION", relation: "ENEMY" }) }
+    ]);
+    const result = integration.publish({ type: "UNIT_DEATH", unitUid: 2, eventId: 1, origin: "SYSTEM" }, [unit(1, "hero"), unit(2, "hero", 0)]);
+    expect(result.units.find((entry) => entry.uid === 1)?.abilityEffectState?.shields).toHaveLength(1);
+  });
+
+  it("emits ON_STATUS_REMOVED once on natural expiry and once on cleanse", () => {
+    const integration = createCombatAbilityIntegration([
+      { ownerUid: 1, ability: def("apply", { type: "ON_DEPLOY" }, { type: "SELF" }, [{ type: "APPLY_STATUS", status: "slow", duration: 1, potency: flat(0.5) }]) },
+      { ownerUid: 1, ability: def("removed", { type: "ON_STATUS_REMOVED", status: "SLOW" }, { type: "SELF" }, [{ type: "SHIELD", amount: flat(1), duration: 2 }]) }
+    ]);
+    const deployed = integration.publish({ type: "UNIT_DEPLOYED", unitUid: 1, eventId: 1, origin: "SYSTEM" }, [unit(1, "hero")]);
+    const expired = integration.publish({ type: "SIMULATION_TICK", deltaSeconds: 1, eventId: 2, origin: "SYSTEM" }, deployed.units);
+    expect(expired.units[0].abilityEffectState?.shields).toHaveLength(1);
+    expect(expired.activationCount).toBe(1);
   });
 });
