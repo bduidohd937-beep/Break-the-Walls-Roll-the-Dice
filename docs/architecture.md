@@ -55,6 +55,17 @@ main → app/root → feature components → controllers → systems/combat → 
 - 전투 프레임의 공용 상태·이벤트 타입은 `game/combat/types.ts`에서 정의하고 순수 전투 계산 테스트로 보호합니다.
 - 영웅 고유 능력은 캐릭터 ID 분기로 구현하지 않고 향후 `Trigger / Condition / Target / Effect / Scaling` 기반 범용 능력 시스템에 연결합니다.
 
+## Ability Framework v1 원칙
+
+능력은 `Trigger → Condition → Target → Effect → Scaling` 순서로 실행합니다. 런타임은 전투 이벤트별로 등록된 능력만 확인하며, 기존 기본 공격과 이동에는 아직 연결하지 않습니다.
+
+- Role ≠ Ability: 역할은 표시·검색·AI 참고용 분류이며 능력을 자동 부여하지 않습니다.
+- Tag ≠ Effect: 태그는 분류 정보이며 피해·회복·상태 효과를 자동 발생시키지 않습니다.
+- Race ≠ RacePassive: 종족과 종족 패시브는 별도 시스템입니다.
+- Element ≠ Skill: 속성은 상성 정보이며 스킬을 자동 부여하지 않습니다.
+- 영웅 ID나 이름을 검사해 고유 능력을 실행하지 않습니다. 고유 능력은 `AbilityDefinition` 데이터로 표현합니다.
+- 기존 화상·감속은 `APPLY_STATUS` 어댑터로 연결할 수 있지만 기존 상태 처리와 전투 수치는 이번 단계에서 변경하지 않습니다.
+
 ## 대규모 정돈 순서
 
 구조 변경은 한 번에 섞지 않고 다음 순서로 진행합니다.
