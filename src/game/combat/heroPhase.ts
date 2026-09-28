@@ -6,6 +6,7 @@ import { outgoingDamage } from "./damage";
 import { applyKnockback } from "./knockback";
 import type { DamagePopup } from "./types";
 import type { CombatEvent } from "./abilities/combatEvents";
+import { resolveAbilityDamage } from "./abilities/effects";
 
 export type HeroPhaseInput = {
   heroes: Unit[];
@@ -91,9 +92,10 @@ function attackEnemyUnits(
     if (targetIndex < 0) continue;
     const isPrimaryTarget = targetUid === target.uid;
     const impactAtk = hero.attackType === "splash" && !isPrimaryTarget ? hero.atk * 0.65 : hero.atk;
+    const resolvedDamage = resolveAbilityDamage(nextEnemies[targetIndex], damage);
     const hitTarget = applyKnockback(
-      nextEnemies[targetIndex],
-      nextEnemies[targetIndex].currentHp - damage,
+      resolvedDamage.unit,
+      nextEnemies[targetIndex].currentHp - resolvedDamage.hpDamage,
       "hero",
       impactAtk
     );

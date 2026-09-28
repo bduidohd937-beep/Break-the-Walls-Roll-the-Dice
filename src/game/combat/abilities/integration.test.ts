@@ -242,7 +242,8 @@ describe("combat event integration", () => {
       },
       register: baseRuntime.register,
       cleanup: baseRuntime.cleanup,
-      stateSize: baseRuntime.stateSize
+      stateSize: baseRuntime.stateSize,
+      hasWork: baseRuntime.hasWork
     };
     const integration = createCombatAbilityIntegration(bindings, { maxChainDepth: 1, runtime });
     const result = integration.publish({ type: "DAMAGE_APPLIED", eventId: 1, origin: "BASIC_ATTACK", sourceUid: 1, targetUid: 2, actualDamage: 1 }, [unit(), unit({ uid: 2, team: "enemy" })]);

@@ -79,6 +79,13 @@ main → app/root → feature components → controllers → systems/combat → 
 - Ability가 없는 유닛은 이벤트 전달을 빠르게 종료하며 기존 이동·공격·피해·사망 결과를 유지합니다.
 - 현재 화상 사망은 피해 원본 소유자를 저장하지 않으므로 처치자를 추정하지 않습니다. Status 원본 추적은 Status Framework 정리 단계에서 연결합니다.
 
+### 공용 임시 Effect 정책
+
+- `SHIELD`는 Scaling으로 층별 보호막을 만들고 먼저 생성된 층부터 피해를 흡수합니다.
+- `STAT_MODIFIER`는 ATK·DEF·ASPD·MOVE에 공통으로 사용합니다. flat 합산 후 percent를 곱하며, buff와 debuff가 같은 데이터 구조를 사용합니다.
+- `DAMAGE_TAKEN_MODIFIER`는 활성 배율을 모두 곱합니다.
+- 각 층과 modifier는 BattleUnit UID에 귀속되고 simulation time으로 독립 만료됩니다. 저장 데이터에는 기록하지 않습니다.
+
 ## 대규모 정돈 순서
 
 구조 변경은 한 번에 섞지 않고 다음 순서로 진행합니다.

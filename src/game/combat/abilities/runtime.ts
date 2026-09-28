@@ -1,5 +1,5 @@
 import { meetsAbilityCondition } from "./conditions";
-import { defaultEffectHandlers, executeEffect, legacyStatusHandlers, type EffectHandlerRegistry, type StatusHandlerRegistry } from "./effects";
+import { advanceAbilityEffectDurations, defaultEffectHandlers, executeEffect, legacyStatusHandlers, type EffectHandlerRegistry, type StatusHandlerRegistry } from "./effects";
 import { selectAbilityTargets } from "./targeting";
 import type {
   AbilityActivation,
@@ -36,6 +36,7 @@ export type AbilityRuntime = {
   register(binding: AbilityBinding): void;
   cleanup(activeUnitUids: ReadonlySet<number>): void;
   stateSize(): number;
+  hasWork(): boolean;
 };
 
 export function createAbilityRuntime(bindings: readonly AbilityBinding[], options: AbilityRuntimeOptions = {}): AbilityRuntime {
@@ -44,6 +45,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
   const intervalElapsed = new Map<string, number>();
   const hpThresholdBelow = new Map<string, boolean>();
   const registeredBindings: IndexedBinding[] = [];
+  const temporaryEffectUids = new Set<number>();
   let registrationIndex = 0;
   const effectHandlers = options.effectHandlers ?? defaultEffectHandlers;
   const statusHandlers = options.statusHandlers ?? legacyStatusHandlers;
@@ -62,8 +64,15 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
     register,
     dispatch(event, battlefield) {
       const candidates = byEvent.get(event.type) ?? [];
-      if (candidates.length === 0) return { units: battlefield.units, activations: [], applications: [] };
-      const units = new Map<number, AbilityUnit>(battlefield.units.map((unit) => [unit.uid, { ...unit }]));
+      const shouldAdvanceEffects = event.type === "ON_INTERVAL" && temporaryEffectUids.size > 0;
+      if (candidates.length === 0 && !shouldAdvanceEffects) return { units: battlefield.units, activations: [], applications: [] };
+      const units = new Map<number, AbilityUnit>(battlefield.units.map((unit) => {
+        const next = shouldAdvanceEffects && temporaryEffectUids.has(unit.uid)
+          ? advanceAbilityEffectDurations(unit, event.elapsedSeconds)
+          : { ...unit };
+        if (shouldAdvanceEffects && !next.abilityEffectState) temporaryEffectUids.delete(unit.uid);
+        return [unit.uid, next];
+      }));
       const activations: AbilityActivation[] = [];
       const applications: AbilityEffectApplication[] = [];
 
@@ -113,6 +122,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
                 statusHandlers
               }, effectHandlers);
               units.set(selectedTarget.uid, nextTarget);
+              if (nextTarget.abilityEffectState) temporaryEffectUids.add(selectedTarget.uid);
               applications.push({
                 abilityId: binding.ability.id,
                 ownerUid: binding.ownerUid,
@@ -147,9 +157,13 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
       for (let index = registeredBindings.length - 1; index >= 0; index--) {
         if (!activeUnitUids.has(registeredBindings[index].ownerUid)) registeredBindings.splice(index, 1);
       }
+      for (const uid of temporaryEffectUids) if (!activeUnitUids.has(uid)) temporaryEffectUids.delete(uid);
     },
     stateSize() {
-      return counters.size + intervalElapsed.size + hpThresholdBelow.size;
+      return counters.size + intervalElapsed.size + hpThresholdBelow.size + temporaryEffectUids.size;
+    },
+    hasWork() {
+      return registeredBindings.length > 0 || temporaryEffectUids.size > 0;
     }
   };
 }

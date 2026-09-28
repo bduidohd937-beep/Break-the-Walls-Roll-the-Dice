@@ -4,11 +4,24 @@ export type AbilityRole = "MELEE_DPS" | "RANGED_DPS" | "TANK" | "SUPPORT" | "HEA
 export type Race = "HUMAN" | "UNDEAD" | "DRAGON" | "GIANT" | "MACHINE" | "SPIRIT" | "ANGEL" | "DEMON" | "BEAST" | "ABERRATION";
 export type AbilityTag = string;
 export type StatusId = "burn" | "slow" | (string & {});
+export type ModifiableStat = "ATK" | "DEF" | "ASPD" | "MOVE";
+export type ModifierMode = "FLAT" | "PERCENT";
+
+export type TimedShield = { amount: number; remaining: number };
+export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; value: number; remaining: number };
+export type TimedDamageTakenModifier = { multiplier: number; remaining: number };
+export type AbilityEffectState = {
+  shields: readonly TimedShield[];
+  statModifiers: readonly TimedStatModifier[];
+  damageTakenModifiers: readonly TimedDamageTakenModifier[];
+  baseStats?: { atk: number; def: number; attackInterval: number; speed: number };
+};
 
 export type AbilityUnit = Unit & {
   def?: number;
   abilityTags?: readonly AbilityTag[];
   statusIds?: readonly StatusId[];
+  abilityEffectState?: AbilityEffectState;
 };
 
 export type TriggerDefinition =
@@ -53,7 +66,10 @@ export type EffectDefinition =
   | ({ type: "DAMAGE"; amount: ScalingDefinition } & TaggedEffect)
   | ({ type: "HEAL"; amount: ScalingDefinition } & TaggedEffect)
   | ({ type: "KNOCKBACK"; distance: ScalingDefinition } & TaggedEffect)
-  | ({ type: "APPLY_STATUS"; status: StatusId; duration: number; potency?: ScalingDefinition } & TaggedEffect);
+  | ({ type: "APPLY_STATUS"; status: StatusId; duration: number; potency?: ScalingDefinition } & TaggedEffect)
+  | ({ type: "SHIELD"; amount: ScalingDefinition; duration: number } & TaggedEffect)
+  | ({ type: "STAT_MODIFIER"; stat: ModifiableStat; mode: ModifierMode; value: ScalingDefinition; duration: number } & TaggedEffect)
+  | ({ type: "DAMAGE_TAKEN_MODIFIER"; multiplier: number; duration: number } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;

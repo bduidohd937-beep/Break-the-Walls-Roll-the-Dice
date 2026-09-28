@@ -12,6 +12,7 @@ import { spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 import type { CombatAbilityIntegration, CombatEvent } from "../combat/abilities";
+import { resolveAbilityDamage } from "../combat/abilities/effects";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
@@ -262,9 +263,10 @@ export function useBattleLoop(ctx: BattleLoopContext) {
             const hpBeforeHit = nextHeroes[hitIndex].currentHp;
             const isPrimaryTarget = targetUid === target.uid;
             const impactAtk = enemy.attackType === "splash" && !isPrimaryTarget ? attackDamage * 0.65 : attackDamage;
+            const resolvedDamage = resolveAbilityDamage(nextHeroes[hitIndex], damage);
             const hitHero = applyKnockback(
-              nextHeroes[hitIndex],
-              nextHeroes[hitIndex].currentHp - damage,
+              resolvedDamage.unit,
+              nextHeroes[hitIndex].currentHp - resolvedDamage.hpDamage,
               "enemy",
               impactAtk,
             );

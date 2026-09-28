@@ -131,7 +131,7 @@ export function createCombatAbilityIntegration(
 
   return {
     hasAbilities() {
-      return registeredOwnerUids.size > 0;
+      return runtime.hasWork();
     },
     registerUnitAbilities(unitUid, abilities) {
       for (const ability of abilities) runtime.register({ ownerUid: unitUid, ability });
