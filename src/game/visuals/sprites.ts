@@ -1,6 +1,3 @@
-import serentiaIdle from "../../assets/heroes/serentia-idle.png";
-import serentiaWalk from "../../assets/heroes/serentia-walk-strip.png";
-import serentiaAttack from "../../assets/heroes/serentia-attack-strip.png";
 import hero001Idle from "../../assets/heroes/hero-001/lv01/idle.png";
 import hero001Move from "../../assets/heroes/hero-001/lv01/move.png";
 import hero001Attack from "../../assets/heroes/hero-001/lv01/attack.png";
@@ -52,7 +49,6 @@ export const UNIT_SPRITES: Record<string, SpriteSheet> = {
 // Animated sprites keep each unit's source assets separate, so later skills can
 // add their own cast, hit, and death clips without changing battle data.
 export const UNIT_ANIMATED_SPRITES: Record<string, AnimatedSprite> = {
-  serentia: { idle: serentiaIdle, walk: serentiaWalk, attack: serentiaAttack, frameCount: 12, walkDuration: 0.96, attackDuration: 0.96 },
 };
 
 export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {

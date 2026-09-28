@@ -33,9 +33,6 @@ export function resolveFrontlineCollision(
 
   for (const hero of nextHeroes) {
     if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
-    // Hero assassins slip through the frontline to reach ranged enemies.
-    if (hero.id === "assassin") continue;
-
     const frontEnemy = nextEnemies
       .filter((enemy) => enemy.currentHp > 0 && enemy.x >= hero.x && enemy.id !== "assassinE")
       .sort((a, b) => a.x - b.x)[0];
@@ -54,7 +51,7 @@ export function resolveFrontlineCollision(
     if (enemy.id === "assassinE") continue;
 
     const frontHero = nextHeroes
-      .filter((hero) => hero.currentHp > 0 && hero.x <= enemy.x && hero.id !== "assassin")
+      .filter((hero) => hero.currentHp > 0 && hero.x <= enemy.x)
       .sort((a, b) => b.x - a.x)[0];
 
     if (!frontHero) continue;

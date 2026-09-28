@@ -4,10 +4,8 @@ export type HeroGradeName = "일반" | "희귀" | "영웅" | "전설" | "신화"
 
 // These prototype grades are tied to stable IDs so reordering HEROES cannot alter saves or summon pools.
 export const HERO_GRADES: Record<string, HeroGradeName | "???"> = {
-  goblin: "일반", fireGoblin: "일반", shield: "일반", archer: "일반", knight: "일반", mage: "일반",
-  paladin: "희귀", assassin: "희귀", dragon: "희귀", arthur: "희귀", rustKnight: "희귀", traineeSword: "희귀",
-  woodArcher: "영웅", traineeMage: "영웅", villagePriest: "영웅", forestThief: "영웅",
-  lance: "전설", sharon: "전설", serentia: "전설", vulcan: "신화", venom: "초월",
+  traineeSword: "희귀",
+  shield: "일반",
 };
 
 const GRADE_MULTIPLIER: Record<HeroGradeName | "???", number> = {
@@ -21,8 +19,8 @@ export const getHeroGrade = (id: string) => {
 };
 
 export const HERO_CONTENT_STATUS: Record<string, "초기 프로토타입" | "추가 임시 영웅" | "합성 전용"> = {
-  goblin: "초기 프로토타입", fireGoblin: "초기 프로토타입", shield: "초기 프로토타입", archer: "초기 프로토타입", knight: "초기 프로토타입", mage: "초기 프로토타입", paladin: "초기 프로토타입", assassin: "초기 프로토타입", dragon: "초기 프로토타입", arthur: "초기 프로토타입",
-  rustKnight: "추가 임시 영웅", traineeSword: "추가 임시 영웅", woodArcher: "추가 임시 영웅", traineeMage: "추가 임시 영웅", villagePriest: "추가 임시 영웅", forestThief: "추가 임시 영웅", lance: "추가 임시 영웅", sharon: "추가 임시 영웅", serentia: "추가 임시 영웅", vulcan: "추가 임시 영웅", venom: "추가 임시 영웅",
+  traineeSword: "초기 프로토타입",
+  shield: "초기 프로토타입",
 };
 
 export const GRADE_GROWTH: Record<HeroGradeName | "???", number> = {

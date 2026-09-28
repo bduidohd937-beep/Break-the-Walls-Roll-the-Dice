@@ -4,10 +4,7 @@ import { applySummonPity, rollSummonGrade, SHARD_VALUE, type SummonGrade, type S
 import { STORAGE_KEYS, saveJson, saveNumber } from "../storage";
 
 export type SummonPhase="idle"|"throw"|"impact"|"crack"|"reveal";
-export const FUSION_RECIPES=()=>[
- {id:"unknown-01",name:"??? · 봉인된 왕",icon:"👑",materials:["vulcan","sharon"],shardCost:10,available:false},
- {id:"unknown-02",name:"??? · 경계의 사신",icon:"☠️",materials:["venom","lance"],shardCost:10,available:false}
-];
+export const FUSION_RECIPES=(): {id:string;name:string;icon:string;materials:string[];shardCost:number;available:boolean}[]=>[];
 type Args={
  heroes:UnitDef[];gems:number;setGems:Dispatch<SetStateAction<number>>;legendPity:number;setLegendPity:Dispatch<SetStateAction<number>>;mythPity:number;setMythPity:Dispatch<SetStateAction<number>>;
  storage:SummonStorageItem[];setStorage:Dispatch<SetStateAction<SummonStorageItem[]>>;owned:string[];setOwned:Dispatch<SetStateAction<string[]>>;

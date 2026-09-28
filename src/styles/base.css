@@ -51,10 +51,10 @@ button { font: inherit; }
 .unit-pixel-sprite.state-hit{animation-duration:.14s;animation-timing-function:steps(3)}
 .unit-pixel-sprite.state-death{animation:none}
 .unit-animated-sprite{--sprite-size:48px;display:inline-block;flex:none;width:calc(var(--sprite-size) * var(--sprite-scale, 1.375));height:calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count, 1)) calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-position:0 0;image-rendering:pixelated;vertical-align:middle;transform:translate(calc((.5 - var(--pivot-x,.5)) * 100%),calc((1 - var(--pivot-y,1)) * 100%))}
-.unit-animated-sprite[data-animated="true"]{animation:serentiaWalk var(--animation-duration) steps(var(--frame-count)) infinite}
-.unit-animated-sprite.state-attack[data-animated="true"]{animation-name:serentiaAttack;animation-timing-function:steps(var(--last-frame), end);animation-duration:var(--attack-duration);animation-iteration-count:1;animation-fill-mode:forwards}
-@keyframes serentiaWalk{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count))}}
-@keyframes serentiaAttack{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--last-frame))}}
+.unit-animated-sprite[data-animated="true"]{animation:configuredSpriteFrames var(--animation-duration) steps(var(--frame-count)) infinite}
+.unit-animated-sprite.state-attack[data-animated="true"]{animation-name:configuredSpriteAttack;animation-timing-function:steps(var(--last-frame), end);animation-duration:var(--attack-duration);animation-iteration-count:1;animation-fill-mode:forwards}
+@keyframes configuredSpriteFrames{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count))}}
+@keyframes configuredSpriteAttack{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--last-frame))}}
 .battle-paused .unit-animated-sprite[data-animated="true"]{animation-play-state:paused!important}
 .unit-sprite .unit-animated-sprite{--sprite-size:64px}
 .formation-hero .unit-animated-sprite,.formation-slot .unit-animated-sprite,.deck-builder-card .unit-animated-sprite,.storage-hero .unit-animated-sprite{--sprite-size:32px}
