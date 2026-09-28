@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { DECK_IDS, HEROES } from "../constants";
-import { DEV_MODE, STORAGE_KEYS, loadJson, saveJson } from "../storage";
+import { STORAGE_KEYS, loadJson, saveJson } from "../storage";
 import { savedIds } from "../systems/saveData";
 
 export const DECK_SLOT_COUNT = 10;
@@ -8,7 +8,7 @@ export const DECK_SLOT_COUNT = 10;
 export function useHeroFormation(ownedHeroes: string[]) {
   const [deckIds, setDeckIds] = useState<string[]>(() => {
     const saved = savedIds(loadJson(STORAGE_KEYS.deckIds, []), undefined, DECK_SLOT_COUNT);
-    return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
+    return saved.length ? saved : DECK_IDS.slice(0, 5);
   });
   const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
   const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("upgrade");

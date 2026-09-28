@@ -4,7 +4,7 @@ import { DEV_MODE, STORAGE_KEYS, loadJson, loadNumber } from "../storage";
 import { savedCounts, savedIds, savedSummons } from "../systems/saveData";
 import type { SummonStorageItem } from "../systems/summon";
 
-const FUSION_RECORD_IDS = new Set(["unknown-01", "unknown-02", "devWukong"]);
+const FUSION_RECORD_IDS = new Set(["unknown-01", "unknown-02"]);
 
 export function useSummonProfile() {
   const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {

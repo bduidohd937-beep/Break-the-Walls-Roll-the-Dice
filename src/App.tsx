@@ -200,19 +200,9 @@ function App() {
     deployCooldownsRef.current = { ...deployCooldownsRef.current, [def.id]: def.cooldown };
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     const deployed = makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid);
-    if (def.id === "devWukong") {
-      const front = enemiesRef.current.filter((enemy) => enemy.currentHp > 0).sort((a, b) => a.x - b.x)[0];
-      if (front) {
-        enemiesRef.current = enemiesRef.current.map((enemy) => enemy.currentHp > 0 && Math.abs(enemy.x - front.x) <= 25
-          ? { ...enemy, currentHp: Math.max(0, enemy.currentHp - upgradedDef.atk * 1.8), slowTimer: 3, slowMultiplier: 0.3 }
-          : enemy);
-        setEnemies(enemiesRef.current);
-        deployed.wukongOpenerUsed = true;
-      }
-    }
     heroesRef.current = [...heroesRef.current, deployed];
     setHeroes((list) => [...list, deployed]);
-    setNotice(def.id === "devWukong" ? "손오공 강림 · 여의신철!" : `${def.name} 출전!`);
+    setNotice(`${def.name} 출전!`);
   }, [battleState, paused, unitLevels, heroSouls, trainingBonus]);
 
   autoTickRef.current = () => {

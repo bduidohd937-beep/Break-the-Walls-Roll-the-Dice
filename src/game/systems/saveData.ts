@@ -22,7 +22,7 @@ export function savedSummons(value: unknown): SummonStorageItem[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<number>();
   return value.filter((item): item is SummonStorageItem => {
-    if (!item || typeof item !== "object" || !Number.isSafeInteger(item.uid) || item.uid < 0 || seen.has(item.uid) || !heroIds.has(item.heroId) || item.heroId === "devWukong" || !Object.prototype.hasOwnProperty.call(SHARD_VALUE, item.grade as SummonGrade)) return false;
+    if (!item || typeof item !== "object" || !Number.isSafeInteger(item.uid) || item.uid < 0 || seen.has(item.uid) || !heroIds.has(item.heroId) || !Object.prototype.hasOwnProperty.call(SHARD_VALUE, item.grade as SummonGrade)) return false;
     seen.add(item.uid);
     return true;
   });

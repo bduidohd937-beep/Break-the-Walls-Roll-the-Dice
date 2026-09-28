@@ -52,7 +52,6 @@ export type Unit = UnitDef & {
   slowMultiplier: number;
   specialTimer: number;
   summonOwnerUid?: number;
-  wukongOpenerUsed?: boolean;
 };
 
 export type EnemyKey = "goblin" | "orc" | "darkKnight" | "fireOgre" | "archer" | "fireMage" | "assassin" | "gigantos" | "morgar" | "ignis" | "voltras" | "arcanon";

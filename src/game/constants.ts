@@ -1,13 +1,5 @@
 import type { ElementType, UnitDef, Wave } from "./types";
 
-export const WUKONG: UnitDef = {
-  id: "devWukong", name: "제천대성 손오공", sprite: "🐵", element: "fire",
-  hp: 500000, atk: 12000, speed: 65, range: 180, rangeType: "melee",
-  attackType: "splash", splashRadius: 25, attackInterval: 0.65,
-  cost: 50, cooldown: 1, role: "??? · 신수/영장 · 불/전기", ability: "regen", abilityValue: 0.04,
-  story: "차원의 균열 너머 신들의 영역에서 봉인이 풀린 투전승불. 여의봉과 근두운으로 전장을 뒤흔든다."
-};
-
 export const HEROES: UnitDef[] = [
   { id: "goblin", name: "고블린", sprite: "👺", element: "neutral", hp: 90, atk: 14, speed: 48, range: 34, rangeType: "melee", attackType: "single", attackInterval: 0.9, cost: 50, cooldown: 2.5, role: "근접" },
   { id: "fireGoblin", name: "화염 고블린", sprite: "👺", element: "fire", hp: 82, atk: 24, speed: 43, range: 120, rangeType: "ranged", attackType: "single", attackInterval: 1.2, cost: 90, cooldown: 4, role: "원거리", effect: "burn" },
@@ -30,7 +22,6 @@ export const HEROES: UnitDef[] = [
   { id: "vulcan", name: "불칸 — 용암 골렘", sprite: "🌋", element: "fire", hp: 850, atk: 92, speed: 20, range: 45, rangeType: "melee", attackType: "splash", splashRadius: 9, attackInterval: 1.9, cost: 760, cooldown: 18, role: "희귀 · 마법 탱커", effect: "burn" },
   { id: "venom", name: "베놈 — 늪지 독거미", sprite: "🕷️", element: "neutral", hp: 260, atk: 88, speed: 35, range: 145, rangeType: "ranged", attackType: "single", attackInterval: 1.4, cost: 680, cooldown: 16, role: "희귀 · 지속 딜러" },
   { id: "serentia", name: "세렌티아 — 차원술사", sprite: "🔮", element: "dark", hp: 230, atk: 118, speed: 32, range: 220, rangeType: "ranged", attackType: "single", attackInterval: 1.55, cost: 280, cooldown: 12, role: "전설 · 차원술사", story: "차원의 결을 읽어 전장을 누비는 술사. 지금은 기본 공격만 사용할 수 있다." },
-  WUKONG,
 ];
 
 export const ENEMIES: UnitDef[] = [
