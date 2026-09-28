@@ -908,3 +908,24 @@ button { font: inherit; }
   .scene-lumber{left:4%;top:72%}
   .scene-quarry{right:4%;top:72%}
 }
+
+/* Landscape phone layout: fit the hub map and navigation into the short viewport. */
+@media(orientation:landscape) and (max-height:600px){
+  .stage-select-shell{height:100svh;min-height:100svh;padding:0;place-items:stretch}
+  .stage-select-card.main-hub-card{width:100%;height:100svh;border-radius:0;padding:0 12px;}
+  .kingdom-hud{min-height:52px;margin:0 -12px 6px;padding:calc(4px + env(safe-area-inset-top)) 12px 4px;align-items:center;gap:10px}
+  .kingdom-hud-level{width:auto;flex:1;min-width:90px}
+  .kingdom-hud-wallet{flex-wrap:nowrap;gap:6px}
+  .hud-currency{font-size:10px;padding:6px 8px;white-space:nowrap}
+  .kingdom-home{gap:5px}
+  .kingdom-scene{height:min(43svh,220px);min-height:145px}
+  .scene-landmark{min-width:58px;min-height:58px}
+  .kingdom-scene-footer{gap:8px;padding:5px 8px;font-size:10px}
+  .kingdom-scene-footer button{min-height:40px;padding:6px 10px;font-size:10px}
+  .kingdom-section-nav{gap:6px}
+  .kingdom-section-nav button{min-height:40px;padding:6px;font-size:10px}
+  .kingdom-bottom-nav{min-height:56px;padding:4px 8px;gap:6px}
+  .kingdom-menu-button{min-height:44px;font-size:10px}
+  .kingdom-menu-button.primary{transform:none;box-shadow:inset 0 0 0 2px #60451d,0 0 8px #c08b3370}
+  .kingdom-menu-icon{width:30px;height:25px;font-size:19px;line-height:23px}
+}
