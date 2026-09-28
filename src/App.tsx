@@ -31,6 +31,7 @@ import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigati
 import { useKingdomProfile } from "./game/controllers/useKingdomProfile";
 import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import { useHeroFormation } from "./game/controllers/useHeroFormation";
+import { useBattleViewState } from "./game/controllers/useBattleViewState";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
@@ -105,12 +106,13 @@ function App() {
   const [gatherRegion, setGatherRegion] = useState<"basic" | "ancient" | "crystal">("basic");
   const gatherMaxHp = { wood: 10, stone: 14 };
   const gatherReward = { wood: 4, stone: 3 };
-  const [notice, setNotice] = useState("전투 시작!");
-  const [gameSpeed, setGameSpeed] = useState(5);
-  const [pauseScreen, setPauseScreen] = useState<null | "menu" | "settings" | "exit">(null);
-  const paused = pauseScreen !== null;
-  const [autoCom, setAutoCom] = useState(false);
-  const [battleDeckPage, setBattleDeckPage] = useState<0 | 1>(0);
+  const {
+    notice, setNotice,
+    gameSpeed, setGameSpeed,
+    pauseScreen, setPauseScreen, paused,
+    autoCom, setAutoCom,
+    battleDeckPage, setBattleDeckPage
+  } = useBattleViewState();
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const deployCooldownsRef = useRef<Record<string, number>>({});
   const nextUidRef = useRef(1);

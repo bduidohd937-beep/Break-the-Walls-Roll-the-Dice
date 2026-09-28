@@ -51,6 +51,7 @@ main → app/root → feature components → controllers → systems/combat → 
 - 왕국·보유 영웅·자원·일꾼 저장 상태는 `game/controllers/useKingdomProfile.ts`에서 기존 저장 형식을 유지합니다.
 - 소환 보관함·영혼·파편·천장 기록은 `game/controllers/useSummonProfile.ts`에서 기존 저장 형식을 유지합니다.
 - 출전 덱 저장과 영웅 편성 UI 상태는 `game/controllers/useHeroFormation.ts`에서 관리합니다.
+- 전투 안내·배속·일시정지·덱 페이지 같은 화면 상태는 `game/controllers/useBattleViewState.ts`에서 관리합니다.
 
 ## 대규모 정돈 순서
 
