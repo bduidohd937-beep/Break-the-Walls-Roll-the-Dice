@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, GRANTED_HERO_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/KingdomPanel";
@@ -85,7 +85,8 @@ function App() {
   });
   const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
     const saved = savedIds(loadJson(STORAGE_KEYS.ownedHeroes, []));
-    return DEV_MODE ? DECK_IDS : saved.length ? saved : DECK_IDS.slice(0, 5);
+    const initial = DEV_MODE ? DECK_IDS : saved.length ? saved : DECK_IDS.slice(0, 5);
+    return [...new Set([...initial, ...GRANTED_HERO_IDS])];
   });
   const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
     try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: savedNonnegative(saved?.wood), stone: savedNonnegative(saved?.stone) }; } catch { return { wood: 0, stone: 0 }; }

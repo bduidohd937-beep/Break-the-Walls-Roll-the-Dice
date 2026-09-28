@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { UnitDef } from "../game/types";
-import { UNIT_SPRITES, type Frame, type SpriteSheet } from "../game/visuals/sprites";
+import { UNIT_ANIMATED_SPRITES, UNIT_SPRITES, type Frame, type SpriteSheet } from "../game/visuals/sprites";
 
 type SpriteState = "idle" | "walk" | "attack" | "hit" | "death";
 const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSProperties => ({
@@ -11,6 +11,11 @@ const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSPrope
 } as CSSProperties);
 
 export function HeroSprite({ hero, state = "idle", deathProgress = 0 }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number }) {
+  const animatedSprite = UNIT_ANIMATED_SPRITES[hero.id];
+  if (animatedSprite) {
+    const src = state === "attack" ? animatedSprite.attack : state === "walk" ? animatedSprite.walk : animatedSprite.portrait;
+    return <img className={`unit-animated-sprite state-${state}`} src={src} alt={hero.name} />;
+  }
   const sheet = UNIT_SPRITES[hero.id];
   if (sheet) {
     if (state === "death") {

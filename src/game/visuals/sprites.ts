@@ -1,4 +1,7 @@
 import soldierSheet from "../../assets/heroes/001-soldier.png";
+import serentiaPortrait from "../../assets/heroes/serentia-portrait.png";
+import serentiaWalk from "../../assets/heroes/serentia-walk.gif";
+import serentiaAttack from "../../assets/heroes/serentia-attack.gif";
 import type { Unit } from "../types";
 
 export type BattleDeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; duration: number; unit?: Unit };
@@ -20,6 +23,12 @@ export type SpriteSheet = {
   };
 };
 
+export type AnimatedSprite = {
+  portrait: string;
+  walk: string;
+  attack: string;
+};
+
 const row = (y: number, count: number): Frame[] => Array.from({ length: count }, (_, x) => [x, y]);
 
 export const UNIT_SPRITES: Record<string, SpriteSheet> = {
@@ -39,6 +48,12 @@ export const UNIT_SPRITES: Record<string, SpriteSheet> = {
       soulSeconds: 0.6,
     },
   },
+};
+
+// Animated sprites keep each unit's source assets separate, so later skills can
+// add their own cast, hit, and death clips without changing battle data.
+export const UNIT_ANIMATED_SPRITES: Record<string, AnimatedSprite> = {
+  serentia: { portrait: serentiaPortrait, walk: serentiaWalk, attack: serentiaAttack },
 };
 
 export const spriteDeathDuration = (id: string) => {

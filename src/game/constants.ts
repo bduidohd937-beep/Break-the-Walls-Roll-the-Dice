@@ -29,6 +29,7 @@ export const HEROES: UnitDef[] = [
   { id: "sharon", name: "샤론 — 바람꼬리 궁수", sprite: "🦊", element: "neutral", hp: 175, atk: 68, speed: 43, range: 205, rangeType: "ranged", attackType: "single", attackInterval: 1.05, cost: 560, cooldown: 14, role: "희귀 · 원거리" },
   { id: "vulcan", name: "불칸 — 용암 골렘", sprite: "🌋", element: "fire", hp: 850, atk: 92, speed: 20, range: 45, rangeType: "melee", attackType: "splash", splashRadius: 9, attackInterval: 1.9, cost: 760, cooldown: 18, role: "희귀 · 마법 탱커", effect: "burn" },
   { id: "venom", name: "베놈 — 늪지 독거미", sprite: "🕷️", element: "neutral", hp: 260, atk: 88, speed: 35, range: 145, rangeType: "ranged", attackType: "single", attackInterval: 1.4, cost: 680, cooldown: 16, role: "희귀 · 지속 딜러" },
+  { id: "serentia", name: "세렌티아 — 차원술사", sprite: "🔮", element: "dark", hp: 230, atk: 118, speed: 32, range: 220, rangeType: "ranged", attackType: "single", attackInterval: 1.55, cost: 280, cooldown: 12, role: "전설 · 차원술사", story: "차원의 결을 읽어 전장을 누비는 술사. 지금은 기본 공격만 사용할 수 있다." },
   WUKONG,
 ];
 
@@ -48,6 +49,7 @@ export const ENEMIES: UnitDef[] = [
 ];
 
 export const DECK_IDS = HEROES.map((hero) => hero.id);
+export const GRANTED_HERO_IDS = ["serentia"];
 
 
 export const ENEMY_MAP = {
