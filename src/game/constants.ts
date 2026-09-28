@@ -42,7 +42,7 @@ export const ENEMIES: UnitDef[] = [
 ];
 
 export const DECK_IDS = HEROES.map((hero) => hero.id);
-export const GRANTED_HERO_IDS = ["serentia"];
+export const GRANTED_HERO_IDS = ["serentia", "traineeSword"];
 
 
 export const ENEMY_MAP = {
