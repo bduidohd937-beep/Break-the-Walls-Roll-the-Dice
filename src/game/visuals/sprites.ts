@@ -24,6 +24,8 @@ export type SpriteSheet = {
 };
 
 export type AnimatedSprite = {
+  // Square horizontal atlas cells; source resolution is independent of display size.
+  displayScale?: number;
   idle: string;
   walk: string;
   attack: string;

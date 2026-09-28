@@ -17,7 +17,7 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
     >
       {!dying && <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>}
       <div className="unit-sprite">
-        <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle"} attackDuration={unit.attackInterval / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
+        <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle"} gameSpeed={gameSpeed} attackSequence={unit.attackAnimationSequence} attackDuration={unit.attackInterval / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
       </div>
       {!dying && unit.attackFlash > 0 && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
       {!dying && unit.ability === "guard" && <div className="ability-badge" aria-label="가드">🛡️</div>}

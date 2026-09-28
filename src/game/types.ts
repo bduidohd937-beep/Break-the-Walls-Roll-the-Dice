@@ -38,6 +38,7 @@ export type Unit = UnitDef & {
   hitFlash: number;
   attackFlash: number;
   attackAnimationTimer?: number;
+  attackAnimationSequence?: number;
   attackTargetX: number;
   knockbackCount: number;
   knockbackTimer: number;

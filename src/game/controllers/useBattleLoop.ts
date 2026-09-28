@@ -178,6 +178,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               setCastleHit("enemy");
               nextHeroes[i].attackFlash = 0.16;
               nextHeroes[i].attackAnimationTimer = nextHeroes[i].attackInterval;
+              nextHeroes[i].attackAnimationSequence = (nextHeroes[i].attackAnimationSequence ?? 0) + 1;
               nextHeroes[i].attackTargetX = 87;
             }
             nextHeroes[i].attackTimer = hero.attackInterval;
@@ -220,6 +221,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           nextHeroes[i].attackTimer = hero.attackInterval;
           nextHeroes[i].attackFlash = 0.16;
           nextHeroes[i].attackAnimationTimer = hero.attackInterval;
+              nextHeroes[i].attackAnimationSequence = (nextHeroes[i].attackAnimationSequence ?? 0) + 1;
           nextHeroes[i].attackTargetX = target.x;
           if (hero.id === "devWukong") {
             if (wukongOpener) {
@@ -293,6 +295,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               nextEnemies[i].attackTimer = enemy.attackInterval;
               nextEnemies[i].attackFlash = 0.16;
               nextEnemies[i].attackAnimationTimer = enemy.attackInterval;
+              nextEnemies[i].attackAnimationSequence = (nextEnemies[i].attackAnimationSequence ?? 0) + 1;
               nextEnemies[i].attackTargetX = 9;
             }
           } else {
@@ -337,6 +340,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           nextEnemies[i].attackTimer = enragedBoss ? enemy.attackInterval * 0.65 : enemy.attackInterval;
           nextEnemies[i].attackFlash = enragedBoss ? 0.22 : 0.16;
           nextEnemies[i].attackAnimationTimer = enemy.attackInterval;
+              nextEnemies[i].attackAnimationSequence = (nextEnemies[i].attackAnimationSequence ?? 0) + 1;
           nextEnemies[i].attackTargetX = target.x;
         }
       }

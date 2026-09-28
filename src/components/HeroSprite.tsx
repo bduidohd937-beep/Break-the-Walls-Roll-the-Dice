@@ -10,14 +10,15 @@ const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSPrope
   "--frame-count": count,
 } as CSSProperties);
 
-export function HeroSprite({ hero, state = "idle", deathProgress = 0, attackDuration }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number; attackDuration?: number }) {
+export function HeroSprite({ hero, state = "idle", deathProgress = 0, attackDuration, gameSpeed = 1, attackSequence = 0 }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number; attackDuration?: number; gameSpeed?: number; attackSequence?: number }) {
   const animatedSprite = UNIT_ANIMATED_SPRITES[hero.id];
   if (animatedSprite) {
     const animated = state === "walk" || state === "attack";
     const image = state === "attack" ? animatedSprite.attack : state === "walk" ? animatedSprite.walk : animatedSprite.idle;
-    const duration = state === "attack" ? attackDuration ?? animatedSprite.attackDuration : animatedSprite.walkDuration;
-    return <span className={`unit-animated-sprite state-${state}`} role="img" aria-label={hero.name}
-      style={{ "--sprite-image": `url("${image}")`, "--frame-count": animated ? animatedSprite.frameCount : 1, "--animation-duration": `${duration}s` } as CSSProperties}
+    const count = animated ? animatedSprite.frameCount : 1;
+    const duration = state === "attack" ? attackDuration ?? animatedSprite.attackDuration / gameSpeed : animatedSprite.walkDuration / gameSpeed;
+    return <span key={state === "attack" ? `attack-${attackSequence}` : state} className={`unit-animated-sprite state-${state}`} role="img" aria-label={hero.name}
+      style={{ "--sprite-image": `url("${image}")`, "--frame-count": count, "--last-frame": count - 1, "--sprite-scale": animatedSprite.displayScale ?? 1.375, "--animation-duration": `${duration}s`, "--attack-duration": `${duration}s` } as CSSProperties}
       data-animated={animated ? "true" : undefined} />;
   }
   const sheet = UNIT_SPRITES[hero.id];
