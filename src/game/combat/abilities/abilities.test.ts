@@ -75,11 +75,11 @@ describe("ability triggers", () => {
     expect(runtime.dispatch({ type: "ON_ATTACK", casterUid: 1, currentTargetUid: 2 }, battlefield).activations).toHaveLength(1);
   });
 
-  it("activates ON_HIT_COUNT only on the configured hit", () => {
-    const runtime = createAbilityRuntime([{ ownerUid: 1, ability: ability({ trigger: { type: "ON_HIT_COUNT", count: 2 } }) }]);
+  it("activates ON_HIT_RECEIVED_COUNT only on the configured hit", () => {
+    const runtime = createAbilityRuntime([{ ownerUid: 1, ability: ability({ trigger: { type: "ON_HIT_RECEIVED_COUNT", count: 2 } }) }]);
     const battlefield = { units: [unit(), unit({ uid: 2, team: "enemy" })] };
-    expect(runtime.dispatch({ type: "ON_HIT", casterUid: 1, currentTargetUid: 2 }, battlefield).activations).toHaveLength(0);
-    expect(runtime.dispatch({ type: "ON_HIT", casterUid: 1, currentTargetUid: 2 }, battlefield).activations).toHaveLength(1);
+    expect(runtime.dispatch({ type: "ON_HIT_RECEIVED", casterUid: 1, currentTargetUid: 2 }, battlefield).activations).toHaveLength(0);
+    expect(runtime.dispatch({ type: "ON_HIT_RECEIVED", casterUid: 1, currentTargetUid: 2 }, battlefield).activations).toHaveLength(1);
   });
 });
 
@@ -194,4 +194,3 @@ describe("ability metadata independence", () => {
     expect(result.activations[0]).toMatchObject({ abilityId: "definition-only", ownerUid: 77, targetUids: [88] });
   });
 });
-

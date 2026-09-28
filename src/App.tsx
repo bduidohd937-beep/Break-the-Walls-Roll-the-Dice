@@ -33,6 +33,7 @@ import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import { useHeroFormation } from "./game/controllers/useHeroFormation";
 import { useBattleViewState } from "./game/controllers/useBattleViewState";
 import type { BattleReward, DamagePopup } from "./game/combat/types";
+import { createCombatAbilityIntegration } from "./game/combat/abilities";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
 
 function App() {
@@ -57,6 +58,8 @@ function App() {
   const [deathEffects, setDeathEffects] = useState<BattleDeathEffect[]>([]);
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
+  const combatEventUidRef = useRef(1);
+  const abilityIntegrationRef = useRef(createCombatAbilityIntegration([]));
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [battleReward, setBattleReward] = useState<BattleReward | null>(null);
   const {
@@ -200,8 +203,21 @@ function App() {
     deployCooldownsRef.current = { ...deployCooldownsRef.current, [def.id]: def.cooldown };
     setDeployCooldowns((cooldowns) => ({ ...cooldowns, [def.id]: def.cooldown }));
     const deployed = makeUnit(upgradedDef, "hero", 9 + Math.random() * 7, uid);
-    heroesRef.current = [...heroesRef.current, deployed];
-    setHeroes((list) => [...list, deployed]);
+    const deployedHeroes = [...heroesRef.current, deployed];
+    if (abilityIntegrationRef.current.hasAbilities()) {
+      const abilityResult = abilityIntegrationRef.current.publish({
+        type: "UNIT_DEPLOYED",
+        eventId: combatEventUidRef.current++,
+        origin: "SYSTEM",
+        unitUid: deployed.uid
+      }, [...deployedHeroes, ...enemiesRef.current]);
+      heroesRef.current = abilityResult.units.filter((unit) => unit.team === "hero");
+      enemiesRef.current = abilityResult.units.filter((unit) => unit.team === "enemy");
+    } else {
+      heroesRef.current = deployedHeroes;
+    }
+    setHeroes(heroesRef.current);
+    setEnemies(enemiesRef.current);
     setNotice(`${def.name} 출전!`);
   }, [battleState, paused, unitLevels, heroSouls, trainingBonus]);
 
@@ -274,7 +290,7 @@ function App() {
   });
 
 
-  useBattleLoop({ battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
+  useBattleLoop({ battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, combatEventUidRef, abilityIntegrationRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
@@ -314,6 +330,8 @@ function App() {
     setDamagePopups([]);
     setDeathEffects([]);
     popupUidRef.current = 1;
+    combatEventUidRef.current = 1;
+    abilityIntegrationRef.current = createCombatAbilityIntegration([]);
     setBattleReward(null);
     setBattleState("playing");
     setDeployCooldowns({});

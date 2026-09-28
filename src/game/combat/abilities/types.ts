@@ -15,8 +15,9 @@ export type TriggerDefinition =
   | { type: "ON_DEPLOY" }
   | { type: "ON_ATTACK" }
   | { type: "ON_ATTACK_COUNT"; count: number }
-  | { type: "ON_HIT" }
-  | { type: "ON_HIT_COUNT"; count: number }
+  | { type: "ON_HIT_DEALT" }
+  | { type: "ON_HIT_RECEIVED" }
+  | { type: "ON_HIT_RECEIVED_COUNT"; count: number }
   | { type: "ON_KILL" }
   | { type: "ON_DEATH" }
   | { type: "ON_HP_BELOW"; hpPercent: number }
@@ -66,10 +67,30 @@ export type AbilityDefinition = {
 export type AbilityBinding = { ownerUid: number; ability: AbilityDefinition };
 
 export type AbilityEvent =
-  | { type: "ON_DEPLOY" | "ON_ATTACK" | "ON_ATTACK_COUNT" | "ON_HIT" | "ON_HIT_COUNT" | "ON_KILL" | "ON_DEATH" | "ON_HP_BELOW"; casterUid: number; currentTargetUid?: number }
-  | { type: "ON_INTERVAL"; elapsedSeconds: number; casterUid?: number; currentTargetUid?: number };
+  | { type: "ON_DEPLOY" | "ON_ATTACK" | "ON_HIT_DEALT" | "ON_HIT_RECEIVED" | "ON_KILL" | "ON_DEATH" | "ON_HP_BELOW"; casterUid: number; currentTargetUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_INTERVAL"; elapsedSeconds: number; casterUid?: number; currentTargetUid?: number; meta?: AbilityEventMeta };
+
+export type AbilityEventOrigin = "BASIC_ATTACK" | "ABILITY" | "STATUS" | "SYSTEM";
+export type AbilityEventMeta = {
+  eventId: number;
+  attackId?: number;
+  origin: AbilityEventOrigin;
+  originAbilityId?: string;
+  chainDepth: number;
+  actualDamage?: number;
+};
 
 export type AbilityBattlefield = { units: readonly AbilityUnit[] };
-export type AbilityActivation = { abilityId: string; ownerUid: number; targetUids: number[] };
-export type AbilityExecutionResult = { units: AbilityUnit[]; activations: AbilityActivation[] };
-
+export type AbilityActivation = { abilityId: string; ownerUid: number; targetUids: number[]; eventMeta?: AbilityEventMeta };
+export type AbilityEffectApplication = {
+  abilityId: string;
+  ownerUid: number;
+  targetUid: number;
+  effectType: EffectDefinition["type"];
+  hpDelta: number;
+};
+export type AbilityExecutionResult = {
+  units: readonly AbilityUnit[];
+  activations: AbilityActivation[];
+  applications: AbilityEffectApplication[];
+};

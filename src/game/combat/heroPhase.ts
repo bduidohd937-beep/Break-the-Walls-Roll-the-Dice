@@ -5,6 +5,7 @@ import { makeUnit } from "../units/createUnit";
 import { outgoingDamage } from "./damage";
 import { applyKnockback } from "./knockback";
 import type { DamagePopup } from "./types";
+import type { CombatEvent } from "./abilities/combatEvents";
 
 export type HeroPhaseInput = {
   heroes: Unit[];
@@ -20,6 +21,8 @@ export type HeroPhaseInput = {
   enemyCastleHp: number;
   nextUid: number;
   nextPopupUid: number;
+  nextCombatEventId?: number;
+  collectCombatEvents?: boolean;
   random?: () => number;
 };
 
@@ -33,6 +36,8 @@ export type HeroPhaseResult = {
   damagePopups: DamagePopup[];
   enemyCastleHit: boolean;
   notice?: string;
+  combatEvents: CombatEvent[];
+  nextCombatEventId: number;
 };
 
 export function selectHeroTarget(hero: Unit, enemies: Unit[]): Unit | undefined {
@@ -57,8 +62,10 @@ function attackEnemyUnits(
   target: Unit,
   enemies: Unit[],
   nextPopupUid: number,
-  random: () => number
-): { hero: Unit; enemies: Unit[]; damagePopups: DamagePopup[]; nextPopupUid: number } {
+  random: () => number,
+  nextCombatEventId: number,
+  collectCombatEvents: boolean
+): { hero: Unit; enemies: Unit[]; damagePopups: DamagePopup[]; nextPopupUid: number; combatEvents: CombatEvent[]; nextCombatEventId: number } {
   const nextEnemies = [...enemies];
   const damage = outgoingDamage(hero, target, hero.atk, random);
   const splashRadius = hero.splashRadius ?? 0;
@@ -68,6 +75,16 @@ function attackEnemyUnits(
         .map((enemy) => enemy.uid)
     : [target.uid];
   const damagePopups: DamagePopup[] = [];
+  const attackId = collectCombatEvents ? nextCombatEventId++ : 0;
+  const combatEvents: CombatEvent[] = [];
+  if (collectCombatEvents) combatEvents.push({
+    type: "BASIC_ATTACK",
+    eventId: nextCombatEventId++,
+    attackId,
+    origin: "BASIC_ATTACK",
+    attackerUid: hero.uid,
+    targetUid: target.uid
+  });
 
   for (const targetUid of hitTargets) {
     const targetIndex = nextEnemies.findIndex((enemy) => enemy.uid === targetUid);
@@ -80,6 +97,7 @@ function attackEnemyUnits(
       "hero",
       impactAtk
     );
+    const actualDamage = Math.max(0, nextEnemies[targetIndex].currentHp - Math.max(0, hitTarget.currentHp));
     nextEnemies[targetIndex] = hero.effect === "burn"
       ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
       : { ...hitTarget, hitFlash: 0.14 };
@@ -88,6 +106,15 @@ function attackEnemyUnits(
       x: hitTarget.x,
       value: Math.max(1, Math.round(damage)),
       critical: damage >= hero.atk * 1.9
+    });
+    if (collectCombatEvents) combatEvents.push({
+      type: "DAMAGE_APPLIED",
+      eventId: nextCombatEventId++,
+      attackId,
+      origin: "BASIC_ATTACK",
+      sourceUid: hero.uid,
+      targetUid,
+      actualDamage
     });
   }
 
@@ -102,7 +129,9 @@ function attackEnemyUnits(
     },
     enemies: nextEnemies,
     damagePopups,
-    nextPopupUid
+    nextPopupUid,
+    combatEvents,
+    nextCombatEventId
   };
 }
 
@@ -116,6 +145,8 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
   let enemyCastleHit = false;
   let notice: string | undefined;
   const damagePopups: DamagePopup[] = [];
+  const combatEvents: CombatEvent[] = [];
+  let nextCombatEventId = input.nextCombatEventId ?? 1;
   const random = input.random ?? Math.random;
 
   for (let index = 0; index < heroes.length; index++) {
@@ -132,6 +163,7 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
           enemies.every((enemy) => enemy.currentHp <= 0);
         if (finalWaveCleared) {
           const damage = hero.atk * 1.8;
+          const castleHpBeforeAttack = enemyCastleHp;
           if (input.stage.type === "boss" && input.bossKey && !bossSpawnAnnounced && damage >= enemyCastleHp) {
             const bossDef = ENEMY_MAP[input.bossKey];
             const hpScale = 1 + input.stageIndex * STAGE_HP_SCALE + input.waveIndex * WAVE_HP_SCALE + 0.35;
@@ -156,6 +188,15 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
             enemyCastleHp = Math.max(0, enemyCastleHp - damage);
           }
           enemyCastleHit = true;
+          if (input.collectCombatEvents !== false) combatEvents.push({
+            type: "CASTLE_ATTACK",
+            eventId: nextCombatEventId++,
+            attackId: nextCombatEventId++,
+            origin: "BASIC_ATTACK",
+            attackerUid: hero.uid,
+            castle: "enemy",
+            actualDamage: Math.max(0, castleHpBeforeAttack - enemyCastleHp)
+          });
           heroes[index].attackFlash = 0.16;
           heroes[index].attackAnimationTimer = heroes[index].attackInterval;
           heroes[index].attackAnimationSequence = (heroes[index].attackAnimationSequence ?? 0) + 1;
@@ -173,11 +214,13 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
     }
     if (hero.attackTimer > 0) continue;
 
-    const attack = attackEnemyUnits(hero, target, enemies, nextPopupUid, random);
+    const attack = attackEnemyUnits(hero, target, enemies, nextPopupUid, random, nextCombatEventId, input.collectCombatEvents !== false);
     heroes[index] = attack.hero;
     enemies = attack.enemies;
     nextPopupUid = attack.nextPopupUid;
     damagePopups.push(...attack.damagePopups);
+    combatEvents.push(...attack.combatEvents);
+    nextCombatEventId = attack.nextCombatEventId;
   }
 
   return {
@@ -189,6 +232,8 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
     nextPopupUid,
     damagePopups,
     enemyCastleHit,
-    notice
+    notice,
+    combatEvents,
+    nextCombatEventId
   };
 }
