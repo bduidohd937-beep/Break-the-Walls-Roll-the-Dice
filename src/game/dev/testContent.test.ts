@@ -13,4 +13,9 @@ describe("test content sandbox", () => {
     expect(units).toHaveLength(50);
     expect(new Set(units.map((unit) => unit.id)).size).toBe(50);
   });
+  it("creates the true max ally stress scenario", () => {
+    const units = createTestBattleUnits(50, 30);
+    expect(units).toHaveLength(80);
+    expect(units.slice(0, 50).every((unit) => unit.id.startsWith("test_common_"))).toBe(true);
+  });
 });
