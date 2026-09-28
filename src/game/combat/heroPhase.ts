@@ -93,7 +93,7 @@ function attackEnemyUnits(
     if (targetIndex < 0) continue;
     const isPrimaryTarget = targetUid === target.uid;
     const impactAtk = hero.attackType === "splash" && !isPrimaryTarget ? hero.atk * 0.65 : hero.atk;
-    const resolvedDamage = resolveAbilityDamage(nextEnemies[targetIndex], damage);
+    const resolvedDamage = resolveAbilityDamage(nextEnemies[targetIndex], damage, hero);
     const hitTarget = applyKnockback(
       resolvedDamage.unit,
       nextEnemies[targetIndex].currentHp - resolvedDamage.hpDamage,
