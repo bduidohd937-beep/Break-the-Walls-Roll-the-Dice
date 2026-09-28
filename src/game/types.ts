@@ -37,6 +37,7 @@ export type Unit = UnitDef & {
   cooldownTimer: number;
   hitFlash: number;
   attackFlash: number;
+  attackAnimationTimer?: number;
   attackTargetX: number;
   knockbackCount: number;
   knockbackTimer: number;

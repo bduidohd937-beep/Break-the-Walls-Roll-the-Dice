@@ -10,11 +10,15 @@ const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSPrope
   "--frame-count": count,
 } as CSSProperties);
 
-export function HeroSprite({ hero, state = "idle", deathProgress = 0 }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number }) {
+export function HeroSprite({ hero, state = "idle", deathProgress = 0, attackDuration }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number; attackDuration?: number }) {
   const animatedSprite = UNIT_ANIMATED_SPRITES[hero.id];
   if (animatedSprite) {
-    const src = state === "attack" ? animatedSprite.attack : state === "walk" ? animatedSprite.walk : animatedSprite.portrait;
-    return <img className={`unit-animated-sprite state-${state}`} src={src} alt={hero.name} />;
+    const animated = state === "walk" || state === "attack";
+    const image = state === "attack" ? animatedSprite.attack : state === "walk" ? animatedSprite.walk : animatedSprite.idle;
+    const duration = state === "attack" ? attackDuration ?? animatedSprite.attackDuration : animatedSprite.walkDuration;
+    return <span className={`unit-animated-sprite state-${state}`} role="img" aria-label={hero.name}
+      style={{ "--sprite-image": `url("${image}")`, "--frame-count": animated ? animatedSprite.frameCount : 1, "--animation-duration": `${duration}s` } as CSSProperties}
+      data-animated={animated ? "true" : undefined} />;
   }
   const sheet = UNIT_SPRITES[hero.id];
   if (sheet) {
