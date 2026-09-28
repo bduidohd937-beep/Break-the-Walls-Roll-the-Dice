@@ -20,7 +20,7 @@ import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, get
 import { getProgressionGoals } from "./game/systems/progression";
 import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
-import { DEV_MODE, STORAGE_KEYS, loadJson, loadNumber, saveJson, saveNumber } from "./game/storage";
+import { DEV_MODE, STORAGE_KEYS, loadJson, saveJson, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
@@ -29,8 +29,9 @@ import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLo
 import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
 import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigation";
 import { useKingdomProfile } from "./game/controllers/useKingdomProfile";
+import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
-import { savedCounts, savedIds, savedSummons } from "./game/systems/saveData";
+import { savedIds } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 
@@ -79,20 +80,16 @@ function App() {
   const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
   const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
-  const [summonStorage, setSummonStorage] = useState<SummonStorageItem[]>(() => {
-    try { const saved = loadJson<SummonStorageItem[]>(STORAGE_KEYS.summonStorage, []); return savedSummons(saved); } catch { return []; }
-  });
-  const [heroSouls, setHeroSouls] = useState<Record<string, number>>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.heroSouls, {}); return DEV_MODE ? Object.fromEntries(HEROES.map(hero => [hero.id, 30])) : savedCounts(saved, 30); } catch { return {}; }
-  });
-  const [soulShards, setSoulShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.soulShards, DEV_MODE ? 999999 : 0)));
-  const [transcendShards, setTranscendShards] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.transcendShards, DEV_MODE ? 999999 : 0)));
-  const [fusionRecords, setFusionRecords] = useState<string[]>(() => {
-    try { const saved = loadJson<string[]>(STORAGE_KEYS.fusionRecords, []); return savedIds(saved, new Set(["unknown-01", "unknown-02", "devWukong"])); } catch { return []; }
-  });
-  const summonUidRef = useRef(Math.max(Date.now(), ...summonStorage.map(item => item.uid + 1)));
-  const [legendPity, setLegendPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.legendPity, 0)));
-  const [mythPity, setMythPity] = useState(() => Math.max(0, loadNumber(STORAGE_KEYS.mythPity, 0)));
+  const {
+    summonStorage, setSummonStorage,
+    heroSouls, setHeroSouls,
+    soulShards, setSoulShards,
+    transcendShards, setTranscendShards,
+    fusionRecords, setFusionRecords,
+    summonUidRef,
+    legendPity, setLegendPity,
+    mythPity, setMythPity
+  } = useSummonProfile();
   const [summonSequence, setSummonSequence] = useState<SummonStorageItem[]>([]);
   const [summonRevealIndex, setSummonRevealIndex] = useState(0);
   const [summonSummaryOpen, setSummonSummaryOpen] = useState(false);

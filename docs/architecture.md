@@ -49,6 +49,7 @@ main → app/root → feature components → controllers → systems/combat → 
 - 플레이어 진행 저장 상태는 `game/controllers/usePlayerProgress.ts`에서 기존 저장 키와 검증 규칙을 그대로 사용합니다.
 - 허브 탭과 로비 열림 상태는 `game/controllers/useHubNavigation.ts`에서 관리합니다.
 - 왕국·보유 영웅·자원·일꾼 저장 상태는 `game/controllers/useKingdomProfile.ts`에서 기존 저장 형식을 유지합니다.
+- 소환 보관함·영혼·파편·천장 기록은 `game/controllers/useSummonProfile.ts`에서 기존 저장 형식을 유지합니다.
 
 ## 대규모 정돈 순서
 
