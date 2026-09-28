@@ -205,14 +205,17 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     currentHp: Math.min(target.hp, target.currentHp + calculateScaling(effect.amount, caster, target))
   }),
   KNOCKBACK: (effect, { caster, target }) => {
+    if (target.knockbackImmune) return target;
     const distance = Math.max(0, calculateScaling(effect.distance, caster, target));
     return applyAbilityKnockback(target, distance, caster.team);
   },
   APPLY_STATUS: (effect, { caster, target, statusHandlers, sourceAbilityId }) => {
     if (effect.status === "stun" || effect.status === "slow") {
       const id: AbilityStatusId = effect.status === "stun" ? "STUN" : "SLOW";
+      if (target.statusImmunities?.includes(id)) return target;
       const state = target.abilityEffectState ?? emptyEffectState();
       const potency = effect.potency ? calculateScaling(effect.potency, caster, target) : 1;
+      const duration = effect.duration * Math.max(0, target.statusDurationMultiplier?.[id] ?? 1);
       const existing = state.statuses.filter((entry) => entry.id !== id || (id === "SLOW" && entry.sourceUid !== caster.uid));
       const same = state.statuses.find((entry) => entry.id === id);
       const nextStatus = {
@@ -220,7 +223,7 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
         sourceUid: caster.uid,
         sourceAbilityId,
         potency: same && id === "SLOW" ? Math.min(same.potency, potency) : potency,
-        remaining: same && id === "STUN" ? Math.max(same.remaining, effect.duration) : effect.duration
+        remaining: same && id === "STUN" ? Math.max(same.remaining, duration) : duration
       };
       return { ...target, abilityEffectState: { ...state, statuses: [...existing, nextStatus] } };
     }

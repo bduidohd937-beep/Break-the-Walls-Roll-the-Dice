@@ -37,6 +37,9 @@ export type AbilityUnit = Unit & {
   statusIds?: readonly StatusId[];
   abilityEffectState?: AbilityEffectState;
   summonMeta?: { ownerUid: number; sourceAbilityId: string; summonedAt: number; remaining?: number };
+  statusImmunities?: readonly AbilityStatusId[];
+  statusDurationMultiplier?: Partial<Record<AbilityStatusId, number>>;
+  knockbackImmune?: boolean;
 };
 
 export type SummonRequest = { summonUnitId: string; count: number; duration?: number; ownerUid: number; sourceAbilityId: string; team: Unit["team"]; x: number; uidStart: number };
@@ -51,6 +54,8 @@ export type TriggerDefinition =
   | { type: "ON_HIT_RECEIVED_COUNT"; count: number }
   | { type: "ON_KILL" }
   | { type: "ON_DEATH" }
+  | { type: "ON_REVIVE" }
+  | { type: "ON_STATUS_APPLIED"; status?: AbilityStatusId }
   | { type: "ON_HP_BELOW"; hpPercent: number }
   | { type: "ON_INTERVAL"; intervalSeconds: number };
 
@@ -114,6 +119,8 @@ export type AbilityBinding = { ownerUid: number; ability: AbilityDefinition };
 
 export type AbilityEvent =
   | { type: "ON_DEPLOY" | "ON_ATTACK" | "ON_HIT_DEALT" | "ON_HIT_RECEIVED" | "ON_KILL" | "ON_DEATH" | "ON_HP_BELOW"; casterUid: number; currentTargetUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_REVIVE"; casterUid: number; currentTargetUid?: number; meta?: AbilityEventMeta }
+  | { type: "ON_STATUS_APPLIED"; casterUid: number; currentTargetUid: number; status: AbilityStatusId; duration: number; potency: number; meta?: AbilityEventMeta }
   | { type: "ON_INTERVAL"; elapsedSeconds: number; casterUid?: number; currentTargetUid?: number; meta?: AbilityEventMeta };
 
 export type AbilityEventOrigin = "BASIC_ATTACK" | "ABILITY" | "STATUS" | "SYSTEM";
@@ -134,6 +141,9 @@ export type AbilityEffectApplication = {
   targetUid: number;
   effectType: EffectDefinition["type"];
   hpDelta: number;
+  status?: AbilityStatusId;
+  duration?: number;
+  potency?: number;
 };
 export type AbilityResourceChange = { resource: string; amount: number; ownerUid: number; abilityId: string };
 export type AbilityExecutionResult = {

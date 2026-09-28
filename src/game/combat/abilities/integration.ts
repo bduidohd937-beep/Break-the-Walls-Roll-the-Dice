@@ -61,6 +61,20 @@ export function createCombatAbilityIntegration(
     }
 
     for (const application of result.applications) {
+      if (application.effectType === "REVIVE" && application.hpDelta > 0) {
+        const revived = publishInternal({ type: "UNIT_REVIVED", unitUid: application.targetUid, sourceUid: application.ownerUid, eventId: generatedEventId--, origin: "ABILITY", originAbilityId: application.abilityId, chainDepth: depth + 1 }, nextUnits, depth + 1, false);
+        nextUnits = revived.units;
+        activationCount += revived.activationCount;
+        droppedByDepthLimit ||= revived.droppedByDepthLimit;
+        resourceChanges.push(...(revived.resourceChanges ?? []));
+      }
+      if (application.status && application.duration !== undefined && application.potency !== undefined) {
+        const applied = publishInternal({ type: "STATUS_APPLIED", targetUid: application.targetUid, sourceUid: application.ownerUid, status: application.status, duration: application.duration, potency: application.potency, eventId: generatedEventId--, origin: "ABILITY", originAbilityId: application.abilityId, chainDepth: depth + 1 }, nextUnits, depth + 1, false);
+        nextUnits = applied.units;
+        activationCount += applied.activationCount;
+        droppedByDepthLimit ||= applied.droppedByDepthLimit;
+        resourceChanges.push(...(applied.resourceChanges ?? []));
+      }
       if (application.hpDelta === 0) continue;
       const chainedMeta = {
         eventId: generatedEventId--,
@@ -103,9 +117,10 @@ export function createCombatAbilityIntegration(
     let result: CombatEventResult = { units, activationCount: 0, droppedByDepthLimit: false };
     const merge = (next: CombatEventResult) => {
       result = {
-        units: next.units,
-        activationCount: result.activationCount + next.activationCount,
-        droppedByDepthLimit: result.droppedByDepthLimit || next.droppedByDepthLimit
+      units: next.units,
+      activationCount: result.activationCount + next.activationCount,
+        droppedByDepthLimit: result.droppedByDepthLimit || next.droppedByDepthLimit,
+        resourceChanges: [...(result.resourceChanges ?? []), ...(next.resourceChanges ?? [])]
       };
     };
 
@@ -138,6 +153,12 @@ export function createCombatAbilityIntegration(
         lastDamageSource.delete(event.unitUid);
         break;
       }
+      case "UNIT_REVIVED":
+        merge(apply({ type: "ON_REVIVE", casterUid: event.unitUid, currentTargetUid: event.sourceUid, meta }, result.units));
+        break;
+      case "STATUS_APPLIED":
+        merge(apply({ type: "ON_STATUS_APPLIED", casterUid: event.sourceUid, currentTargetUid: event.targetUid, status: event.status, duration: event.duration, potency: event.potency, meta }, result.units));
+        break;
       case "SIMULATION_TICK":
         merge(apply({ type: "ON_INTERVAL", elapsedSeconds: event.deltaSeconds, meta }, result.units));
         break;

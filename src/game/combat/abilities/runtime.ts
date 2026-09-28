@@ -103,6 +103,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
 
       for (const binding of candidates) {
         if (event.casterUid !== undefined && binding.ownerUid !== event.casterUid) continue;
+        if (event.type === "ON_STATUS_APPLIED" && binding.ability.trigger.type === "ON_STATUS_APPLIED" && binding.ability.trigger.status && binding.ability.trigger.status !== event.status) continue;
         let caster = units.get(binding.ownerUid);
         if (!caster) continue;
         const trigger = binding.ability.trigger;
@@ -178,7 +179,12 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
                 ownerUid: binding.ownerUid,
                 targetUid: selectedTarget.uid,
                 effectType: effect.type,
-                hpDelta: nextTarget.currentHp - latestTarget.currentHp
+                hpDelta: nextTarget.currentHp - latestTarget.currentHp,
+                ...(effect.type === "APPLY_STATUS" && (effect.status === "stun" || effect.status === "slow") ? {
+                  status: effect.status === "stun" ? "STUN" as const : "SLOW" as const,
+                  duration: nextTarget.abilityEffectState?.statuses.find((entry) => entry.sourceAbilityId === binding.ability.id)?.remaining,
+                  potency: nextTarget.abilityEffectState?.statuses.find((entry) => entry.sourceAbilityId === binding.ability.id)?.potency
+                } : {})
               });
             }
           }

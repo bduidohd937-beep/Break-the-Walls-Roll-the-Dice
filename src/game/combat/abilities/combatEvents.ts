@@ -1,4 +1,4 @@
-import type { AbilityEventOrigin, AbilityUnit } from "./types";
+import type { AbilityEventOrigin, AbilityStatusId, AbilityUnit } from "./types";
 
 export type CombatEventMeta = {
   eventId: number;
@@ -14,6 +14,8 @@ export type CombatEvent =
   | ({ type: "DAMAGE_APPLIED"; sourceUid?: number; targetUid: number; actualDamage: number } & CombatEventMeta)
   | ({ type: "HP_CHANGED"; unitUid: number; previousHp: number; currentHp: number; sourceUid?: number } & CombatEventMeta)
   | ({ type: "UNIT_DEATH"; unitUid: number; killerUid?: number } & CombatEventMeta)
+  | ({ type: "UNIT_REVIVED"; unitUid: number; sourceUid?: number } & CombatEventMeta)
+  | ({ type: "STATUS_APPLIED"; targetUid: number; sourceUid: number; status: AbilityStatusId; duration: number; potency: number } & CombatEventMeta)
   | ({ type: "SIMULATION_TICK"; deltaSeconds: number } & CombatEventMeta)
   | ({ type: "CASTLE_ATTACK"; attackerUid: number; castle: "hero" | "enemy"; actualDamage: number } & CombatEventMeta);
 
