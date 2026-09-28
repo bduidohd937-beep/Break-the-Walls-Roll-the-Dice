@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { StageDef, UnitDef } from "../game/types";
+import type { StageDef, UnitDef } from "../../game/types";
 import { StageSelectPanel } from "./StageSelectPanel";
 
 export function BattleLobby(p:{ stages:StageDef[]; unlockedStage:number; clearedStages:number[]; devMode:boolean; selected:number|null; onPick:(index:number)=>void; onBack:()=>void; onDeploy:(index:number)=>void; formationOpen:boolean; onFormation:()=>void; formation:ReactNode; deck:UnitDef[] }) {

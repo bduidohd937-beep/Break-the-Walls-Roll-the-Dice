@@ -1,6 +1,6 @@
-import { HeroSprite } from "./HeroSprite";
-import type { UnitDef } from "../game/types";
-import { GATHER_REGIONS, type GatherRegionKey, type ResourceType } from "../game/systems/gathering";
+import { HeroSprite } from "../shared/HeroSprite";
+import type { UnitDef } from "../../game/types";
+import { GATHER_REGIONS, type GatherRegionKey, type ResourceType } from "../../game/systems/gathering";
 
 type Props={
  resources:Record<ResourceType,number>; offlineGather:{wood:number;stone:number;seconds:number}|null;

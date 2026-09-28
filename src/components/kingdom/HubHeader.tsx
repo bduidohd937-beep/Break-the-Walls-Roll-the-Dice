@@ -1,4 +1,4 @@
-import { FullscreenToggle } from "./FullscreenToggle";
+import { FullscreenToggle } from "../shared/FullscreenToggle";
 
 export type HubTab = "home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion" | "shop";
 

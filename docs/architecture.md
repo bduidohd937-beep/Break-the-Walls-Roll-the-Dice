@@ -7,7 +7,12 @@
 ```text
 src/
   assets/heroes/       영웅 이미지와 애니메이션 원본·가공 자산
-  components/          화면 컴포넌트와 공용 UI
+  components/battle/   전투 화면·유닛·출전 로비·스테이지 선택
+  components/kingdom/  왕국 허브·채집·상점·보관 화면
+  components/heroes/   영웅 관리·합성·영웅 저장소
+  components/summon/   소환 화면
+  components/shared/   여러 기능에서 함께 쓰는 UI와 영웅 이미지
+  components/devtools/ 개발 전용 스프라이트 검사 화면
   game/combat/         충돌, 피해, 넉백 등 순수 전투 계산
   game/controllers/    React 상태와 게임 시스템을 연결하는 훅
   game/systems/        경제, 성장, 소환, 저장 검증 등 도메인 규칙
@@ -64,8 +69,6 @@ main → app/root → feature components → controllers → systems/combat → 
 
 ## 다음 구조 개선 후보
 
-- `components`를 전투, 왕국, 영웅, 소환 기능 폴더로 이동
-- 공용 HUD와 전체화면 버튼을 공유 컴포넌트 폴더로 이동
 - `App.tsx`에서 프로필 상태와 화면 조립 분리
 - `useBattleLoop.ts`에서 순수 계산과 React 타이머 제어 분리
 - 저장 데이터와 전투 경제에 대한 최소 회귀 테스트 추가

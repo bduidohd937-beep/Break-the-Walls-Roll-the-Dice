@@ -1,8 +1,8 @@
 import React from "react";
-import type { Unit } from "../game/types";
-import { ELEMENT_CLASS, clamp } from "../game/constants";
-import { HeroSprite } from "./HeroSprite";
-import { UNIT_ANIMATED_SPRITES } from "../game/visuals/sprites";
+import type { Unit } from "../../game/types";
+import { ELEMENT_CLASS, clamp } from "../../game/constants";
+import { HeroSprite } from "../shared/HeroSprite";
+import { UNIT_ANIMATED_SPRITES } from "../../game/visuals/sprites";
 
 export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit; dyingProgress?: number; gameSpeed?: number }) {
   const dying = dyingProgress !== undefined;

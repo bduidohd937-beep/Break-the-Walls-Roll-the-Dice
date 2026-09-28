@@ -1,6 +1,6 @@
-import { HeroSprite } from "./HeroSprite";
-import type { UnitDef } from "../game/types";
-import type { SummonStorageItem } from "../game/systems/summon";
+import { HeroSprite } from "../shared/HeroSprite";
+import type { UnitDef } from "../../game/types";
+import type { SummonStorageItem } from "../../game/systems/summon";
 type Phase="idle"|"throw"|"impact"|"crack"|"reveal";
 type Props={heroes:UnitDef[];phase:Phase;sequence:SummonStorageItem[];revealIndex:number;summaryOpen:boolean;results:SummonStorageItem[];gems:number;soulShards:number;transcendShards:number;legendPity:number;mythPity:number;message:string;storageCount:number;fusionCount:number;fusionTotal:number;ownedCount:number;onSkip:()=>void;onNext:()=>void;onCloseSummary:()=>void;onSummon:(count:1|11)=>void;onStorage:()=>void;onFusion:()=>void};
 export function SummonPanel(p:Props){const item=p.sequence[p.revealIndex],hero=item?p.heroes.find(h=>h.id===item.heroId):undefined,high=item?["전설","신화","초월"].includes(item.grade):false,omen=item?.grade??"일반";return <div className="summon-panel hub-summon">

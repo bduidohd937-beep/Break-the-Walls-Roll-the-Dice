@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { UNIT_SPRITES, type Frame } from "../game/visuals/sprites";
+import { UNIT_SPRITES, type Frame } from "../../game/visuals/sprites";
 import "./sprite-debug.css";
 
 type Animation = "idle" | "walk" | "attack" | "hit" | "death";

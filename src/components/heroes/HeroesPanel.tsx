@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { HeroSprite } from "./HeroSprite";
-import type { UnitDef } from "../game/types";
-import { ELEMENT_LABEL } from "../game/constants";
-import { HERO_CONTENT_STATUS, type HeroGradeName } from "../game/systems/heroGrowth";
+import { HeroSprite } from "../shared/HeroSprite";
+import type { UnitDef } from "../../game/types";
+import { ELEMENT_LABEL } from "../../game/constants";
+import { HERO_CONTENT_STATUS, type HeroGradeName } from "../../game/systems/heroGrowth";
 
 type Grade={name:HeroGradeName|"???";multiplier:number};
 type Trait={name:string;text:string};

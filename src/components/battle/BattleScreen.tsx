@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
-import type { StageDef, Unit, UnitDef } from "../game/types";
-import { ELEMENT_CLASS } from "../game/constants";
+import type { StageDef, Unit, UnitDef } from "../../game/types";
+import { ELEMENT_CLASS } from "../../game/constants";
 import { BattleUnit } from "./BattleUnit";
-import { HeroSprite } from "./HeroSprite";
-import { FullscreenToggle } from "./FullscreenToggle";
-import type { BattleDeathEffect } from "../game/visuals/sprites";
-import type { BattleReward } from "../game/controllers/useBattleLoop";
+import { HeroSprite } from "../shared/HeroSprite";
+import { FullscreenToggle } from "../shared/FullscreenToggle";
+import type { BattleDeathEffect } from "../../game/visuals/sprites";
+import type { BattleReward } from "../../game/controllers/useBattleLoop";
 type BattleState="playing"|"victory"|"defeat"|"stageSelect";
 type DamagePopup={id:number;x:number;value:number;critical?:boolean};
 type PauseScreen=null|"menu"|"settings"|"exit";

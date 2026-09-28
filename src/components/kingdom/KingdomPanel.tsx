@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { FacilityKey } from "../game/systems/kingdom";
-import type { ProgressionGoal } from "../game/systems/progression";
+import type { FacilityKey } from "../../game/systems/kingdom";
+import type { ProgressionGoal } from "../../game/systems/progression";
 
 type Unlock = { level: number; icon: string; title: string; text: string };
 type Facility = { name: string; icon: string; unlock: number; baseCost: number; text: (lv: number) => string };

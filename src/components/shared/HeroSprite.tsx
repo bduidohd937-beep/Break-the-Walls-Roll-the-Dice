@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { UnitDef } from "../game/types";
-import { UNIT_ANIMATED_SPRITES, UNIT_SPRITES, type Frame, type SpriteSheet } from "../game/visuals/sprites";
+import type { UnitDef } from "../../game/types";
+import { UNIT_ANIMATED_SPRITES, UNIT_SPRITES, type Frame, type SpriteSheet } from "../../game/visuals/sprites";
 
 type SpriteState = "idle" | "walk" | "attack" | "hit" | "death";
 const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSProperties => ({
