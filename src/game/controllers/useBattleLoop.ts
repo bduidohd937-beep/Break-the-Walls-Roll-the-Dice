@@ -5,7 +5,8 @@ import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from 
 import { makeUnit } from "../units/createUnit";
 import { applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
-import { incomingDamage, outgoingDamage } from "../combat/damage";
+import { incomingDamage } from "../combat/damage";
+import { runHeroPhase } from "../combat/heroPhase";
 import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
 import { spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
@@ -102,94 +103,35 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const speedMultiplier = Math.max(0.55, 1 - stacks * bossMechanic.enemyAttackSpeedPerStack);
         nextEnemies = nextEnemies.map((enemy) => ({ ...enemy, attackTimer: Math.min(enemy.attackTimer, enemy.attackInterval * speedMultiplier) }));
       }
-      // Heroes move, attack, and hit the enemy castle when the lane is clear.
-      for (let i = 0; i < nextHeroes.length; i++) {
-        const hero = nextHeroes[i];
-        if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
-
-        const livingEnemies = nextEnemies.filter((e) => e.currentHp > 0);
-        const frontTarget = livingEnemies
-          .filter((e) => e.x >= hero.x)
-          .sort((a, b) => a.x - b.x)[0] ?? livingEnemies
-          .sort((a, b) => Math.abs(a.x - hero.x) - Math.abs(b.x - hero.x))[0];
-        const assassinTarget = hero.id === "assassin"
-          ? livingEnemies
-              .filter((e) => e.rangeType === "ranged")
-              .sort((a, b) => a.currentHp - b.currentHp || a.x - b.x)[0]
-          : undefined;
-        const target = assassinTarget ?? frontTarget;
-
-        if (!target) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
-          if (hero.x >= 84 && hero.attackTimer <= 0) {
-            const finalWaveCleared =
-              waveRef.current === stage.waves.length - 1 &&
-              spawnRef.current >= totalInWave &&
-              nextEnemies.every((enemy) => enemy.currentHp <= 0);
-            if (finalWaveCleared) {
-              const damage = hero.atk * 1.8;
-              if (stage.type === "boss" && bossKey && !bossSpawnAnnouncedRef.current && damage >= enemyCastleRef.current) {
-                const bossDef = ENEMY_MAP[bossKey];
-                const hpScale = 1 + stageRef.current * STAGE_HP_SCALE + waveRef.current * WAVE_HP_SCALE + 0.35;
-                const atkScale = 1 + stageRef.current * STAGE_ATK_SCALE + waveRef.current * WAVE_ATK_SCALE + 0.15;
-                nextEnemies.push(makeUnit({ ...bossDef, hp: Math.round(bossDef.hp * hpScale), atk: Math.round(bossDef.atk * atkScale) }, "enemy", 90, 1000 + uidRef.current++));
-                bossSpawnAnnouncedRef.current = true;
-                enemyCastleRef.current = Math.ceil(stage.enemyCastleHp / 2);
-                nextHeroes = nextHeroes.map((unit) => ({ ...unit, knockbackTimer: 0.22, knockbackFromX: unit.x, knockbackTargetX: Math.max(9, unit.x - 40), attackTimer: Math.max(unit.attackTimer, 0.5), attackFlash: 0 }));
-                setNotice(`⚠ 성벽 붕괴 저지 · ${stage.bossName ?? "BOSS"} 등장!`);
-              } else {
-                enemyCastleRef.current = Math.max(0, enemyCastleRef.current - damage);
-              }
-              setEnemyCastleHp(enemyCastleRef.current);
-              setCastleHit("enemy");
-              nextHeroes[i].attackFlash = 0.16;
-              nextHeroes[i].attackAnimationTimer = nextHeroes[i].attackInterval;
-              nextHeroes[i].attackAnimationSequence = (nextHeroes[i].attackAnimationSequence ?? 0) + 1;
-              nextHeroes[i].attackTargetX = 87;
-            }
-            nextHeroes[i].attackTimer = hero.attackInterval;
-          }
-          continue;
-        }
-
-        const distance = Math.abs(target.x - hero.x);
-        if (distance > hero.range / 10) {
-          nextHeroes[i] = { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
-        } else if (hero.attackTimer <= 0) {
-          const damage = outgoingDamage(hero, target, hero.atk);
-          const splashRadius = hero.splashRadius ?? 0;
-          const hitTargets = hero.attackType === "splash"
-            ? nextEnemies
-                .filter((enemy) => enemy.currentHp > 0 && Math.abs(enemy.x - target.x) <= splashRadius)
-                .map((enemy) => enemy.uid)
-            : [target.uid];
-
-          for (const targetUid of hitTargets) {
-            const targetIndex = nextEnemies.findIndex((enemy) => enemy.uid === targetUid);
-            if (targetIndex < 0) continue;
-
-            const isPrimaryTarget = targetUid === target.uid;
-            const impactAtk = hero.attackType === "splash" && !isPrimaryTarget ? hero.atk * 0.65 : hero.atk;
-            const hitTarget = applyKnockback(
-              nextEnemies[targetIndex],
-              nextEnemies[targetIndex].currentHp - damage,
-              "hero",
-              impactAtk,
-            );
-
-            nextEnemies[targetIndex] = hero.effect === "burn"
-              ? { ...hitTarget, burnTimer: 3, burnDamage: Math.max(hitTarget.burnDamage, hero.atk * 0.12), hitFlash: 0.14 }
-              : { ...hitTarget, hitFlash: 0.14 };
-            const popupId = popupUidRef.current++;
-            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: hitTarget.x, value: Math.max(1, Math.round(damage)), critical: damage >= hero.atk * 1.9 }]);
-          }
-          nextHeroes[i].attackTimer = hero.attackInterval;
-          nextHeroes[i].attackFlash = 0.16;
-          nextHeroes[i].attackAnimationTimer = hero.attackInterval;
-              nextHeroes[i].attackAnimationSequence = (nextHeroes[i].attackAnimationSequence ?? 0) + 1;
-          nextHeroes[i].attackTargetX = target.x;
-        }
+      const heroPhase = runHeroPhase({
+        heroes: nextHeroes,
+        enemies: nextEnemies,
+        dt,
+        stage,
+        stageIndex: stageRef.current,
+        waveIndex: waveRef.current,
+        spawnedInWave: spawnRef.current,
+        totalInWave,
+        bossKey,
+        bossSpawnAnnounced: bossSpawnAnnouncedRef.current,
+        enemyCastleHp: enemyCastleRef.current,
+        nextUid: uidRef.current,
+        nextPopupUid: popupUidRef.current
+      });
+      nextHeroes = heroPhase.heroes;
+      nextEnemies = heroPhase.enemies;
+      enemyCastleRef.current = heroPhase.enemyCastleHp;
+      bossSpawnAnnouncedRef.current = heroPhase.bossSpawnAnnounced;
+      uidRef.current = heroPhase.nextUid;
+      popupUidRef.current = heroPhase.nextPopupUid;
+      if (heroPhase.enemyCastleHit) {
+        setEnemyCastleHp(enemyCastleRef.current);
+        setCastleHit("enemy");
       }
+      for (const popup of heroPhase.damagePopups) {
+        setDamagePopups((popups) => [...popups.slice(-24), popup]);
+      }
+      if (heroPhase.notice) setNotice(heroPhase.notice);
 
       // Resolve boss death after hero damage, before surviving enemies attack.
       const bossAfterAttack = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);

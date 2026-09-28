@@ -3,6 +3,7 @@ export type Team = "hero" | "enemy";
 export type AttackType = "single" | "splash";
 export type RangeType = "melee" | "ranged";
 export type AbilityType = "guard" | "crit" | "regen" | "execute";
+export type TargetPriority = "frontline" | "ranged-lowest-hp";
 
 export type UnitDef = {
   id: string;
@@ -24,6 +25,7 @@ export type UnitDef = {
   splashRadius?: number;
   ability?: AbilityType;
   abilityValue?: number;
+  targetPriority?: TargetPriority;
 };
 
 export type Unit = UnitDef & {
