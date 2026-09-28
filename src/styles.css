@@ -911,8 +911,8 @@ button { font: inherit; }
 
 /* Landscape phone layout: fit the hub map and navigation into the short viewport. */
 @media(orientation:landscape) and (max-height:600px){
-  .stage-select-shell{height:100svh;min-height:100svh;padding:0;place-items:stretch}
-  .stage-select-card.main-hub-card{width:100%;height:100svh;border-radius:0;padding:0 12px;}
+  .stage-select-shell{height:100svh;min-height:100svh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);place-items:stretch}
+  .stage-select-card.main-hub-card{width:100%;height:100svh;border-radius:0;padding:0 12px;overflow:hidden}
   .kingdom-hud{min-height:52px;margin:0 -12px 6px;padding:calc(4px + env(safe-area-inset-top)) 12px 4px;align-items:center;gap:10px}
   .kingdom-hud-level{width:auto;flex:1;min-width:90px}
   .kingdom-hud-wallet{flex-wrap:nowrap;gap:6px}
