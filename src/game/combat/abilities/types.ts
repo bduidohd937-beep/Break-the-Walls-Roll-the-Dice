@@ -116,6 +116,7 @@ export type AbilityDefinition = {
   target: TargetDefinition;
   effects: readonly EffectDefinition[];
   tags?: readonly AbilityTag[];
+  visual?: { animation: "skill1"; durationSeconds: number };
 };
 
 export type AbilityBinding = { ownerUid: number; ability: AbilityDefinition };

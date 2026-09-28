@@ -6,6 +6,7 @@ export type HeroGradeName = "일반" | "희귀" | "영웅" | "전설" | "신화"
 export const HERO_GRADES: Record<string, HeroGradeName | "???"> = {
   traineeSword: "희귀",
   shield: "일반",
+  HERO_003: "일반",
 };
 
 const GRADE_MULTIPLIER: Record<HeroGradeName | "???", number> = {
@@ -21,6 +22,7 @@ export const getHeroGrade = (id: string) => {
 export const HERO_CONTENT_STATUS: Record<string, "초기 프로토타입" | "추가 임시 영웅" | "합성 전용"> = {
   traineeSword: "초기 프로토타입",
   shield: "초기 프로토타입",
+  HERO_003: "초기 프로토타입",
 };
 
 export const GRADE_GROWTH: Record<HeroGradeName | "???", number> = {

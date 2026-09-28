@@ -114,6 +114,10 @@
 .attack-effect.melee-impact{left:72%;top:20px;font-size:28px;color:#fff0a8;text-shadow:0 0 8px #ff9b35;animation:meleeImpact .18s steps(3) forwards}
 .attack-effect.fire-impact{color:#ff9a43;text-shadow:0 0 12px #ff4d1f}
 .attack-effect.projectile{z-index:10;font-size:22px;filter:drop-shadow(0 0 4px #fff);animation:projectileImpact var(--projectile-duration,.18s) linear forwards}
+.attack-effect.projectile.has-projectile-asset{width:42px;height:20px;background-image:var(--projectile-image);background-position:center;background-size:contain;background-repeat:no-repeat;filter:drop-shadow(0 1px 2px #20150d)}
+.attack-effect.projectile.has-projectile-asset::before{content:"";position:absolute;inset:2px 24px 2px -28px;background:var(--trail-image) center/contain no-repeat;opacity:.7}
+.attack-effect.projectile.has-projectile-asset::after{content:"";position:absolute;width:28px;height:28px;right:-16px;top:-4px;background:var(--impact-image) center/contain no-repeat;opacity:.75}
+.attack-effect.projectile.piercing-projectile{width:64px;height:24px}
 .damage-popup{font-weight:1000;color:#fff;text-shadow:0 2px 0 #611,0 0 5px #ff4b4b}
 .damage-popup.critical{color:#ffe45c;font-size:24px;text-shadow:0 2px 0 #6e3d00,0 0 9px #ff9b28}
 @keyframes unitImpact{0%{transform:translateX(0) scale(1)}35%{transform:translateX(-5px) scale(1.08,.88)}70%{transform:translateX(3px) scale(.94,1.06)}100%{transform:translateX(0) scale(1)}}

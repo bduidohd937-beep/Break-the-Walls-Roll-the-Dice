@@ -8,6 +8,24 @@ import hero002Move from "../../assets/heroes/hero-002/lv01/move.png";
 import hero002Attack from "../../assets/heroes/hero-002/lv01/attack.png";
 import hero002Hit from "../../assets/heroes/hero-002/lv01/hit.png";
 import hero002Death from "../../assets/heroes/hero-002/lv01/death.png";
+import hero003Idle from "../../assets/heroes/hero-003/lv01/idle.png";
+import hero003Move from "../../assets/heroes/hero-003/lv01/move.png";
+import hero003Attack from "../../assets/heroes/hero-003/lv01/attack.png";
+import hero003Skill1 from "../../assets/heroes/hero-003/lv01/skill1.png";
+import hero003Hit from "../../assets/heroes/hero-003/lv01/hit.png";
+import hero003Knockback from "../../assets/heroes/hero-003/lv01/knockback.png";
+import hero003Death from "../../assets/heroes/hero-003/lv01/death.png";
+import hero003BasicArrow from "../../assets/heroes/hero-003/vfx/basic-arrow.png";
+import hero003PiercingArrow from "../../assets/heroes/hero-003/vfx/piercing-arrow.png";
+import hero003AirTrail from "../../assets/heroes/hero-003/vfx/air-trail.png";
+import hero003ReleaseFx from "../../assets/heroes/hero-003/vfx/release-fx.png";
+import hero003PierceFx from "../../assets/heroes/hero-003/vfx/pierce-fx.png";
+import hero003ImpactDebris from "../../assets/heroes/hero-003/vfx/impact-debris.png";
+import hero003Portrait from "../../assets/heroes/hero-003/ui/portrait.png";
+import hero003DeployIcon from "../../assets/heroes/hero-003/ui/deploy-icon.png";
+import hero003Skill1Icon from "../../assets/heroes/hero-003/ui/skill-1-icon.png";
+import hero003SoulIcon from "../../assets/heroes/hero-003/ui/soul-icon.png";
+import hero003SoulFragmentIcon from "../../assets/heroes/hero-003/ui/soul-fragment-icon.png";
 import type { Unit } from "../types";
 import type { SpriteConfig } from "../types";
 
@@ -71,6 +89,23 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
       hit: { asset: hero002Hit, frameCount: 3, fps: 12, loop: false },
       death: { asset: hero002Death, frameCount: 6, fps: 10, loop: false },
     },
+  },
+  HERO_003: {
+    frameWidth: 224, frameHeight: 224, scale: 1.15, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    animations: {
+      idle: { asset: hero003Idle, frameCount: 4, fps: 6, loop: true },
+      move: { asset: hero003Move, frameCount: 6, fps: 10, loop: true },
+      attack: { asset: hero003Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 5, projectileSpawnFrame: 5 },
+      skill1: { asset: hero003Skill1, frameCount: 8, fps: 12, loop: false, impactFrame: 6, projectileSpawnFrame: 6, skillEventFrame: 6 },
+      hit: { asset: hero003Hit, frameCount: 2, fps: 10, loop: false },
+      knockback: { asset: hero003Knockback, frameCount: 4, fps: 10, loop: false },
+      death: { asset: hero003Death, frameCount: 6, fps: 8, loop: false },
+    },
+    projectiles: {
+      basic: { asset: hero003BasicArrow, trailAsset: hero003AirTrail, releaseAsset: hero003ReleaseFx, impactAsset: hero003ImpactDebris },
+      skill1: { asset: hero003PiercingArrow, trailAsset: hero003AirTrail, releaseAsset: hero003ReleaseFx, pierceAsset: hero003PierceFx, impactAsset: hero003ImpactDebris },
+    },
+    ui: { portrait: hero003Portrait, deploy: hero003DeployIcon, skill1: hero003Skill1Icon, soul: hero003SoulIcon, soulFragment: hero003SoulFragmentIcon },
   },
 };
 

@@ -11,6 +11,7 @@ export function advanceHeroStatus(unit: Unit, dt: number): Unit {
     hitFlash: Math.max(0, unit.hitFlash - VISUAL_TICK_SECONDS),
     attackFlash: Math.max(0, unit.attackFlash - VISUAL_TICK_SECONDS),
     attackAnimationTimer: Math.max(0, (unit.attackAnimationTimer ?? 0) - dt),
+    abilityAnimationTimer: Math.max(0, (unit.abilityAnimationTimer ?? 0) - dt),
     specialTimer: Math.max(0, unit.specialTimer - dt)
   }, dt);
   const healed = Math.min(next.hp, next.currentHp + regenAmount(next, dt));
@@ -30,6 +31,7 @@ export function advanceEnemyStatus(unit: Unit, dt: number): Unit {
     hitFlash: Math.max(0, unit.hitFlash - VISUAL_TICK_SECONDS),
     attackFlash: Math.max(0, unit.attackFlash - VISUAL_TICK_SECONDS),
     attackAnimationTimer: Math.max(0, (unit.attackAnimationTimer ?? 0) - dt),
+    abilityAnimationTimer: Math.max(0, (unit.abilityAnimationTimer ?? 0) - dt),
     slowTimer: Math.max(0, unit.slowTimer - dt)
   }, dt);
   if (next.burnTimer <= 0) return next;

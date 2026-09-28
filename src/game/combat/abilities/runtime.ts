@@ -127,8 +127,9 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
           if (event.type !== "ON_INTERVAL") continue;
           const cooldownMultiplier = caster.abilityEffectState?.cooldownModifiers.reduce((product, modifier) => product * modifier.multiplier, 1) ?? 1;
           const elapsed = (intervalElapsed.get(binding.key) ?? 0) + event.elapsedSeconds / Math.max(0.05, cooldownMultiplier);
-          activationCount = Math.floor(elapsed / Math.max(0.001, trigger.intervalSeconds));
-          intervalElapsed.set(binding.key, elapsed - activationCount * trigger.intervalSeconds);
+          const interval = Math.max(0.001, trigger.intervalSeconds);
+          activationCount = Math.floor((elapsed + 1e-9) / interval);
+          intervalElapsed.set(binding.key, Math.max(0, elapsed - activationCount * interval));
           if (activationCount === 0) continue;
         }
 
@@ -186,6 +187,20 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
                   duration: nextTarget.abilityEffectState?.statuses.find((entry) => entry.sourceAbilityId === binding.ability.id)?.remaining,
                   potency: nextTarget.abilityEffectState?.statuses.find((entry) => entry.sourceAbilityId === binding.ability.id)?.potency
                 } : {})
+              });
+            }
+          }
+          if (binding.ability.visual && selectedTargets.length > 0) {
+            const owner = units.get(binding.ownerUid);
+            if (owner) {
+              const farthestTarget = selectedTargets.reduce((farthest, target) => Math.abs(target.x - owner.x) > Math.abs(farthest.x - owner.x) ? target : farthest, selectedTargets[0]);
+              units.set(binding.ownerUid, {
+                ...owner,
+                abilityAnimationState: binding.ability.visual.animation,
+                abilityAnimationTimer: binding.ability.visual.durationSeconds,
+                abilityAnimationDuration: binding.ability.visual.durationSeconds,
+                abilityAnimationSequence: (owner.abilityAnimationSequence ?? 0) + 1,
+                attackTargetX: farthestTarget.x
               });
             }
           }

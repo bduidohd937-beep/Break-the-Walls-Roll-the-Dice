@@ -5,6 +5,7 @@ import { UNIT_SPRITE_CONFIGS } from "./visuals/sprites";
 export const HEROES: UnitDef[] = [
   { id: "traineeSword", name: "병사", sprite: "🗡️", element: "neutral", hp: 180, atk: 42, speed: 39, range: 38, rangeType: "melee", attackType: "single", attackInterval: 1.05, cost: 160, cooldown: 6, role: "근접 딜러", abilityIds: [ABILITY_IDS.soldierHeavyStrike], spriteConfig: UNIT_SPRITE_CONFIGS.traineeSword },
   { id: "shield", name: "철갑 방패병", sprite: "🛡️", element: "neutral", hp: 260, atk: 22, speed: 30, range: 32, rangeType: "melee", attackType: "single", attackInterval: 1.3, cost: 150, cooldown: 6, role: "탱커", ability: "guard", abilityValue: 0.22, spriteConfig: UNIT_SPRITE_CONFIGS.shield },
+  { id: "HERO_003", name: "왕국 궁수", sprite: "🏹", element: "neutral", rarity: "COMMON", race: "HUMAN", combatRole: "RANGED_DPS", hp: 120, atk: 38, speed: 38, range: 190, rangeType: "ranged", attackType: "single", attackInterval: 1.35, cost: 180, cooldown: 7, role: "원거리 딜러", abilityIds: [ABILITY_IDS.kingdomArcherPiercingArrow], spriteConfig: UNIT_SPRITE_CONFIGS.HERO_003 },
 ];
 
 export const ENEMIES: UnitDef[] = [
@@ -23,7 +24,7 @@ export const ENEMIES: UnitDef[] = [
 ];
 
 export const DECK_IDS = HEROES.map((hero) => hero.id);
-export const GRANTED_HERO_IDS = ["traineeSword", "shield"];
+export const GRANTED_HERO_IDS = ["traineeSword", "shield", "HERO_003"];
 
 
 export const ENEMY_MAP = {

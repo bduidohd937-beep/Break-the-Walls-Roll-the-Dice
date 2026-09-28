@@ -53,8 +53,13 @@ button { font: inherit; }
 .unit-animated-sprite{--sprite-size:48px;display:inline-block;flex:none;width:calc(var(--sprite-size) * var(--sprite-scale, 1.375));height:calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count, 1)) calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-position:0 0;image-rendering:pixelated;vertical-align:middle;transform:translate(calc((.5 - var(--pivot-x,.5)) * 100%),calc((1 - var(--pivot-y,1)) * 100%))}
 .unit-animated-sprite[data-animated="true"]{animation:configuredSpriteFrames var(--animation-duration) steps(var(--frame-count)) infinite}
 .unit-animated-sprite.state-attack[data-animated="true"]{animation-name:configuredSpriteAttack;animation-timing-function:steps(var(--last-frame), end);animation-duration:var(--attack-duration);animation-iteration-count:1;animation-fill-mode:forwards}
+.unit-animated-sprite[data-loop="false"]{animation-name:configuredSpriteAttack;animation-timing-function:steps(var(--last-frame), end);animation-iteration-count:1;animation-fill-mode:forwards}
+.unit-animated-sprite.state-skill1[data-loop="false"],.unit-animated-sprite.state-knockback[data-loop="false"]{animation-duration:var(--attack-duration)}
 @keyframes configuredSpriteFrames{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count))}}
 @keyframes configuredSpriteAttack{to{background-position-x:calc(-1 * var(--sprite-size) * var(--sprite-scale, 1.375) * var(--last-frame))}}
+.hero-ui-asset{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.hero-skill-icon,.hero-soul-icon{display:inline-block;width:34px;height:34px;vertical-align:middle;margin-right:8px}
+.hero-soul-icon{width:24px;height:24px;margin-right:5px}
 .battle-paused .unit-animated-sprite[data-animated="true"]{animation-play-state:paused!important}
 .unit-sprite .unit-animated-sprite{--sprite-size:64px}
 .formation-hero .unit-animated-sprite,.formation-slot .unit-animated-sprite,.deck-builder-card .unit-animated-sprite,.storage-hero .unit-animated-sprite{--sprite-size:32px}
