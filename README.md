@@ -7,8 +7,12 @@ React + TypeScript + Vite로 만든 2D 횡스크롤 자동 전투, 영지 경영
 ```powershell
 npm install
 npm run dev
+npm run typecheck
 npm run build
+npm run check
 ```
+
+의존성은 `package-lock.json`으로 고정합니다. 새 환경에서는 `npm install`로 같은 버전을 설치하고, 변경 전에는 `npm run check`로 타입 검사와 프로덕션 빌드를 함께 확인합니다. 폴더 책임과 단계별 구조 개선 원칙은 [`docs/architecture.md`](docs/architecture.md)에 정리되어 있습니다.
 
 ## 현재 구현 범위
 

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import "./styles.css";
 import type { Unit, UnitDef } from "./game/types";
 import { HEROES, DECK_IDS, ENEMY_MAP, GRANTED_HERO_IDS, INITIAL_GEMS, ELEMENT_LABEL, clamp } from "./game/constants";
 import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
