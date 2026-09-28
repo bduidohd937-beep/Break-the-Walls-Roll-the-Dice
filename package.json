@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "check": "npm run typecheck && npm test && vite build",
+    "validate:content": "vitest run src/game/content/validator.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
