@@ -898,6 +898,11 @@ button { font: inherit; }
 .stage-select-card.main-hub-card{padding-bottom:0}
 .kingdom-bottom-nav{bottom:0;margin: auto -22px 0;flex-shrink:0}
 @media(max-width:800px){.stage-select-card.main-hub-card{padding-bottom:0}.kingdom-bottom-nav{bottom:0;margin:auto -10px 0}}
+.hub-tab-content{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding-bottom:8px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.fullscreen-toggle{display:grid;place-items:center;min-width:38px;min-height:38px;padding:5px;border:2px solid #5d5140;background:#101d28;color:#f3dfae;font-size:19px;font-weight:1000;line-height:1;cursor:pointer;box-shadow:inset 0 0 0 1px #202b34}
+.fullscreen-toggle:active{transform:translateY(1px);filter:brightness(1.2)}
+.hud-fullscreen{flex:0 0 auto}
+.battle-fullscreen{flex:0 0 28px;min-width:28px;min-height:26px;padding:3px;font-size:14px}
 .hero-management.upgrade-only{display:block}.hero-management.upgrade-only .hero-roster{width:100%}.hero-management.upgrade-only .hero-detail{max-width:100%}
 .hero-mode-tabs{display:flex;justify-content:space-between;align-items:center}.hero-mode-tabs>b{padding:12px;color:#ffe3a5}
 
@@ -995,4 +1000,27 @@ button { font: inherit; }
   .hero-name{margin-top:2px;font-size:7px}
   .hero-meta,.cooldown{margin-top:1px;font-size:6px}
   .deck-indicator{flex:0 0 auto;padding:2px 4px;font-size:7px}
+}
+
+/* Landscape hub pages scroll inside the content region while the HUD and menu stay reachable. */
+@media (orientation:landscape) and (max-height:700px){
+  .stage-select-shell{display:block;width:100%;height:100svh;min-height:0;overflow:hidden;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+  .stage-select-card.main-hub-card{width:100%;height:100svh;min-height:0;max-height:none;overflow:hidden;padding:0 12px;display:flex;flex-direction:column}
+  .kingdom-hud{min-height:48px;max-height:58px;flex:0 0 auto;margin:0 -12px 5px;padding:calc(3px + env(safe-area-inset-top)) 12px 3px;align-items:center;gap:8px}
+  .kingdom-hud-level{width:auto;max-width:none;flex:1 1 auto;min-width:70px;font-size:12px}
+  .kingdom-hud-track{height:5px;margin-top:4px}
+  .kingdom-hud-wallet{flex:0 0 auto;flex-wrap:nowrap;gap:5px}
+  .hud-currency,.hud-settings,.fullscreen-toggle{min-height:32px;padding:4px 7px;font-size:9px}
+  .hud-settings,.fullscreen-toggle{min-width:32px;font-size:17px}
+  .hub-tab-content{width:100%;flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;padding:0 0 8px;overscroll-behavior:contain}
+  .kingdom-home{gap:5px}
+  .kingdom-scene{height:min(48svh,270px);min-height:120px}
+  .kingdom-scene-footer{gap:6px;padding:4px 7px;font-size:9px}
+  .kingdom-scene-footer button{min-height:34px;padding:4px 8px;font-size:9px}
+  .kingdom-bottom-nav,.stage-select-card.main-hub-card>.kingdom-bottom-nav{position:relative;inset:auto;flex:0 0 auto;margin:0 -12px;padding:4px 8px max(4px,env(safe-area-inset-bottom));min-height:50px}
+  .kingdom-menu-button,.kingdom-bottom-nav .kingdom-menu-button{min-height:40px;font-size:9px}
+  .kingdom-menu-icon{width:25px;height:21px;font-size:16px;line-height:20px}
+  .kingdom-section-nav{gap:5px}
+  .kingdom-section-nav button{min-height:36px;padding:5px;font-size:9px}
+  .kingdom-battle-lobby{min-height:0}
 }

@@ -75,7 +75,7 @@ function App() {
   const [hubSettingsOpen, setHubSettingsOpen] = useState(false);
   const [selectedLobbyStage, setSelectedLobbyStage] = useState<number | null>(null);
   const [lobbyFormationOpen, setLobbyFormationOpen] = useState(false);
-  const hubScrollRef = useRef<HTMLElement>(null);
+  const hubScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { hubScrollRef.current?.scrollTo(0, 0); }, [mainTab]);
   const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
   const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
@@ -502,13 +502,14 @@ function App() {
   if (battleState === "stageSelect") {
     return (
       <main className="stage-select-shell">
-        <section ref={hubScrollRef} className="stage-select-card main-hub-card">
+        <section className="stage-select-card main-hub-card">
           <HubHeader tab={mainTab} devMode={DEV_MODE} kingdomLevel={kingdomLevel} gems={gems} gold={kingdomGold}
             nextLevelProgress={Math.min(100, Math.round(100 * Math.min(1, kingdomGold / Math.max(1, kingdomUpgradeCost))))}
             onSettings={() => setHubSettingsOpen(true)} />
           {mainTab !== "home" && <button className="kingdom-return" type="button" disabled={summonPhase !== "idle"} onClick={() => navigateHub("home")}>← 왕국으로</button>}
           {hubSettingsOpen && <div className="hub-settings-overlay" role="dialog" aria-modal="true" aria-label="게임 설정"><div className="hub-settings-panel"><h2>게임 설정</h2><p>전투 속도 {gameSpeed}X · AUTO COM {autoCom ? "ON" : "OFF"}</p><button type="button" onClick={() => setGameSpeed(v => v === 1 ? 5 : 1)}>전투 속도 {gameSpeed}X</button><button type="button" onClick={() => setAutoCom(v => !v)}>AUTO COM {autoCom ? "끄기" : "켜기"}</button><button type="button" onClick={() => setHubSettingsOpen(false)}>닫기</button></div></div>}
 
+          <div ref={hubScrollRef} key={mainTab} className="hub-tab-content">
           {mainTab === "home" && <KingdomPanel
             kingdomLevel={kingdomLevel} kingdomGold={kingdomGold} kingdomProductionBonus={kingdomProductionBonus} kingdomSellBonus={kingdomSellBonus}
             unlockedStage={unlockedStage} stageCount={STAGES.length} currentStageName={STAGES[Math.min(unlockedStage, STAGES.length)-1]?.name}
@@ -557,6 +558,7 @@ function App() {
           />}
 
           {mainTab === "shop" && <ShopPanel />}
+          </div>
           <KingdomNav tab={mainTab} disabled={summonPhase !== "idle"} onNavigate={navigateHub} />
         </section>
       </main>

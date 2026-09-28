@@ -1,3 +1,5 @@
+import { FullscreenToggle } from "./FullscreenToggle";
+
 export type HubTab = "home" | "gather" | "battle" | "heroes" | "summon" | "storage" | "fusion" | "shop";
 
 type Props = {
@@ -16,6 +18,7 @@ export function HubHeader(p: Props) {
     <div className="kingdom-hud-wallet">
       <span className="hud-currency"><i className="hud-icon hud-gold" aria-hidden="true"/> Gold <b>{p.gold.toLocaleString()}</b></span>
       <span className="hud-currency"><i className="hud-icon hud-gem" aria-hidden="true"/> Gem <b>{p.gems.toLocaleString()}</b></span>
+      <FullscreenToggle className="hud-fullscreen" />
       <button type="button" className="hud-settings" onClick={p.onSettings} aria-label="게임 설정" title="게임 설정">⚙</button>
     </div>
   </header>;
