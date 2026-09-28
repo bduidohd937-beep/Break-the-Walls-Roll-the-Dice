@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, GRANTED_HERO_IDS, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, DECK_IDS, ENEMY_MAP, ELEMENT_LABEL, clamp } from "./game/constants";
 import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/kingdom/KingdomPanel";
@@ -28,11 +28,11 @@ import { useGatheringProduction } from "./game/controllers/useGatheringProductio
 import { useBattleLoop, type BattleReward } from "./game/controllers/useBattleLoop";
 import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
 import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigation";
+import { useKingdomProfile } from "./game/controllers/useKingdomProfile";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
-import { savedCounts, savedIds, savedNonnegative, savedSummons } from "./game/systems/saveData";
+import { savedCounts, savedIds, savedSummons } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
-const DEV_FACILITY_LEVEL = 10; // Facilities currently have no level cap.
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
@@ -69,24 +69,13 @@ function App() {
     lobbyFormationOpen, setLobbyFormationOpen,
     hubScrollRef
   } = useHubNavigation();
-  const [kingdomLevel, setKingdomLevel] = useState(() => Math.max(1, Math.floor(loadNumber(STORAGE_KEYS.kingdomLevel, DEV_MODE ? 6 : 1))));
-  const [facilityLevels, setFacilityLevels] = useState<Record<"lumber" | "quarry" | "vault" | "training", number>>(() => {
-    const saved = loadJson<Record<string, number>>(STORAGE_KEYS.facilityLevels, {});
-    const initial = DEV_MODE ? DEV_FACILITY_LEVEL : 1;
-    return { lumber: Math.max(1, Math.floor(savedNonnegative(saved?.lumber, initial))), quarry: Math.max(1, Math.floor(savedNonnegative(saved?.quarry, initial))), vault: Math.max(1, Math.floor(savedNonnegative(saved?.vault, initial))), training: Math.max(1, Math.floor(savedNonnegative(saved?.training, initial))) };
-  });
-  const [ownedHeroes, setOwnedHeroes] = useState<string[]>(() => {
-    const saved = savedIds(loadJson(STORAGE_KEYS.ownedHeroes, []));
-    const initial = DEV_MODE ? DECK_IDS : saved.length ? saved : DECK_IDS.slice(0, 5);
-    return [...new Set([...initial, ...GRANTED_HERO_IDS])];
-  });
-  const [resources, setResources] = useState<{ wood: number; stone: number }>(() => {
-    try { const saved = loadJson<Record<string, number>>(STORAGE_KEYS.resources, {}); return { wood: savedNonnegative(saved?.wood), stone: savedNonnegative(saved?.stone) }; } catch { return { wood: 0, stone: 0 }; }
-  });
-  useEffect(() => { saveJson(STORAGE_KEYS.resources, resources); }, [resources]);
-  const [workers, setWorkers] = useState<{ wood?: string; stone?: string }>(() => {
-    try { const saved = loadJson<Record<string, string>>(STORAGE_KEYS.workers, {}); return { wood: typeof saved?.wood === "string" && ownedHeroes.includes(saved.wood) ? saved.wood : undefined, stone: typeof saved?.stone === "string" && ownedHeroes.includes(saved.stone) && saved.stone !== saved?.wood ? saved.stone : undefined }; } catch { return {}; }
-  });
+  const {
+    kingdomLevel, setKingdomLevel,
+    facilityLevels, setFacilityLevels,
+    ownedHeroes, setOwnedHeroes,
+    resources, setResources,
+    workers, setWorkers
+  } = useKingdomProfile();
   const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
   const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
