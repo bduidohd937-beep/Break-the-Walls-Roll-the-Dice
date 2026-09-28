@@ -62,7 +62,8 @@ export type TargetDefinition =
   | ({ type: "LOWEST_HP_ALLY" } & TargetLimits)
   | ({ type: "LOWEST_HP_PERCENT_ALLY" } & TargetLimits)
   | ({ type: "ALL_ENEMIES_IN_RANGE" } & TargetLimits)
-  | ({ type: "ALL_ALLIES_IN_RANGE" } & TargetLimits);
+  | ({ type: "ALL_ALLIES_IN_RANGE" } & TargetLimits)
+  | ({ type: "DEAD_ALLY" } & TargetLimits);
 
 export type ScalingSource =
   | "CASTER_ATK" | "CASTER_DEF" | "CASTER_MAX_HP" | "CASTER_CURRENT_HP" | "CASTER_LOST_HP"
@@ -85,7 +86,9 @@ export type EffectDefinition =
   | ({ type: "HOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
   | ({ type: "CLEANSE"; count: number } & TaggedEffect)
   | ({ type: "DISPEL"; count: number } & TaggedEffect)
-  | ({ type: "SUMMON"; summonUnitId: string; count: number; duration?: number } & TaggedEffect);
+  | ({ type: "SUMMON"; summonUnitId: string; count: number; duration?: number } & TaggedEffect)
+  | ({ type: "REVIVE"; amount: ScalingDefinition } & TaggedEffect)
+  | ({ type: "RESOURCE_CHANGE"; resource: string; amount: ScalingDefinition } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;
@@ -121,8 +124,10 @@ export type AbilityEffectApplication = {
   effectType: EffectDefinition["type"];
   hpDelta: number;
 };
+export type AbilityResourceChange = { resource: string; amount: number; ownerUid: number; abilityId: string };
 export type AbilityExecutionResult = {
   units: readonly AbilityUnit[];
   activations: AbilityActivation[];
   applications: AbilityEffectApplication[];
+  resourceChanges: AbilityResourceChange[];
 };

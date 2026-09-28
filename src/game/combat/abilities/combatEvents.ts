@@ -21,5 +21,5 @@ export type CombatEventResult = {
   units: readonly AbilityUnit[];
   activationCount: number;
   droppedByDepthLimit: boolean;
+  resourceChanges?: ReadonlyArray<{ resource: string; amount: number; ownerUid: number; abilityId: string }>;
 };
-

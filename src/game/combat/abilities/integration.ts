@@ -42,6 +42,7 @@ export function createCombatAbilityIntegration(
     let nextUnits = result.units;
     let activationCount = result.activations.length;
     let droppedByDepthLimit = false;
+    const resourceChanges = [...(result.resourceChanges ?? [])];
 
     const previousUids = new Set(units.map((unit) => unit.uid));
     for (const summoned of nextUnits.filter((unit) => unit.summonMeta && !previousUids.has(unit.uid))) {
@@ -56,6 +57,7 @@ export function createCombatAbilityIntegration(
       nextUnits = deployed.units;
       activationCount += deployed.activationCount;
       droppedByDepthLimit ||= deployed.droppedByDepthLimit;
+      resourceChanges.push(...(deployed.resourceChanges ?? []));
     }
 
     for (const application of result.applications) {
@@ -86,8 +88,9 @@ export function createCombatAbilityIntegration(
       nextUnits = chained.units;
       activationCount += chained.activationCount;
       droppedByDepthLimit ||= chained.droppedByDepthLimit;
+      resourceChanges.push(...(chained.resourceChanges ?? []));
     }
-    return { units: nextUnits, activationCount, droppedByDepthLimit };
+    return { units: nextUnits, activationCount, droppedByDepthLimit, resourceChanges };
   }
 
   function publishInternal(event: CombatEvent, units: readonly AbilityUnit[], depth: number, deduplicate: boolean): CombatEventResult {

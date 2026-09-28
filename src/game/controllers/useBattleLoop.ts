@@ -59,6 +59,11 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         const result = abilityIntegrationRef.current.publish(event, [...nextHeroes, ...nextEnemies]);
         nextHeroes = result.units.filter((unit) => unit.team === "hero");
         nextEnemies = result.units.filter((unit) => unit.team === "enemy");
+        for (const change of result.resourceChanges ?? []) {
+          if (change.resource !== "BATTLE_GOLD") continue;
+          goldRef.current = Math.min(battleGoldMax, Math.max(0, goldRef.current + change.amount));
+          setBattleGold(Math.floor(goldRef.current));
+        }
       };
 
       if (abilitiesActive) publishCombatEvent({

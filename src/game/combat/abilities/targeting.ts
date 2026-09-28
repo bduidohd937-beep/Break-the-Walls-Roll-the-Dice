@@ -34,6 +34,7 @@ export function selectAbilityTargets(
       return limit(living.filter((unit) => unit.team !== caster.team && inRange(caster, unit, definition.range)), definition.maxTargets);
     case "ALL_ALLIES_IN_RANGE":
       return limit(living.filter((unit) => unit.team === caster.team && inRange(caster, unit, definition.range)), definition.maxTargets);
+    case "DEAD_ALLY":
+      return limit(units.filter((unit) => unit.team === caster.team && unit.currentHp <= 0 && inRange(caster, unit, definition.range)), definition.maxTargets ?? 1);
   }
 }
-

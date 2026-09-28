@@ -1,6 +1,7 @@
 import { meetsAbilityCondition } from "./conditions";
 import { applyPeriodicEffects, defaultEffectHandlers, executeEffect, legacyStatusHandlers, type EffectHandlerRegistry, type StatusHandlerRegistry } from "./effects";
 import { selectAbilityTargets } from "./targeting";
+import { calculateScaling } from "./scaling";
 import type {
   AbilityActivation,
   AbilityBattlefield,
@@ -8,6 +9,7 @@ import type {
   AbilityEffectApplication,
   AbilityEvent,
   AbilityExecutionResult,
+  AbilityResourceChange,
   AbilityUnit,
   SummonFactory,
   TriggerDefinition
@@ -70,8 +72,9 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
     dispatch(event, battlefield) {
       const candidates = byEvent.get(event.type) ?? [];
       const shouldAdvanceEffects = event.type === "ON_INTERVAL" && temporaryEffectUids.size > 0;
-      if (candidates.length === 0 && !shouldAdvanceEffects) return { units: battlefield.units, activations: [], applications: [] };
+      if (candidates.length === 0 && !shouldAdvanceEffects) return { units: battlefield.units, activations: [], applications: [], resourceChanges: [] };
       const applications: AbilityEffectApplication[] = [];
+      const resourceChanges: AbilityResourceChange[] = [];
       const units = new Map<number, AbilityUnit>(battlefield.units.filter((unit) => {
         if (!shouldAdvanceEffects || !unit.summonMeta || !summonedRemaining.has(unit.uid)) return true;
         const remaining = summonedRemaining.get(unit.uid);
@@ -157,6 +160,10 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
                 }
                 continue;
               }
+              if (effect.type === "RESOURCE_CHANGE") {
+                resourceChanges.push({ resource: effect.resource, amount: calculateScaling(effect.amount, latestCaster, latestTarget), ownerUid: binding.ownerUid, abilityId: binding.ability.id });
+                continue;
+              }
               const nextTarget = executeEffect(effect, {
                 caster: latestCaster,
                 target: latestTarget,
@@ -183,7 +190,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
         }
       }
 
-      return { units: [...units.values()], activations, applications };
+      return { units: [...units.values()], activations, applications, resourceChanges };
     },
     cleanup(activeUnitUids) {
       for (const binding of registeredBindings) {

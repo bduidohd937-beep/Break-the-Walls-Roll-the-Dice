@@ -247,6 +247,24 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
   CLEANSE: (effect, { target }) => removeCleanseEffects(target, effect.count),
   DISPEL: (effect, { target }) => removeDispelEffects(target, effect.count),
   SUMMON: (_effect, { target }) => target
+  ,REVIVE: (effect, { caster, target }) => {
+    if (target.currentHp > 0) return target;
+    return {
+      ...target,
+      currentHp: Math.min(target.hp, Math.max(0, calculateScaling(effect.amount, caster, target))),
+      alive: true,
+      attackTimer: 0,
+      attackFlash: 0,
+      hitFlash: 0,
+      knockbackTimer: 0,
+      burnTimer: 0,
+      burnDamage: 0,
+      slowTimer: 0,
+      slowMultiplier: 1,
+      abilityEffectState: undefined
+    };
+  },
+  RESOURCE_CHANGE: (effect, { target }) => target
 };
 
 export function executeEffect(
