@@ -33,8 +33,27 @@ import { useSummonProfile } from "./game/controllers/useSummonProfile";
 import { useHeroFormation } from "./game/controllers/useHeroFormation";
 import { useBattleViewState } from "./game/controllers/useBattleViewState";
 import type { BattleReward, DamagePopup } from "./game/combat/types";
-import { createCombatAbilityIntegration, resolveAbilityDefinitions } from "./game/combat/abilities";
+import { createCombatAbilityIntegration, resolveAbilityDefinitions, type SummonFactory } from "./game/combat/abilities";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
+
+const summonFactory: SummonFactory = (request) => {
+  const enemyDef = Object.values(ENEMY_MAP).find((definition) => definition.id === request.summonUnitId);
+  const def = HEROES.find((hero) => hero.id === request.summonUnitId) ?? enemyDef;
+  if (!def) return [];
+  return Array.from({ length: Math.max(0, Math.floor(request.count)) }, (_, index) => {
+    const uid = request.uidStart + index;
+    const summoned = makeUnit(def, request.team, request.x, uid);
+    return {
+      ...summoned,
+      summonMeta: {
+        ownerUid: request.ownerUid,
+        sourceAbilityId: request.sourceAbilityId,
+        summonedAt: Date.now(),
+        remaining: request.duration
+      }
+    };
+  });
+};
 
 function App() {
   const [stageIndex, setStageIndex] = useState(0);
@@ -59,7 +78,7 @@ function App() {
   const popupUidRef = useRef(1);
   const deathUidRef = useRef(1);
   const combatEventUidRef = useRef(1);
-  const abilityIntegrationRef = useRef(createCombatAbilityIntegration([]));
+  const abilityIntegrationRef = useRef(createCombatAbilityIntegration([], { summonFactory }));
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [battleReward, setBattleReward] = useState<BattleReward | null>(null);
   const {
@@ -332,7 +351,7 @@ function App() {
     setDeathEffects([]);
     popupUidRef.current = 1;
     combatEventUidRef.current = 1;
-    abilityIntegrationRef.current = createCombatAbilityIntegration([]);
+    abilityIntegrationRef.current = createCombatAbilityIntegration([], { summonFactory });
     setBattleReward(null);
     setBattleState("playing");
     setDeployCooldowns({});

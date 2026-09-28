@@ -9,6 +9,7 @@ import type {
   AbilityEvent,
   AbilityExecutionResult,
   AbilityUnit,
+  SummonFactory,
   TriggerDefinition
 } from "./types";
 
@@ -29,6 +30,7 @@ function triggerCount(trigger: TriggerDefinition): number | undefined {
 export type AbilityRuntimeOptions = {
   effectHandlers?: EffectHandlerRegistry;
   statusHandlers?: StatusHandlerRegistry;
+  summonFactory?: SummonFactory;
 };
 
 export type AbilityRuntime = {
@@ -49,6 +51,9 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
   let registrationIndex = 0;
   const effectHandlers = options.effectHandlers ?? defaultEffectHandlers;
   const statusHandlers = options.statusHandlers ?? legacyStatusHandlers;
+  const summonFactory = options.summonFactory;
+  const summonedRemaining = new Map<number, number | undefined>();
+  let nextSummonUid = 1_000_000;
 
   const register = (binding: AbilityBinding) => {
     const indexed = { ...binding, key: `${binding.ownerUid}:${binding.ability.id}:${registrationIndex++}` };
@@ -67,7 +72,15 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
       const shouldAdvanceEffects = event.type === "ON_INTERVAL" && temporaryEffectUids.size > 0;
       if (candidates.length === 0 && !shouldAdvanceEffects) return { units: battlefield.units, activations: [], applications: [] };
       const applications: AbilityEffectApplication[] = [];
-      const units = new Map<number, AbilityUnit>(battlefield.units.map((unit) => {
+      const units = new Map<number, AbilityUnit>(battlefield.units.filter((unit) => {
+        if (!shouldAdvanceEffects || !unit.summonMeta || !summonedRemaining.has(unit.uid)) return true;
+        const remaining = summonedRemaining.get(unit.uid);
+        if (remaining === undefined) return true;
+        const nextRemaining = remaining - event.elapsedSeconds;
+        if (nextRemaining <= 0) { summonedRemaining.delete(unit.uid); temporaryEffectUids.delete(unit.uid); return false; }
+        summonedRemaining.set(unit.uid, nextRemaining);
+        return true;
+      }).map((unit) => {
         let next = { ...unit };
         if (shouldAdvanceEffects && temporaryEffectUids.has(unit.uid)) {
           const ticked = applyPeriodicEffects(unit, event.elapsedSeconds);
@@ -80,7 +93,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
             hpDelta: application.hpDelta
           });
         }
-        if (shouldAdvanceEffects && !next.abilityEffectState) temporaryEffectUids.delete(unit.uid);
+        if (shouldAdvanceEffects && !next.abilityEffectState && !next.summonMeta) temporaryEffectUids.delete(unit.uid);
         return [unit.uid, next];
       }));
       const activations: AbilityActivation[] = [];
@@ -125,6 +138,25 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
               const latestCaster = units.get(binding.ownerUid) ?? caster;
               const latestTarget = units.get(selectedTarget.uid);
               if (!latestTarget) continue;
+              if (effect.type === "SUMMON") {
+                const created = summonFactory?.({
+                  summonUnitId: effect.summonUnitId,
+                  count: Math.max(0, Math.floor(effect.count)),
+                  duration: effect.duration,
+                  ownerUid: binding.ownerUid,
+                  sourceAbilityId: binding.ability.id,
+                  team: latestCaster.team,
+                  x: latestCaster.x,
+                  uidStart: nextSummonUid
+                }) ?? [];
+                nextSummonUid += created.length;
+                for (const summoned of created) {
+                  units.set(summoned.uid, summoned);
+                  summonedRemaining.set(summoned.uid, summoned.summonMeta?.remaining);
+                  temporaryEffectUids.add(summoned.uid);
+                }
+                continue;
+              }
               const nextTarget = executeEffect(effect, {
                 caster: latestCaster,
                 target: latestTarget,
@@ -168,6 +200,7 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
         if (!activeUnitUids.has(registeredBindings[index].ownerUid)) registeredBindings.splice(index, 1);
       }
       for (const uid of temporaryEffectUids) if (!activeUnitUids.has(uid)) temporaryEffectUids.delete(uid);
+      for (const uid of summonedRemaining.keys()) if (!activeUnitUids.has(uid)) summonedRemaining.delete(uid);
     },
     stateSize() {
       return counters.size + intervalElapsed.size + hpThresholdBelow.size + temporaryEffectUids.size;

@@ -29,7 +29,11 @@ export type AbilityUnit = Unit & {
   abilityTags?: readonly AbilityTag[];
   statusIds?: readonly StatusId[];
   abilityEffectState?: AbilityEffectState;
+  summonMeta?: { ownerUid: number; sourceAbilityId: string; summonedAt: number; remaining?: number };
 };
+
+export type SummonRequest = { summonUnitId: string; count: number; duration?: number; ownerUid: number; sourceAbilityId: string; team: Unit["team"]; x: number; uidStart: number };
+export type SummonFactory = (request: SummonRequest) => readonly AbilityUnit[];
 
 export type TriggerDefinition =
   | { type: "ON_DEPLOY" }
@@ -80,7 +84,8 @@ export type EffectDefinition =
   | ({ type: "DOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
   | ({ type: "HOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
   | ({ type: "CLEANSE"; count: number } & TaggedEffect)
-  | ({ type: "DISPEL"; count: number } & TaggedEffect);
+  | ({ type: "DISPEL"; count: number } & TaggedEffect)
+  | ({ type: "SUMMON"; summonUnitId: string; count: number; duration?: number } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;

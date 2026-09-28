@@ -1,6 +1,6 @@
 import { createAbilityRuntime, type AbilityRuntime } from "./runtime";
 import type { CombatEvent, CombatEventResult } from "./combatEvents";
-import type { AbilityBinding, AbilityDefinition, AbilityEvent, AbilityEventMeta, AbilityUnit } from "./types";
+import type { AbilityBinding, AbilityDefinition, AbilityEvent, AbilityEventMeta, AbilityUnit, SummonFactory } from "./types";
 
 const DEFAULT_MAX_CHAIN_DEPTH = 12;
 
@@ -25,9 +25,9 @@ function abilityMeta(event: CombatEvent): AbilityEventMeta {
 
 export function createCombatAbilityIntegration(
   bindings: readonly AbilityBinding[],
-  options: { maxChainDepth?: number; runtime?: AbilityRuntime } = {}
+  options: { maxChainDepth?: number; runtime?: AbilityRuntime; summonFactory?: SummonFactory } = {}
 ): CombatAbilityIntegration {
-  const runtime = options.runtime ?? createAbilityRuntime(bindings);
+  const runtime = options.runtime ?? createAbilityRuntime(bindings, { summonFactory: options.summonFactory });
   const processedEvents = new Set<number>();
   const deployedUnits = new Set<number>();
   const finalizedDeaths = new Set<number>();
@@ -42,6 +42,21 @@ export function createCombatAbilityIntegration(
     let nextUnits = result.units;
     let activationCount = result.activations.length;
     let droppedByDepthLimit = false;
+
+    const previousUids = new Set(units.map((unit) => unit.uid));
+    for (const summoned of nextUnits.filter((unit) => unit.summonMeta && !previousUids.has(unit.uid))) {
+      const deployed = publishInternal({
+        type: "UNIT_DEPLOYED",
+        unitUid: summoned.uid,
+        eventId: generatedEventId--,
+        origin: "SYSTEM",
+        originAbilityId: summoned.summonMeta?.sourceAbilityId,
+        chainDepth: depth + 1
+      }, nextUnits, depth + 1, false);
+      nextUnits = deployed.units;
+      activationCount += deployed.activationCount;
+      droppedByDepthLimit ||= deployed.droppedByDepthLimit;
+    }
 
     for (const application of result.applications) {
       if (application.hpDelta === 0) continue;

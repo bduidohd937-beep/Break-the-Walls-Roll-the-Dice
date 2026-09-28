@@ -245,7 +245,8 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     return { ...target, abilityEffectState: { ...state, periodicEffects: [...state.periodicEffects, periodic] } };
   },
   CLEANSE: (effect, { target }) => removeCleanseEffects(target, effect.count),
-  DISPEL: (effect, { target }) => removeDispelEffects(target, effect.count)
+  DISPEL: (effect, { target }) => removeDispelEffects(target, effect.count),
+  SUMMON: (_effect, { target }) => target
 };
 
 export function executeEffect(
