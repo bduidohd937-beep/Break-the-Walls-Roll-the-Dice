@@ -10,8 +10,12 @@ export const STORAGE_KEYS = {
 
 // The developer profile keeps its progress under separate keys on the same origin.
 const devParam = new URLSearchParams(window.location.search).get("dev");
-// The shipped client never includes a URL switch that can grant developer progress.
-export const DEV_MODE = import.meta.env.DEV && devParam !== "0";
+const isPreviewBuild = import.meta.env.VITE_VERCEL_ENV === "preview";
+// Local development defaults to the dev profile; only Vercel Preview accepts ?dev=1.
+// Production builds ignore the query parameter so it cannot unlock the dev profile.
+export const DEV_MODE = import.meta.env.DEV
+  ? devParam !== "0"
+  : isPreviewBuild && devParam === "1";
 const profileKey = (key:string) => DEV_MODE ? `btw-dev-${key.slice(4)}` : key;
 
 export const loadNumber=(key:string,fallback=0)=>{const n=Number(window.localStorage.getItem(profileKey(key))??String(fallback));return Number.isFinite(n)?n:fallback};
