@@ -119,7 +119,8 @@ export function createAbilityRuntime(bindings: readonly AbilityBinding[], option
               const nextTarget = executeEffect(effect, {
                 caster: latestCaster,
                 target: latestTarget,
-                statusHandlers
+                statusHandlers,
+                sourceAbilityId: binding.ability.id
               }, effectHandlers);
               units.set(selectedTarget.uid, nextTarget);
               if (nextTarget.abilityEffectState) temporaryEffectUids.add(selectedTarget.uid);

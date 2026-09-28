@@ -6,7 +6,7 @@ import { outgoingDamage } from "./damage";
 import { applyKnockback } from "./knockback";
 import type { DamagePopup } from "./types";
 import type { CombatEvent } from "./abilities/combatEvents";
-import { resolveAbilityDamage } from "./abilities/effects";
+import { effectiveMoveSpeed, hasAbilityStatus, resolveAbilityDamage } from "./abilities/effects";
 
 export type HeroPhaseInput = {
   heroes: Unit[];
@@ -55,7 +55,8 @@ export function selectHeroTarget(hero: Unit, enemies: Unit[]): Unit | undefined 
 }
 
 function moveTowardEnemyCastle(hero: Unit, dt: number): Unit {
-  return { ...hero, x: Math.min(87, hero.x + hero.speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
+  const speed = effectiveMoveSpeed(hero);
+  return { ...hero, x: Math.min(87, hero.x + speed * MOVE_SPEED_MULTIPLIER * dt / 100) };
 }
 
 function attackEnemyUnits(
@@ -153,7 +154,7 @@ export function runHeroPhase(input: HeroPhaseInput): HeroPhaseResult {
 
   for (let index = 0; index < heroes.length; index++) {
     const hero = heroes[index];
-    if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
+    if (hero.currentHp <= 0 || hero.knockbackTimer > 0 || hasAbilityStatus(hero, "STUN")) continue;
     const target = selectHeroTarget(hero, enemies);
 
     if (!target) {

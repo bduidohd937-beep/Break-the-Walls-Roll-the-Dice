@@ -10,10 +10,13 @@ export type ModifierMode = "FLAT" | "PERCENT";
 export type TimedShield = { amount: number; remaining: number };
 export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; value: number; remaining: number };
 export type TimedDamageTakenModifier = { multiplier: number; remaining: number };
+export type AbilityStatusId = "STUN" | "SLOW";
+export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number };
 export type AbilityEffectState = {
   shields: readonly TimedShield[];
   statModifiers: readonly TimedStatModifier[];
   damageTakenModifiers: readonly TimedDamageTakenModifier[];
+  statuses: readonly TimedAbilityStatus[];
   baseStats?: { atk: number; def: number; attackInterval: number; speed: number };
 };
 

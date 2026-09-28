@@ -1,8 +1,18 @@
 import { applyAbilityKnockback } from "../knockback";
 import { calculateScaling } from "./scaling";
-import type { AbilityEffectState, AbilityUnit, EffectDefinition, ModifiableStat, StatusId } from "./types";
+import type { AbilityEffectState, AbilityStatusId, AbilityUnit, EffectDefinition, ModifiableStat, StatusId } from "./types";
 
-const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [] });
+const emptyEffectState = (): AbilityEffectState => ({ shields: [], statModifiers: [], damageTakenModifiers: [], statuses: [] });
+
+export function hasAbilityStatus(unit: AbilityUnit, status: AbilityStatusId): boolean {
+  return Boolean(unit.abilityEffectState?.statuses.some((entry) => entry.id === status && entry.remaining > 0));
+}
+
+export function effectiveMoveSpeed(unit: AbilityUnit): number {
+  const slows = unit.abilityEffectState?.statuses.filter((entry) => entry.id === "SLOW" && entry.remaining > 0) ?? [];
+  const multiplier = slows.length === 0 ? 1 : Math.min(...slows.map((entry) => entry.potency));
+  return unit.speed * Math.max(0, multiplier);
+}
 
 function effectiveStat(unit: AbilityUnit, stat: ModifiableStat, state: AbilityEffectState): number {
   const base = state.baseStats ?? { atk: unit.atk, def: unit.def ?? 0, attackInterval: unit.attackInterval, speed: unit.speed };
@@ -50,8 +60,9 @@ export function advanceAbilityEffectDurations(unit: AbilityUnit, dt: number): Ab
     shields: state.shields.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     statModifiers: state.statModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     damageTakenModifiers: state.damageTakenModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
+    ,statuses: state.statuses.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
   };
-  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length > 0;
+  const active = nextState.shields.length + nextState.statModifiers.length + nextState.damageTakenModifiers.length + nextState.statuses.length > 0;
   const restored = applyEffectiveStats(unit, nextState);
   return active ? restored : {
     ...restored,
@@ -69,6 +80,7 @@ export type EffectContext = {
   caster: AbilityUnit;
   target: AbilityUnit;
   statusHandlers: StatusHandlerRegistry;
+  sourceAbilityId?: string;
 };
 
 export const legacyStatusHandlers: StatusHandlerRegistry = {
@@ -106,7 +118,22 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     const distance = Math.max(0, calculateScaling(effect.distance, caster, target));
     return applyAbilityKnockback(target, distance, caster.team);
   },
-  APPLY_STATUS: (effect, { caster, target, statusHandlers }) => {
+  APPLY_STATUS: (effect, { caster, target, statusHandlers, sourceAbilityId }) => {
+    if (effect.status === "stun" || effect.status === "slow") {
+      const id: AbilityStatusId = effect.status === "stun" ? "STUN" : "SLOW";
+      const state = target.abilityEffectState ?? emptyEffectState();
+      const potency = effect.potency ? calculateScaling(effect.potency, caster, target) : 1;
+      const existing = state.statuses.filter((entry) => entry.id !== id || (id === "SLOW" && entry.sourceUid !== caster.uid));
+      const same = state.statuses.find((entry) => entry.id === id);
+      const nextStatus = {
+        id,
+        sourceUid: caster.uid,
+        sourceAbilityId,
+        potency: same && id === "SLOW" ? Math.min(same.potency, potency) : potency,
+        remaining: same && id === "STUN" ? Math.max(same.remaining, effect.duration) : effect.duration
+      };
+      return { ...target, abilityEffectState: { ...state, statuses: [...existing, nextStatus] } };
+    }
     const handler = statusHandlers[effect.status];
     if (!handler) return target;
     const potency = effect.potency ? calculateScaling(effect.potency, caster, target) : 0;

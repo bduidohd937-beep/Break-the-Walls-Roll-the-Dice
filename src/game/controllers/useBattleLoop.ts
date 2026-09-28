@@ -12,7 +12,7 @@ import { spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 import type { CombatAbilityIntegration, CombatEvent } from "../combat/abilities";
-import { resolveAbilityDamage } from "../combat/abilities/effects";
+import { effectiveMoveSpeed, hasAbilityStatus, resolveAbilityDamage } from "../combat/abilities/effects";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
@@ -196,7 +196,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       // Enemies move, attack heroes, or damage our castle.
       for (let i = 0; i < nextEnemies.length; i++) {
         const enemy = nextEnemies[i];
-        if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
+        if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0 || hasAbilityStatus(enemy, "STUN")) continue;
 
         const livingHeroes = nextHeroes.filter((h) => h.currentHp > 0);
         const frontTarget = livingHeroes
@@ -235,14 +235,14 @@ export function useBattleLoop(ctx: BattleLoopContext) {
               });
             }
           } else {
-            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
+            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - effectiveMoveSpeed(enemy) * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
           }
           continue;
         }
 
         const distance = Math.abs(target.x - enemy.x);
         if (distance > enemy.range / 10) {
-          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - enemy.speed * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
+          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - effectiveMoveSpeed(enemy) * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
         } else if (enemy.attackTimer <= 0) {
           const attackId = abilitiesActive ? combatEventUidRef.current++ : 0;
           const damageEvents: CombatEvent[] = [];
