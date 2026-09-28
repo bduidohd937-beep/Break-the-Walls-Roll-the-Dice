@@ -11,6 +11,14 @@ const frameStyle = (sheet: SpriteSheet, [column, y]: Frame, count = 1): CSSPrope
 } as CSSProperties);
 
 export function HeroSprite({ hero, state = "idle", deathProgress = 0, attackDuration, gameSpeed = 1, attackSequence = 0 }: { hero: Pick<UnitDef, "id" | "sprite" | "name">; state?: SpriteState; deathProgress?: number; attackDuration?: number; gameSpeed?: number; attackSequence?: number }) {
+  const configured = (hero as UnitDef).spriteConfig;
+  const configuredAnimation = configured?.animations[state === "walk" ? "move" : state];
+  if (configuredAnimation?.asset) {
+    const duration = configuredAnimation.fps > 0 ? configuredAnimation.frameCount / configuredAnimation.fps / gameSpeed : 0;
+    return <span className={`unit-animated-sprite state-${state}`} role="img" aria-label={hero.name}
+      style={{ "--sprite-image": `url("${configuredAnimation.asset}")`, "--frame-count": configuredAnimation.frameCount, "--last-frame": configuredAnimation.frameCount - 1, "--sprite-scale": configured!.scale, "--animation-duration": `${duration}s`, "--attack-duration": `${attackDuration ?? duration}s` } as CSSProperties}
+      data-animated={configuredAnimation.loop ? "true" : undefined} />;
+  }
   const animatedSprite = UNIT_ANIMATED_SPRITES[hero.id];
   if (animatedSprite) {
     const animated = state === "walk" || state === "attack";

@@ -22,7 +22,7 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
       aria-label={unit.name}
     >
       {!dying && <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>}
-      <div className="unit-sprite">
+      <div className="unit-sprite" style={{ transform: `scaleX(${(unit.spriteConfig?.facing === "LEFT" ? -1 : 1) * (unit.team === "enemy" ? -1 : 1)})` }}>
         <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle"} gameSpeed={gameSpeed} attackSequence={unit.attackAnimationSequence} attackDuration={Math.min(unit.attackInterval, UNIT_ANIMATED_SPRITES[unit.id]?.attackDuration ?? unit.attackInterval) / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
       </div>
       {!dying && projectileActive && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw`, "--projectile-duration": `${0.18 / gameSpeed}s` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}

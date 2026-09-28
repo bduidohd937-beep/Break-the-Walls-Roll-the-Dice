@@ -4,6 +4,8 @@ export type AttackType = "single" | "splash";
 export type RangeType = "melee" | "ranged";
 export type AbilityType = "guard" | "crit" | "regen" | "execute";
 export type TargetPriority = "frontline" | "ranged-lowest-hp";
+export type SpriteAnimationConfig = { asset: string; frameCount: number; fps: number; loop: boolean; impactFrame?: number; projectileSpawnFrame?: number; skillEventFrame?: number };
+export type SpriteConfig = { frameWidth: number; frameHeight: number; scale: number; pivotX: number; pivotY: number; facing?: "LEFT" | "RIGHT"; animations: Partial<Record<"idle" | "move" | "attack" | "hit" | "knockback" | "stun" | "deploy" | "death", SpriteAnimationConfig>> };
 
 export type UnitDef = {
   id: string;
@@ -27,6 +29,8 @@ export type UnitDef = {
   abilityValue?: number;
   targetPriority?: TargetPriority;
   abilityIds?: readonly string[];
+  spriteConfig?: SpriteConfig;
+  gameplayBounds?: { width: number; height: number; collisionRadius?: number };
 };
 
 export type Unit = UnitDef & {
