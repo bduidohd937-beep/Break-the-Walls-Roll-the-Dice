@@ -7,13 +7,14 @@ export type StatusId = "burn" | "slow" | (string & {});
 export type ModifiableStat = "ATK" | "DEF" | "ASPD" | "MOVE";
 export type ModifierMode = "FLAT" | "PERCENT";
 
-export type TimedShield = { amount: number; remaining: number };
-export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; value: number; remaining: number };
-export type TimedDamageTakenModifier = { multiplier: number; remaining: number };
+export type RemovableEffectMeta = { removable?: boolean; sourceUid?: number; sourceAbilityId?: string };
+export type TimedShield = { amount: number; remaining: number } & RemovableEffectMeta;
+export type TimedStatModifier = { stat: ModifiableStat; mode: ModifierMode; value: number; remaining: number } & RemovableEffectMeta;
+export type TimedDamageTakenModifier = { multiplier: number; remaining: number } & RemovableEffectMeta;
 export type AbilityStatusId = "STUN" | "SLOW";
-export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number };
+export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number; removable?: boolean };
 export type PeriodicEffectId = "DOT" | "HOT";
-export type TimedPeriodicEffect = { id: PeriodicEffectId; amount: number; interval: number; elapsed: number; remaining: number; sourceUid: number; sourceAbilityId?: string };
+export type TimedPeriodicEffect = { id: PeriodicEffectId; amount: number; interval: number; elapsed: number; remaining: number; sourceUid: number; sourceAbilityId?: string; removable?: boolean };
 export type AbilityEffectState = {
   shields: readonly TimedShield[];
   statModifiers: readonly TimedStatModifier[];
@@ -77,7 +78,9 @@ export type EffectDefinition =
   | ({ type: "STAT_MODIFIER"; stat: ModifiableStat; mode: ModifierMode; value: ScalingDefinition; duration: number } & TaggedEffect)
   | ({ type: "DAMAGE_TAKEN_MODIFIER"; multiplier: number; duration: number } & TaggedEffect)
   | ({ type: "DOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
-  | ({ type: "HOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect);
+  | ({ type: "HOT"; amount: ScalingDefinition; duration: number; interval: number } & TaggedEffect)
+  | ({ type: "CLEANSE"; count: number } & TaggedEffect)
+  | ({ type: "DISPEL"; count: number } & TaggedEffect);
 
 export type AbilityDefinition = {
   id: string;

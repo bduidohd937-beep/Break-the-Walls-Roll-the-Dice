@@ -44,7 +44,7 @@ describe("SHIELD effect", () => {
     const second = apply({ type: "SHIELD", amount: flat(40), duration: 3 }, first);
     const resolved = resolveAbilityDamage(second, 50);
     expect(resolved.hpDamage).toBe(0);
-    expect(resolved.unit.abilityEffectState?.shields).toEqual([{ amount: 20, remaining: 3 }]);
+    expect(resolved.unit.abilityEffectState?.shields[0]).toMatchObject({ amount: 20, remaining: 3, removable: true, sourceUid: 1 });
   });
 });
 

@@ -35,6 +35,58 @@ function applyEffectiveStats(unit: AbilityUnit, state: AbilityEffectState): Abil
   };
 }
 
+function compactEffectState(unit: AbilityUnit, state: AbilityEffectState): AbilityUnit {
+  const hasEffects = state.shields.length + state.statModifiers.length + state.damageTakenModifiers.length + state.statuses.length + state.periodicEffects.length > 0;
+  if (hasEffects) return applyEffectiveStats(unit, state);
+  return {
+    ...unit,
+    atk: state.baseStats?.atk ?? unit.atk,
+    def: state.baseStats?.def ?? unit.def,
+    attackInterval: state.baseStats?.attackInterval ?? unit.attackInterval,
+    speed: state.baseStats?.speed ?? unit.speed,
+    abilityEffectState: undefined
+  };
+}
+
+function removeCleanseEffects(unit: AbilityUnit, count: number): AbilityUnit {
+  const state = unit.abilityEffectState;
+  if (!state || count <= 0) return unit;
+  let remaining = Math.floor(count);
+  const remove = <T extends { removable?: boolean }>(entries: readonly T[]): T[] => entries.filter((entry) => {
+    if (remaining <= 0 || entry.removable === false) return true;
+    remaining -= 1;
+    return false;
+  });
+  const harmfulStatuses = state.statuses.filter((entry) => entry.id === "STUN" || entry.id === "SLOW");
+  const keptStatuses = remove(harmfulStatuses);
+  const removedStatus = harmfulStatuses.length - keptStatuses.length;
+  remaining = Math.max(0, Math.floor(count) - removedStatus);
+  const statuses = [...state.statuses.filter((entry) => entry.id !== "STUN" && entry.id !== "SLOW"), ...keptStatuses];
+  const harmfulPeriodic = state.periodicEffects.filter((entry) => entry.id === "DOT");
+  const keptPeriodic = remove(harmfulPeriodic);
+  const periodicEffects = [...state.periodicEffects.filter((entry) => entry.id !== "DOT"), ...keptPeriodic];
+  return compactEffectState(unit, { ...state, statuses, periodicEffects });
+}
+
+function removeDispelEffects(unit: AbilityUnit, count: number): AbilityUnit {
+  const state = unit.abilityEffectState;
+  if (!state || count <= 0) return unit;
+  let remaining = Math.floor(count);
+  const remove = <T extends { removable?: boolean }>(entries: readonly T[]): T[] => entries.filter((entry) => {
+    if (remaining <= 0 || entry.removable === false) return true;
+    remaining -= 1;
+    return false;
+  });
+  const statModifiers = remove(state.statModifiers);
+  const removedModifiers = state.statModifiers.length - statModifiers.length;
+  remaining = Math.max(0, Math.floor(count) - removedModifiers);
+  const shields = remove(state.shields);
+  const removedShields = state.shields.length - shields.length;
+  remaining = Math.max(0, remaining - removedShields);
+  const damageTakenModifiers = remove(state.damageTakenModifiers);
+  return compactEffectState(unit, { ...state, statModifiers, shields, damageTakenModifiers });
+}
+
 export function resolveAbilityDamage(target: AbilityUnit, rawDamage: number): { unit: AbilityUnit; hpDamage: number } {
   const state = target.abilityEffectState ?? emptyEffectState();
   const multiplier = state.damageTakenModifiers.reduce((product, modifier) => product * modifier.multiplier, 1);
@@ -164,34 +216,36 @@ export const defaultEffectHandlers: EffectHandlerRegistry = {
     const potency = effect.potency ? calculateScaling(effect.potency, caster, target) : 0;
     return handler(target, effect.duration, potency);
   },
-  SHIELD: (effect, { caster, target }) => {
+  SHIELD: (effect, { caster, target, sourceAbilityId }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
-    return { ...target, abilityEffectState: { ...state, shields: [...state.shields, { amount: Math.max(0, calculateScaling(effect.amount, caster, target)), remaining: effect.duration }] } };
+    return { ...target, abilityEffectState: { ...state, shields: [...state.shields, { amount: Math.max(0, calculateScaling(effect.amount, caster, target)), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId }] } };
   },
-  STAT_MODIFIER: (effect, { caster, target }) => {
+  STAT_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
     const baseStats = state.baseStats ?? { atk: target.atk, def: target.def ?? 0, attackInterval: target.attackInterval, speed: target.speed };
     const nextState: AbilityEffectState = {
       ...state,
       baseStats,
-      statModifiers: [...state.statModifiers, { stat: effect.stat, mode: effect.mode, value: calculateScaling(effect.value, caster, target), remaining: effect.duration }]
+      statModifiers: [...state.statModifiers, { stat: effect.stat, mode: effect.mode, value: calculateScaling(effect.value, caster, target), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId }]
     };
     return applyEffectiveStats(target, nextState);
   },
-  DAMAGE_TAKEN_MODIFIER: (effect, { target }) => {
+  DAMAGE_TAKEN_MODIFIER: (effect, { caster, target, sourceAbilityId }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
-    return { ...target, abilityEffectState: { ...state, damageTakenModifiers: [...state.damageTakenModifiers, { multiplier: Math.max(0, effect.multiplier), remaining: effect.duration }] } };
+    return { ...target, abilityEffectState: { ...state, damageTakenModifiers: [...state.damageTakenModifiers, { multiplier: Math.max(0, effect.multiplier), remaining: effect.duration, removable: true, sourceUid: caster.uid, sourceAbilityId }] } };
   },
   DOT: (effect, { caster, target, sourceAbilityId }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
-    const periodic = { id: "DOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId };
+    const periodic = { id: "DOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId, removable: true };
     return { ...target, abilityEffectState: { ...state, periodicEffects: [...state.periodicEffects, periodic] } };
   },
   HOT: (effect, { caster, target, sourceAbilityId }) => {
     const state = target.abilityEffectState ?? emptyEffectState();
-    const periodic = { id: "HOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId };
+    const periodic = { id: "HOT" as const, amount: Math.max(0, calculateScaling(effect.amount, caster, target)), interval: Math.max(0.001, effect.interval), elapsed: 0, remaining: Math.max(0, effect.duration), sourceUid: caster.uid, sourceAbilityId, removable: true };
     return { ...target, abilityEffectState: { ...state, periodicEffects: [...state.periodicEffects, periodic] } };
-  }
+  },
+  CLEANSE: (effect, { target }) => removeCleanseEffects(target, effect.count),
+  DISPEL: (effect, { target }) => removeDispelEffects(target, effect.count)
 };
 
 export function executeEffect(
