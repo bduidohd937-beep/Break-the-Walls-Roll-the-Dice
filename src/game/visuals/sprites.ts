@@ -2,7 +2,13 @@ import soldierSheet from "../../assets/heroes/001-soldier.png";
 import serentiaIdle from "../../assets/heroes/serentia-idle.png";
 import serentiaWalk from "../../assets/heroes/serentia-walk-strip.png";
 import serentiaAttack from "../../assets/heroes/serentia-attack-strip.png";
+import hero001Idle from "../../assets/heroes/hero-001/lv01/idle.png";
+import hero001Move from "../../assets/heroes/hero-001/lv01/move.png";
+import hero001Attack from "../../assets/heroes/hero-001/lv01/attack.png";
+import hero001Hit from "../../assets/heroes/hero-001/lv01/hit.png";
+import hero001Death from "../../assets/heroes/hero-001/lv01/death.png";
 import type { Unit } from "../types";
+import type { SpriteConfig } from "../types";
 
 export type BattleDeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; duration: number; unit?: Unit };
 
@@ -59,6 +65,19 @@ export const UNIT_SPRITES: Record<string, SpriteSheet> = {
 // add their own cast, hit, and death clips without changing battle data.
 export const UNIT_ANIMATED_SPRITES: Record<string, AnimatedSprite> = {
   serentia: { idle: serentiaIdle, walk: serentiaWalk, attack: serentiaAttack, frameCount: 12, walkDuration: 0.96, attackDuration: 0.96 },
+};
+
+export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
+  traineeSword: {
+    frameWidth: 128, frameHeight: 128, scale: 1, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    animations: {
+      idle: { asset: hero001Idle, frameCount: 4, fps: 6, loop: true },
+      move: { asset: hero001Move, frameCount: 6, fps: 10, loop: true },
+      attack: { asset: hero001Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 4, projectileSpawnFrame: 4 },
+      hit: { asset: hero001Hit, frameCount: 3, fps: 12, loop: false },
+      death: { asset: hero001Death, frameCount: 6, fps: 10, loop: false },
+    },
+  },
 };
 
 export const spriteDeathDuration = (id: string) => {

@@ -1,5 +1,6 @@
 import type { ElementType, UnitDef, Wave } from "./types";
 import { ABILITY_IDS } from "./combat/abilities/definitions";
+import { UNIT_SPRITE_CONFIGS } from "./visuals/sprites";
 
 export const HEROES: UnitDef[] = [
   { id: "goblin", name: "고블린", sprite: "👺", element: "neutral", hp: 90, atk: 14, speed: 48, range: 34, rangeType: "melee", attackType: "single", attackInterval: 0.9, cost: 50, cooldown: 2.5, role: "근접" },
@@ -13,7 +14,7 @@ export const HEROES: UnitDef[] = [
   { id: "dragon", name: "성룡", sprite: "🐉", element: "fire", hp: 1250, atk: 220, speed: 30, range: 170, rangeType: "ranged", attackInterval: 2.4, cost: 1600, cooldown: 25, role: "광역", effect: "burn", attackType: "splash", splashRadius: 15 },
   { id: "arthur", name: "아서왕", sprite: "👑", element: "dark", hp: 2100, atk: 330, speed: 25, range: 55, rangeType: "melee", attackType: "single", attackInterval: 2.6, cost: 3000, cooldown: 40, role: "전설", ability: "execute", abilityValue: 0.25 },
   { id: "rustKnight", name: "녹슨 갑옷 기사", sprite: "🪖", element: "neutral", hp: 300, atk: 24, speed: 27, range: 34, rangeType: "melee", attackType: "single", attackInterval: 1.45, cost: 180, cooldown: 7, role: "탱커", ability: "guard", abilityValue: 0.18 },
-  { id: "traineeSword", name: "병사", sprite: "🗡️", element: "neutral", hp: 180, atk: 42, speed: 39, range: 38, rangeType: "melee", attackType: "single", attackInterval: 1.05, cost: 160, cooldown: 6, role: "근접 딜러", abilityIds: [ABILITY_IDS.soldierHeavyStrike] },
+  { id: "traineeSword", name: "병사", sprite: "🗡️", element: "neutral", hp: 180, atk: 42, speed: 39, range: 38, rangeType: "melee", attackType: "single", attackInterval: 1.05, cost: 160, cooldown: 6, role: "근접 딜러", abilityIds: [ABILITY_IDS.soldierHeavyStrike], spriteConfig: UNIT_SPRITE_CONFIGS.traineeSword },
   { id: "woodArcher", name: "나무활 궁수", sprite: "🏹", element: "neutral", hp: 105, atk: 34, speed: 36, range: 185, rangeType: "ranged", attackType: "single", attackInterval: 1.3, cost: 170, cooldown: 7, role: "원거리 딜러" },
   { id: "traineeMage", name: "견습 마법사", sprite: "🧙‍♂️", element: "neutral", hp: 115, atk: 48, speed: 27, range: 180, rangeType: "ranged", attackType: "splash", splashRadius: 8, attackInterval: 1.75, cost: 240, cooldown: 9, role: "마법 딜러" },
   { id: "villagePriest", name: "마을 사제", sprite: "🙏", element: "neutral", hp: 145, atk: 28, speed: 28, range: 155, rangeType: "ranged", attackType: "single", attackInterval: 1.6, cost: 220, cooldown: 9, role: "지원가", ability: "regen", abilityValue: 0.012 },
