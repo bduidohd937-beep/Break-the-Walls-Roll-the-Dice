@@ -9,6 +9,12 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
   const attackAnimationActive = UNIT_ANIMATED_SPRITES[unit.id]
     ? (unit.attackAnimationTimer ?? 0) > 0
     : unit.attackFlash > 0;
+  const spriteAttack = UNIT_ANIMATED_SPRITES[unit.id];
+  const spriteAttackElapsed = unit.attackInterval - (unit.attackAnimationTimer ?? unit.attackInterval);
+  const projectileWindup = Math.min(unit.attackInterval, spriteAttack?.attackDuration ?? 0) * 0.33;
+  const projectileActive = spriteAttack
+    ? spriteAttackElapsed >= projectileWindup && spriteAttackElapsed < projectileWindup + 0.35
+    : unit.attackFlash > 0;
   return (
     <div
       className={`battle-unit ${unit.team} ${ELEMENT_CLASS[unit.element]} ${unit.rangeType} ${dying ? "dying" : unit.hitFlash > 0 ? "hit" : ""} ${!dying && unit.attackFlash > 0 ? "attacking" : ""}`}
@@ -17,9 +23,9 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
     >
       {!dying && <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>}
       <div className="unit-sprite">
-        <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle"} gameSpeed={gameSpeed} attackSequence={unit.attackAnimationSequence} attackDuration={unit.attackInterval / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
+        <HeroSprite hero={unit} state={dying ? "death" : unit.hitFlash > 0 ? "hit" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle"} gameSpeed={gameSpeed} attackSequence={unit.attackAnimationSequence} attackDuration={Math.min(unit.attackInterval, UNIT_ANIMATED_SPRITES[unit.id]?.attackDuration ?? unit.attackInterval) / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
       </div>
-      {!dying && unit.attackFlash > 0 && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
+      {!dying && projectileActive && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * 1}vw`, "--projectile-duration": `${0.18 / gameSpeed}s` } as React.CSSProperties}>{unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
       {!dying && unit.ability === "guard" && <div className="ability-badge" aria-label="가드">🛡️</div>}
       {!dying && unit.ability === "crit" && unit.attackFlash > 0 && <div className="ability-burst">✦✦</div>}
       {!dying && unit.ability === "execute" && unit.currentHp / unit.hp <= (unit.abilityValue ?? 0.25) && <div className="execute-badge" aria-label="처형">☠️</div>}
