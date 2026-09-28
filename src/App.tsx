@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Unit, UnitDef } from "./game/types";
-import { HEROES, DECK_IDS, ENEMY_MAP, ELEMENT_LABEL, clamp } from "./game/constants";
+import { HEROES, ENEMY_MAP, ELEMENT_LABEL, clamp } from "./game/constants";
 import { BOSS_ENEMY_KEYS, STAGES } from "./game/stages";
 import { makeUnit } from "./game/units/createUnit";
 import { KingdomPanel } from "./components/kingdom/KingdomPanel";
@@ -20,7 +20,7 @@ import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, get
 import { getProgressionGoals } from "./game/systems/progression";
 import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
-import { DEV_MODE, STORAGE_KEYS, loadJson, saveJson, saveNumber } from "./game/storage";
+import { DEV_MODE, STORAGE_KEYS, saveJson, saveNumber } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
@@ -30,8 +30,8 @@ import { usePlayerProgress } from "./game/controllers/usePlayerProgress";
 import { useHubNavigation, type HubTab } from "./game/controllers/useHubNavigation";
 import { useKingdomProfile } from "./game/controllers/useKingdomProfile";
 import { useSummonProfile } from "./game/controllers/useSummonProfile";
+import { useHeroFormation } from "./game/controllers/useHeroFormation";
 import type { BattleDeathEffect } from "./game/visuals/sprites";
-import { savedIds } from "./game/systems/saveData";
 
 type DamagePopup = { id: number; x: number; value: number; critical: boolean; };
 
@@ -59,10 +59,6 @@ function App() {
   const deathUidRef = useRef(1);
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [battleReward, setBattleReward] = useState<BattleReward | null>(null);
-  const [deckIds, setDeckIds] = useState<string[]>(() => {
-    const saved = savedIds(loadJson(STORAGE_KEYS.deckIds, []), undefined, 10);
-    return saved.length ? saved : DEV_MODE ? ["devWukong", ...DECK_IDS.slice(0, 5)] : DECK_IDS.slice(0, 5);
-  });
   const {
     mainTab, setMainTab,
     hubSettingsOpen, setHubSettingsOpen,
@@ -77,6 +73,15 @@ function App() {
     resources, setResources,
     workers, setWorkers
   } = useKingdomProfile();
+  const {
+    deckIds, deckSlotCount,
+    toggleDeckHero, setDeckSlot, removeDeckSlot,
+    selectedHeroId, setSelectedHeroId,
+    heroMode, setHeroMode,
+    dragHeroId, setDragHeroId,
+    formationPage, setFormationPage,
+    formationTouchY
+  } = useHeroFormation(ownedHeroes);
   const [offlineGather, setOfflineGather] = useState<{ wood: number; stone: number; seconds: number } | null>(null);
   const gatherLastSeenRef = useRef(Date.now());
   const [summonMessage, setSummonMessage] = useState("");
@@ -95,11 +100,6 @@ function App() {
   const [summonSummaryOpen, setSummonSummaryOpen] = useState(false);
   const [lastSummonResults, setLastSummonResults] = useState<SummonStorageItem[]>([]);
   const [summonPhase, setSummonPhase] = useState<"idle" | "throw" | "impact" | "crack" | "reveal">("idle");
-  const [selectedHeroId, setSelectedHeroId] = useState(DECK_IDS[0]);
-  const [heroMode, setHeroMode] = useState<"formation" | "upgrade">("upgrade");
-  const [dragHeroId, setDragHeroId] = useState<string | null>(null);
-  const [formationPage, setFormationPage] = useState<0 | 1>(0);
-  const formationTouchY = useRef<number | null>(null);
   const [gatherHp, setGatherHp] = useState({ wood: 10, stone: 14 });
   const [gatherHit, setGatherHit] = useState<"wood" | "stone" | null>(null);
   const [gatherRegion, setGatherRegion] = useState<"basic" | "ancient" | "crystal">("basic");
@@ -115,7 +115,6 @@ function App() {
   const deployCooldownsRef = useRef<Record<string, number>>({});
   const nextUidRef = useRef(1);
   const autoTickRef = useRef<() => void>(() => {});
-  const deckSlotCount = 10;
   const visibleDeck = useMemo(() => {
     const equipped = deckIds.map((id) => HEROES.find((hero) => hero.id === id)).filter(Boolean) as UnitDef[];
     return equipped;
@@ -348,54 +347,6 @@ function App() {
     setResults: setLastSummonResults, setMessage: setSummonMessage, uidRef: summonUidRef,
     getGrade: (id) => getHeroGrade(id)
   });
-
-  const toggleDeckHero = (id: string) => {
-    if (!ownedHeroes.includes(id)) return;
-    if (deckIds.includes(id)) {
-      if (deckIds.length <= 1) return;
-      const next = deckIds.filter((value) => value !== id);
-      setDeckIds(next);
-      saveJson(STORAGE_KEYS.deckIds, next);
-      return;
-    }
-    if (deckIds.length >= deckSlotCount) return;
-    const next = [...deckIds, id];
-    setDeckIds(next);
-    saveJson(STORAGE_KEYS.deckIds, next);
-  };
-  const setDeckSlot = (slotIndex: number, heroId: string) => {
-    if (!ownedHeroes.includes(heroId)) return;
-    if (!deckIds.includes(heroId) && deckIds.length >= deckSlotCount) {
-      const next = [...deckIds];
-      next[slotIndex] = heroId;
-      setDeckIds(next);
-      saveJson(STORAGE_KEYS.deckIds, next);
-      return;
-    }
-    const next = deckIds.filter((id) => id !== heroId);
-    const displaced = deckIds[slotIndex];
-    next.splice(Math.min(slotIndex, next.length), 0, heroId);
-    if (displaced && displaced !== heroId && !next.includes(displaced) && next.length < deckSlotCount) next.push(displaced);
-    const trimmed = next.slice(0, deckSlotCount);
-    setDeckIds(trimmed);
-    saveJson(STORAGE_KEYS.deckIds, trimmed);
-  };
-  const removeDeckSlot = (slotIndex: number) => {
-    const next = deckIds.filter((_, index) => index !== slotIndex);
-    if (next.length === 0) return;
-    setDeckIds(next);
-    saveJson(STORAGE_KEYS.deckIds, next);
-  };
-
-  useEffect(() => {
-    const ownedSet = new Set(ownedHeroes);
-    const valid = deckIds.filter((id) => HEROES.some((hero) => hero.id === id) && ownedSet.has(id));
-    const next = valid.slice(0, deckSlotCount);
-    if (next.length !== deckIds.length || next.some((id, index) => id !== deckIds[index])) {
-      setDeckIds(next);
-      saveJson(STORAGE_KEYS.deckIds, next);
-    }
-  }, [ownedHeroes, deckSlotCount]);
 
   const progressionGoals = getProgressionGoals({
     clearedStages,
