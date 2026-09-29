@@ -23,15 +23,17 @@ button { font: inherit; }
 .cloud { position: absolute; width: 180px; height: 42px; border-radius: 999px; background: #ffffffaa; filter: blur(1px); }
 .c1 { top: 8%; left: 8%; }.c2 { top: 18%; right: 15%; transform: scale(.7); }
 .mountains { position: absolute; inset: 25% 0 31%; opacity: .5; background: linear-gradient(135deg, transparent 35%, #7894a0 35% 42%, transparent 42%) 0 0/250px 100%, linear-gradient(45deg, transparent 35%, #5d7e8e 35% 44%, transparent 44%) 120px 10px/260px 100%; }
-.lane { position: absolute; inset: 39% 0 17%; }
-.lane-ground { position: absolute; left: 0; right: 0; bottom: 7%; height: 31%; border-radius: 50%; background: linear-gradient(#8a633e, #67452e); border-top: 7px solid #b08a59; box-shadow: inset 0 18px 0 #765035; }
+.lane { position: absolute; inset: 39% 0 17%; --battle-ground-line:7%; }
+.lane-ground { position: absolute; left: 0; right: 0; bottom: var(--battle-ground-line); height: 31%; border-radius: 50%; background: linear-gradient(#8a633e, #67452e); border-top: 7px solid #b08a59; box-shadow: inset 0 18px 0 #765035; }
 .lane-ground::after { content:""; position:absolute; inset: 20% 0; background: repeating-linear-gradient(90deg, #9b7448 0 45px, #765233 45px 90px); opacity:.28; }
 
-.castle { position:absolute; z-index:5; bottom: 13%; text-align:center; width:110px; }
+.castle { position:absolute; z-index:5; top:0; bottom:0; width:110px; text-align:center; }
 .our-castle,.enemy-castle { transform:translateX(-50%); }
-.tower { font-size: 74px; filter: drop-shadow(0 7px 3px #0007); }
-.castle-label { font-size: 12px; font-weight: 900; }
-.castle-hp { height: 9px; margin-top: 4px; border: 2px solid #182531; background:#2c1115; border-radius:8px; overflow:hidden; }
+.castle-visual { position:absolute; left:50%; bottom:var(--battle-ground-line,7%); width:100%; height:74px; transform:translate(-50%,var(--castle-ground-offset-y,0px)); }
+.tower { display:grid; place-items:end center; height:100%; font-size:74px; line-height:1; filter: drop-shadow(0 7px 3px #0007); }
+.castle-glyph { display:block; line-height:1; transform-origin:50% 100%; }
+.castle-label { position:absolute; top:calc(100% + 2px); left:50%; transform:translateX(-50%); font-size: 12px; font-weight: 900; white-space:nowrap; }
+.castle-hp { position:absolute; top:calc(100% + 20px); left:50%; width:100%; height: 9px; margin:0; transform:translateX(-50%); border: 2px solid #182531; background:#2c1115; border-radius:8px; overflow:hidden; }
 .castle-hp span { display:block; height:100%; background:linear-gradient(90deg,#37d97a,#b8f45d); }
 .castle-hp.enemy span { background:linear-gradient(90deg,#ff5769,#ffb45a); }
 
@@ -41,16 +43,18 @@ button { font: inherit; }
 .wave-progress span { display:block; height:100%; background:linear-gradient(90deg,#63e88b,#ffe36e); transition:width .15s linear; }
 .wave-notice { color:#a9c9df; font-size:9px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-.battle-unit { position:absolute; z-index:4; bottom: 16%; width: 76px; transform: translateX(-50%); text-align:center; transition: left .12s linear; }
+.battle-unit { position:absolute; z-index:4; bottom:var(--battle-ground-line,7%); width: 76px; transform: translateX(-50%); text-align:center; transition: left .05s linear; }
 .battle-unit.hero { z-index: 5; }.battle-unit.enemy { z-index: 4; }
-.unit-sprite { position:relative; width:64px; height:70px; margin:auto; display:grid; place-items:center; font-size:46px; filter: drop-shadow(0 7px 3px #0008); }
+.unit-sprite { position:relative; width:64px; height:var(--unit-sprite-height,70px); margin:auto; display:flex; align-items:flex-end; justify-content:center; font-size:46px; line-height:1; filter: drop-shadow(0 7px 3px #0008); }
+.unit-sprite-motion { position:relative; width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transform-origin:50% 100%; }
+.unit-sprite-facing { width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transform:scaleX(var(--unit-facing,1)); transform-origin:50% 100%; }
 /* Sprite atlas rows have different heights; per-state frame origins live in visuals/sprites.ts. */
 .unit-pixel-sprite{--sprite-size:48px;display:inline-block;flex:none;width:var(--sprite-size);height:calc(var(--sprite-size) * 1.375);background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * 8) calc(var(--sprite-size) * 8);background-position:calc(var(--sprite-size) * var(--frame-x) * -1) calc(var(--sprite-size) * var(--frame-y) * -1);image-rendering:pixelated;vertical-align:middle;animation:spriteFrames .85s steps(8) infinite}
 .unit-pixel-sprite.state-walk{animation-duration:.55s;animation-timing-function:steps(7)}
 .unit-pixel-sprite.state-attack{animation-duration:.16s;animation-timing-function:steps(7)}
 .unit-pixel-sprite.state-hit{animation-duration:.14s;animation-timing-function:steps(3)}
 .unit-pixel-sprite.state-death{animation:none}
-.unit-animated-sprite{--sprite-size:48px;display:inline-block;flex:none;width:calc(var(--sprite-size) * var(--sprite-scale, 1.375));height:calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count, 1)) calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-position:0 0;image-rendering:pixelated;vertical-align:middle;transform:translate(calc((.5 - var(--pivot-x,.5)) * 100%),calc((1 - var(--pivot-y,1)) * 100%))}
+.unit-animated-sprite{--sprite-size:48px;display:inline-block;flex:none;width:calc(var(--sprite-size) * var(--sprite-scale, 1.375));height:calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-image:var(--sprite-image);background-repeat:no-repeat;background-size:calc(var(--sprite-size) * var(--sprite-scale, 1.375) * var(--frame-count, 1)) calc(var(--sprite-size) * var(--sprite-scale, 1.375));background-position:0 0;image-rendering:pixelated;vertical-align:middle;transform:translate(calc((.5 - var(--pivot-x,.5)) * 100% + var(--ground-offset-x,0%)),calc((1 - var(--pivot-y,1)) * 100% + var(--ground-offset-y,0%)))}
 .unit-animated-sprite[data-animated="true"]{animation:configuredSpriteFrames var(--animation-duration) steps(var(--frame-count)) infinite}
 .unit-animated-sprite.state-attack[data-animated="true"]{animation-name:configuredSpriteAttack;animation-timing-function:steps(var(--last-frame), end);animation-duration:var(--attack-duration);animation-iteration-count:1;animation-fill-mode:forwards}
 .unit-animated-sprite[data-loop="false"]{animation-name:configuredSpriteAttack;animation-timing-function:steps(var(--last-frame), end);animation-iteration-count:1;animation-fill-mode:forwards}
@@ -77,10 +81,8 @@ button { font: inherit; }
 .unit-name { font-size:9px; font-weight:900; white-space:nowrap; text-shadow:0 2px 2px #000; }
 .unit-hp { width:64px; height:5px; border:1px solid #15202a; background:#271116; border-radius:5px; overflow:hidden; margin:auto; }
 .unit-hp span { display:block; height:100%; background:#53e36f; }.enemy .unit-hp span { background:#ff596a; }
-.battle-unit.hit { animation:hit .14s linear; }.battle-unit.attacking .unit-sprite { animation:attack .16s ease; }
+.battle-unit.hit { filter:brightness(1.15); }
 .attack-effect { position:absolute; top:5px; left:52px; color:#ffcf54; font-size:28px; animation:burst .18s ease-out; }
-@keyframes hit { 50% { transform:translateX(-50%) translateX(6px); filter:brightness(2); } }
-@keyframes attack { 50% { transform:translateX(7px) scale(1.08); } }
 @keyframes burst { from { opacity:1; transform:scale(.4); } to { opacity:0; transform:scale(1.8); } }
 @keyframes pulse { to { transform:scale(1.2); opacity:.75; } }
 

@@ -12,9 +12,15 @@ export function validateSpriteConfig(unit: UnitDef, path: string, issues: Conten
   if (!finitePositive(config.frameHeight)) issue(issues, path, "frameHeight must be positive");
   if (!finitePositive(config.scale)) issue(issues, path, "scale must be positive");
   if (![config.pivotX, config.pivotY].every((value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1)) issue(issues, path, "pivot must be between 0 and 1");
+  const validGroundOffset = (value: number | undefined, frameSize: number, allowNegative = false) => value === undefined || (Number.isFinite(value) && (allowNegative ? Math.abs(value) <= frameSize : value >= 0 && value <= frameSize));
+  if (!validGroundOffset(config.groundOffsetX, config.frameWidth, true)) issue(issues, path, "groundOffsetX must fit within the source frame");
+  if (!validGroundOffset(config.groundOffsetY, config.frameHeight)) issue(issues, path, "groundOffsetY must fit within the source frame");
   for (const [name, animation] of Object.entries(config.animations)) {
     if (!animation) continue;
     if (!Number.isInteger(animation.frameCount) || animation.frameCount <= 0 || !finitePositive(animation.fps)) issue(issues, `${path}.${name}`, "invalid animation metadata");
+    if (![animation.pivotX, animation.pivotY].every((value) => value === undefined || (Number.isFinite(value) && value >= 0 && value <= 1))) issue(issues, `${path}.${name}`, "animation pivot must be between 0 and 1");
+    if (!validGroundOffset(animation.groundOffsetX, config.frameWidth, true)) issue(issues, `${path}.${name}`, "groundOffsetX must fit within the source frame");
+    if (!validGroundOffset(animation.groundOffsetY, config.frameHeight)) issue(issues, `${path}.${name}`, "groundOffsetY must fit within the source frame");
     for (const key of ["impactFrame", "projectileSpawnFrame", "skillEventFrame"] as const) if (animation[key] !== undefined && (!Number.isInteger(animation[key]) || animation[key]! < 0 || animation[key]! >= animation.frameCount)) issue(issues, `${path}.${name}.${key}`, "frame is outside animation");
   }
 }

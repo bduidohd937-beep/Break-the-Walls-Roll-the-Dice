@@ -63,7 +63,7 @@
   .tower{font-size:38px}
   .castle-label{font-size:8px}
   .castle-hp{height:6px}
-  .battle-unit{width:48px;bottom:12%}
+  .battle-unit{width:48px}
   .unit-sprite{width:48px;height:52px}
   .unit-sprite .unit-animated-sprite,.unit-sprite .unit-pixel-sprite{--sprite-size:46px}
   .unit-name{font-size:7px}

@@ -3,6 +3,8 @@ import type { Unit } from "../../game/types";
 import { ELEMENT_CLASS, clamp } from "../../game/constants";
 import { HeroSprite } from "../shared/HeroSprite";
 import { UNIT_ANIMATED_SPRITES, UNIT_SPRITE_CONFIGS } from "../../game/visuals/sprites";
+import { getMovementAnimationRate } from "../../game/visuals/movementAnimation";
+import type { AbilityUnit } from "../../game/combat/abilities/types";
 
 export function BattleUnit({ unit, dyingProgress, gameSpeed = 1, worldScale = 1 }: { unit: Unit; dyingProgress?: number; gameSpeed?: number; worldScale?: number }) {
   const dying = dyingProgress !== undefined;
@@ -26,15 +28,25 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1, worldScale = 1 
   const skillProjectileActive = skillAnimationActive && skillElapsed >= skillProjectileWindup && skillElapsed < skillProjectileWindup + 0.45;
   const projectileVisual = skillProjectileActive ? configuredVisuals?.skill1 : configuredVisuals?.basic;
   const spriteState = dying ? "death" : unit.knockbackTimer > 0 ? "knockback" : unit.hitFlash > 0 ? "hit" : skillAnimationActive ? "skill1" : attackAnimationActive ? "attack" : unit.moving ? "walk" : "idle";
+  const spriteConfig = unit.spriteConfig ?? UNIT_SPRITE_CONFIGS[unit.id];
+  const spriteScale = spriteConfig?.scale ?? 1;
+  const spriteHeight = spriteConfig ? 64 * spriteScale : 70;
+  const movementRate = getMovementAnimationRate(unit as AbilityUnit);
+  const facing = (spriteConfig?.facing === "LEFT" ? -1 : 1) * (unit.team === "enemy" ? -1 : 1);
   return (
     <div
       className={`battle-unit ${unit.team} ${ELEMENT_CLASS[unit.element]} ${unit.rangeType} ${dying ? "dying" : unit.hitFlash > 0 ? "hit" : ""} ${!dying && unit.attackFlash > 0 ? "attacking" : ""}`}
-      style={{ left: `${unit.x}%` }}
+      style={{ left: `${unit.x}%`, zIndex: 10 + Math.round(unit.x * 10), "--unit-sprite-height": `${spriteHeight}px`, "--unit-facing": facing } as React.CSSProperties}
       aria-label={unit.name}
     >
       {!dying && <div className="unit-hp"><span style={{width: `${clamp((unit.currentHp / unit.hp) * 100, 0, 100)}%`}} /></div>}
-      <div className="unit-sprite" style={{ transform: `scaleX(${(unit.spriteConfig?.facing === "LEFT" ? -1 : 1) * (unit.team === "enemy" ? -1 : 1)})` }}>
-        <HeroSprite hero={unit} state={spriteState} gameSpeed={gameSpeed} attackSequence={skillAnimationActive ? unit.abilityAnimationSequence : unit.attackAnimationSequence} attackDuration={(skillAnimationActive ? unit.abilityAnimationDuration : unit.knockbackTimer > 0 ? 0.22 : activeAttackDuration)! / gameSpeed} deathProgress={dyingProgress} /><span className="unit-aura" />
+      <div className="unit-sprite">
+        <div className="unit-sprite-motion">
+          <div className="unit-sprite-facing">
+            <HeroSprite hero={unit} state={spriteState} gameSpeed={gameSpeed} movePlaybackRate={movementRate} attackSequence={skillAnimationActive ? unit.abilityAnimationSequence : unit.attackAnimationSequence} attackDuration={(skillAnimationActive ? unit.abilityAnimationDuration : unit.knockbackTimer > 0 ? 0.22 : activeAttackDuration)! / gameSpeed} deathProgress={dyingProgress} />
+          </div>
+          <span className="unit-aura" />
+        </div>
       </div>
       {!dying && (projectileActive || skillProjectileActive) && <div className={`attack-effect ${unit.rangeType === "ranged" ? "projectile" : "melee-impact"} ${unit.effect === "burn" ? "fire-impact" : ""} ${skillProjectileActive ? "piercing-projectile" : ""} ${projectileVisual ? "has-projectile-asset" : ""}`} style={{ "--shot-x": `${(unit.attackTargetX - unit.x) * worldScale}vw`, "--projectile-duration": `${(skillProjectileActive ? 0.28 : 0.18) / gameSpeed}s`, "--projectile-image": projectileVisual ? `url("${projectileVisual.asset}")` : undefined, "--trail-image": projectileVisual?.trailAsset ? `url("${projectileVisual.trailAsset}")` : undefined, "--release-image": projectileVisual?.releaseAsset ? `url("${projectileVisual.releaseAsset}")` : undefined, "--impact-image": projectileVisual?.impactAsset ? `url("${projectileVisual.impactAsset}")` : undefined } as React.CSSProperties}>{projectileVisual ? "" : unit.rangeType === "ranged" ? (unit.effect === "burn" ? "🔥" : "➤") : "✦"}</div>}
       {!dying && unit.ability === "guard" && <div className="ability-badge" aria-label="가드">🛡️</div>}

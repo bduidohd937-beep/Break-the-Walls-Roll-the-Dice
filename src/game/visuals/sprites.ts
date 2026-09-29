@@ -71,9 +71,10 @@ export const UNIT_ANIMATED_SPRITES: Record<string, AnimatedSprite> = {
 
 export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
   traineeSword: {
-    frameWidth: 128, frameHeight: 128, scale: 1, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    // Source-cell transparent pixels below the foot baseline, measured from the runtime sheets.
+    frameWidth: 128, frameHeight: 128, scale: 1, pivotX: 0.5, pivotY: 1, groundOffsetY: 5, facing: "RIGHT",
     animations: {
-      idle: { asset: hero001Idle, frameCount: 4, fps: 6, loop: true },
+      idle: { asset: hero001Idle, frameCount: 4, fps: 6, loop: true, groundOffsetY: 6 },
       move: { asset: hero001Move, frameCount: 6, fps: 10, loop: true },
       attack: { asset: hero001Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 4, projectileSpawnFrame: 4 },
       hit: { asset: hero001Hit, frameCount: 3, fps: 12, loop: false },
@@ -81,7 +82,7 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
     },
   },
   shield: {
-    frameWidth: 128, frameHeight: 128, scale: 1.5, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    frameWidth: 128, frameHeight: 128, scale: 1.5, pivotX: 0.5, pivotY: 1, groundOffsetY: 5, facing: "RIGHT",
     animations: {
       idle: { asset: hero002Idle, frameCount: 4, fps: 6, loop: true },
       move: { asset: hero002Move, frameCount: 6, fps: 10, loop: true },
@@ -91,7 +92,7 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
     },
   },
   HERO_003: {
-    frameWidth: 224, frameHeight: 224, scale: 1.3, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    frameWidth: 224, frameHeight: 224, scale: 1.3, pivotX: 0.5, pivotY: 1, groundOffsetY: 1, facing: "RIGHT",
     animations: {
       idle: { asset: hero003Idle, frameCount: 4, fps: 6, loop: true },
       move: { asset: hero003Move, frameCount: 6, fps: 10, loop: true },

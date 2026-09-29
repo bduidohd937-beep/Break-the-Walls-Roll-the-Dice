@@ -79,17 +79,23 @@ export function BattleViewport(p: Props) {
         <div className="cloud c2" />
         <div className="mountains" />
         <div className="battle-horizon" />
-        <div className={`castle our-castle ${p.castleHit === "our" ? "castle-hit" : ""}`} style={{ left: "7%" }}>
-          <div className="tower">🏰</div><div className="castle-label">우리 성</div>
-          <div className="castle-hp"><span style={{ width: `${clamp(p.castleHp / 10, 0, 100)}%` }} /></div>
-        </div>
-        <div className={`castle enemy-castle ${p.castleHit === "enemy" ? "castle-hit" : ""}`} style={{ left: "93%" }}>
-          <div className="tower">🏯</div><div className="castle-label">적 성</div>
-          <div className="castle-hp enemy"><span style={{ width: `${clamp(p.enemyCastleHp / 18, 0, 100)}%` }} /></div>
-        </div>
         <div className="lane">
           <div className="lane-ground" /><div className="lane-grid" /><div className="lane-center-line" />
           <div className="castle-zone our-zone" /><div className="castle-zone enemy-zone" />
+          <div className={`castle our-castle ${p.castleHit === "our" ? "castle-hit" : ""}`} style={{ left: "7%" }}>
+            <div className="castle-visual">
+              <div className="tower"><span className="castle-glyph">🏰</span></div>
+              <div className="castle-label">우리 성</div>
+              <div className="castle-hp"><span style={{ width: `${clamp(p.castleHp / 10, 0, 100)}%` }} /></div>
+            </div>
+          </div>
+          <div className={`castle enemy-castle ${p.castleHit === "enemy" ? "castle-hit" : ""}`} style={{ left: "93%" }}>
+            <div className="castle-visual">
+              <div className="tower"><span className="castle-glyph">🏯</span></div>
+              <div className="castle-label">적 성</div>
+              <div className="castle-hp enemy"><span style={{ width: `${clamp(p.enemyCastleHp / 18, 0, 100)}%` }} /></div>
+            </div>
+          </div>
           {p.heroes.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} worldScale={camera.worldScale} />)}
           {p.enemies.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} worldScale={camera.worldScale} />)}
           {p.deathEffects.map((effect) => effect.unit

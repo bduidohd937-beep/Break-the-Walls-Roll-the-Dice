@@ -14,6 +14,8 @@ describe("sprite asset contract", () => {
   it("validates HERO_001 production animation contract", () => {
     const config = UNIT_SPRITE_CONFIGS.traineeSword;
     expect(config).toMatchObject({ frameWidth: 128, frameHeight: 128, pivotX: 0.5, pivotY: 1, facing: "RIGHT" });
+    expect(config.groundOffsetY).toBe(5);
+    expect(config.animations.idle?.groundOffsetY).toBe(6);
     expect(config.animations).toMatchObject({ idle: { frameCount: 4 }, move: { frameCount: 6 }, attack: { frameCount: 6 }, hit: { frameCount: 3 }, death: { frameCount: 6 } });
     const issues: { path: string; message: string }[] = [];
     validateSpriteConfig({ id: "hero001", name: "hero001", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: config }, "hero001", issues);
@@ -27,6 +29,7 @@ describe("sprite asset contract", () => {
   it("validates HERO_002 production shield-bash animation contract", () => {
     const config = UNIT_SPRITE_CONFIGS.shield;
     expect(config).toMatchObject({ frameWidth: 128, frameHeight: 128, scale: 1.5, pivotX: 0.5, pivotY: 1, facing: "RIGHT" });
+    expect(config.groundOffsetY).toBe(5);
     expect(config.animations).toMatchObject({
       idle: { frameCount: 4, fps: 6 },
       move: { frameCount: 6, fps: 10 },
@@ -37,6 +40,29 @@ describe("sprite asset contract", () => {
     const issues: { path: string; message: string }[] = [];
     validateSpriteConfig({ id: "hero002", name: "hero002", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: config }, "hero002", issues);
     expect(issues).toEqual([]);
+  });
+  it("keeps HERO_003 frames grounded using source-frame baseline metadata", () => {
+    const config = UNIT_SPRITE_CONFIGS.HERO_003;
+    expect(config).toMatchObject({ frameWidth: 224, frameHeight: 224, scale: 1.3, pivotX: 0.5, pivotY: 1, groundOffsetY: 1, facing: "RIGHT" });
+    expect(Object.values(config.animations).every((animation) => animation?.groundOffsetY === undefined || animation.groundOffsetY >= 0)).toBe(true);
+    const issues: { path: string; message: string }[] = [];
+    validateSpriteConfig({ id: "HERO_003", name: "HERO_003", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: config }, "HERO_003", issues);
+    expect(issues).toEqual([]);
+  });
+  it("validates signed horizontal and downward vertical ground offsets in source-frame units", () => {
+    const config = UNIT_SPRITE_CONFIGS.HERO_003;
+    const adjusted = {
+      ...config,
+      groundOffsetX: -12,
+      animations: { ...config.animations, idle: { ...config.animations.idle!, groundOffsetX: 12, groundOffsetY: 4 } },
+    };
+    const validIssues: { path: string; message: string }[] = [];
+    validateSpriteConfig({ id: "HERO_003", name: "HERO_003", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: adjusted }, "HERO_003", validIssues);
+    expect(validIssues).toEqual([]);
+
+    const invalidIssues: { path: string; message: string }[] = [];
+    validateSpriteConfig({ id: "HERO_003", name: "HERO_003", sprite: "", element: "neutral", hp: 1, atk: 1, speed: 1, range: 1, rangeType: "melee", attackInterval: 1, cost: 0, cooldown: 0, role: "test", spriteConfig: { ...adjusted, groundOffsetX: 225 } }, "HERO_003", invalidIssues);
+    expect(invalidIssues.some((issue) => issue.message.includes("groundOffsetX"))).toBe(true);
   });
   it("keeps HERO_002 render scale separate from gameplay stats at 1x and 5x", () => {
     const config = UNIT_SPRITE_CONFIGS.shield;
