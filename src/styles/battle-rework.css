@@ -1,0 +1,41 @@
+/* Battle UI sizing is screen-space; the world layer only remaps x positions and never scales actors. */
+.battle-shell{width:100%;height:100dvh;min-height:420px;overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:10px 16px}
+.battle-topbar{width:min(1600px,100%);max-width:none;min-height:48px;flex:0 0 auto;margin:0 auto;gap:14px}
+.battle-brand{flex:0 0 auto;min-width:180px}.battle-brand .game-title{font-size:clamp(16px,1.8vw,25px);line-height:1;letter-spacing:1px}.battle-brand .sub-title{font-size:10px;margin-top:4px}
+.battle-hud{flex:1 1 auto;min-width:0;flex-wrap:nowrap;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:none}.battle-hud::-webkit-scrollbar{display:none}
+.battle-hud .stat-pill{flex:0 0 auto;min-height:34px;padding:6px 9px;border-radius:4px!important;box-shadow:0 2px 0 #050b12;font-size:10px;white-space:nowrap}.battle-hud .battle-pause-btn{min-width:38px;font-size:17px}
+.battle-card{width:min(1600px,100%);max-width:none;min-height:0;flex:1 1 auto;margin:0 auto;display:flex;flex-direction:column;border-radius:10px;box-shadow:0 10px 32px #0007}
+.battle-sky{height:auto;min-height:140px;flex:1 1 auto;touch-action:pan-y}.battle-sky.camera-narrow{cursor:grab;touch-action:pan-y}.battle-sky.camera-narrow:active{cursor:grabbing}
+.battle-world{inset-inline:auto;pointer-events:none}.pixel-sky-grid,.cloud,.mountains,.battle-horizon,.castle,.lane{pointer-events:none}.lane{inset-inline:0}.lane-ground{pointer-events:none}
+.castle{width:110px}.castle-label,.castle-hp{pointer-events:none}.battle-unit{width:76px;bottom:16%}.battle-unit .unit-sprite{width:64px;height:70px}.battle-unit .unit-sprite .unit-animated-sprite,.battle-unit .unit-sprite .unit-pixel-sprite{--sprite-size:64px}.unit-hp{width:64px}
+.wave-banner{pointer-events:none}.camera-hint{position:absolute;z-index:15;left:50%;bottom:8px;transform:translateX(-50%);padding:4px 9px;border:1px solid #d9c27e88;border-radius:999px;color:#f5e5b5;background:#08121dcc;font-size:9px;font-weight:800;pointer-events:none;white-space:nowrap}
+.economy-panel{min-height:44px;flex:0 0 auto;gap:10px;padding:5px 10px;border-top-width:1px}.economy-info b{font-size:9px}.economy-info span{font-size:7px}.economy-upgrade{min-width:150px;padding:6px 10px;font-size:8px}
+.deck-panel{flex:0 0 auto;padding:5px 8px 6px;touch-action:pan-y}.battle-deck-header{min-height:17px;margin-bottom:4px}.battle-deck-header b{font-size:10px}.battle-deck-header span{font-size:8px}
+.battle-deck-pages{grid-template-columns:32px minmax(0,1fr) 32px;gap:6px}.battle-deck-pages .deck-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow:hidden;padding:0}.battle-deck-pages .swap-btn{min-height:74px;border-radius:5px;font-size:24px}
+.hero-card-wrap{min-width:0}.hero-card{display:grid;grid-template-columns:43px minmax(0,1fr) auto;grid-template-rows:1fr 1fr;align-items:center;column-gap:7px;width:100%;min-height:74px;height:74px;padding:5px 7px;border-radius:5px!important}
+.hero-sprite{grid-column:1;grid-row:1/3;width:42px;height:58px;font-size:27px}.hero-sprite .unit-animated-sprite,.hero-sprite .unit-pixel-sprite{--sprite-size:30px}.hero-name{grid-column:2/4;grid-row:1;margin:0;font-size:10px}.hero-name em{margin-right:2px}.hero-meta{grid-column:2;grid-row:2;margin:0;font-size:8px}.cooldown{grid-column:3;grid-row:2;margin:0;font-size:8px;text-align:right;white-space:nowrap}
+.hero-combat-type,.hero-ability{display:none}.cooldown-mask{border-radius:0 0 5px 5px}.deck-slots.slide-next{animation:deckSwipeInNext .16s ease-out}.deck-slots.slide-prev{animation:deckSwipeInPrev .16s ease-out}
+@keyframes deckSwipeInNext{from{opacity:.65;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}@keyframes deckSwipeInPrev{from{opacity:.65;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+.deck-indicator{flex:0 0 auto;padding:3px 6px 4px;font-size:8px}
+
+@media(min-width:801px) and (min-height:701px){.battle-shell{padding:12px 24px}.battle-topbar{min-height:56px}.battle-hud .stat-pill{min-height:38px;padding:7px 11px;font-size:11px}.battle-card{border-width:2px}.economy-panel{min-height:48px}.battle-deck-pages .swap-btn{min-height:80px}.hero-card{min-height:80px;height:80px}}
+
+@media(max-width:1100px) and (orientation:landscape){
+  .battle-shell{min-height:0;height:100dvh;padding:max(3px,env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) max(3px,env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left));gap:4px}
+  .battle-topbar{min-height:34px;gap:5px}.battle-brand{min-width:0}.battle-brand .game-title{font-size:13px;letter-spacing:.4px}.battle-brand .sub-title{display:none}
+  .battle-hud{gap:3px}.battle-hud .stat-pill{min-height:32px;padding:5px 6px;font-size:8px}.battle-hud .stat-pill span{display:none}.battle-hud .battle-pause-btn{min-width:34px;font-size:16px}
+  .battle-card{border-radius:6px}.battle-sky{min-height:0}.lane{inset-block:34% 12%}.castle{width:64px;bottom:8%}.tower{font-size:38px}.castle-label{font-size:8px}.castle-hp{height:6px}
+  .battle-unit{bottom:12%}.wave-banner{top:5px;width:min(310px,46%);padding:4px 8px;border-radius:6px}.wave-title{font-size:9px}.wave-progress{height:4px;margin:3px 0}.wave-notice,.wave-threat{font-size:7px}.boss-bar{top:5px;max-width:25%;padding:4px 6px}
+  .economy-panel{min-height:34px;padding:3px 6px}.economy-info b{font-size:8px}.economy-info span{font-size:6px}.economy-upgrade{min-width:112px;min-height:30px;padding:4px 6px;font-size:7px}
+  .deck-panel{padding:3px 5px 4px}.battle-deck-header{min-height:13px;margin-bottom:2px}.battle-deck-header b{font-size:8px}.battle-deck-header span{font-size:7px}
+  .battle-deck-pages{grid-template-columns:29px minmax(0,1fr) 29px;gap:4px}.battle-deck-pages .swap-btn{min-height:64px;font-size:20px}.battle-deck-pages .deck-slots{gap:4px}
+  .hero-card{grid-template-columns:35px minmax(0,1fr) auto;height:64px;min-height:64px;padding:3px 5px;column-gap:4px}.hero-sprite{width:34px;height:52px;font-size:22px}.hero-sprite .unit-animated-sprite,.hero-sprite .unit-pixel-sprite{--sprite-size:26px}.hero-name{font-size:8px}.hero-meta,.cooldown{font-size:7px}.deck-indicator{padding:2px 4px;font-size:7px}.camera-hint{bottom:4px;padding:3px 7px;font-size:7px}
+}
+
+@media(max-width:800px) and (orientation:portrait){
+  .battle-shell{height:auto;min-height:100dvh;overflow:visible;padding:6px}.battle-topbar{align-items:center;gap:5px}.battle-brand .game-title{font-size:13px}.battle-brand .sub-title{display:none}
+  .battle-hud{flex-wrap:wrap;justify-content:flex-end;overflow:visible}.battle-hud .stat-pill{min-height:30px;padding:4px 5px;font-size:8px}.battle-hud .stat-pill span{display:none}
+  .battle-card{flex:initial;overflow:visible}.battle-sky{height:48dvh;min-height:260px;flex:none}.lane{inset-block:38% 14%}.economy-panel{min-height:42px}.deck-panel{padding:5px}.battle-deck-pages .swap-btn{min-height:68px}.hero-card{min-height:68px;height:68px}
+}
+
+@media(prefers-reduced-motion:reduce){.battle-world,.deck-slots{transition:none;animation-duration:.01ms!important}}

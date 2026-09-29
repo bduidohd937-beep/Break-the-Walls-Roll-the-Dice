@@ -132,7 +132,8 @@ function App() {
     gameSpeed, setGameSpeed,
     pauseScreen, setPauseScreen, paused,
     autoCom, setAutoCom,
-    battleDeckPage, setBattleDeckPage
+    battleDeckPage, setBattleDeckPage,
+    battleViewMode, toggleBattleView, battleCameraLeft, moveBattleCamera
   } = useBattleViewState();
   const [deployCooldowns, setDeployCooldowns] = useState<Record<string, number>>({});
   const deployCooldownsRef = useRef<Record<string, number>>({});
@@ -533,6 +534,7 @@ function App() {
     deathEffects={deathEffects} damagePopups={damagePopups} castleHit={castleHit} bossPhaseTwo={bossPhaseTwo}
     bossDisplayIcon={bossDisplayIcon} bossDisplayName={bossDisplayName} bossHpPercent={bossHpPercent} bossUnit={bossUnit}
     bossDefeated={Boolean(bossSpawnAnnouncedRef.current && !bossUnit)} battleDeckPage={battleDeckPage} onDeckPage={setBattleDeckPage}
+    battleViewMode={battleViewMode} onToggleBattleView={toggleBattleView} battleCameraLeft={battleCameraLeft} onCameraLeft={moveBattleCamera}
     bossCharge={bossChargeRef.current} bossPhase={bossPhaseRef.current} waveProgress={waveProgress} notice={notice} waveThreat={waveThreat}
     visibleDeck={visibleDeck} deployCooldowns={deployCooldowns} deckCount={visibleDeck.length} deckSlotCount={deckSlotCount}
     kingdomLevel={kingdomLevel} ownedHeroCount={ownedHeroes.length} heroTotal={HEROES.length} getUnitLevel={getUnitLevel}

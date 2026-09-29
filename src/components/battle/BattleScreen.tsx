@@ -1,28 +1,81 @@
-import type { CSSProperties } from "react";
-import type { StageDef, Unit, UnitDef } from "../../game/types";
-import { ELEMENT_CLASS } from "../../game/constants";
-import { BattleUnit } from "./BattleUnit";
-import { HeroSprite } from "../shared/HeroSprite";
+import { BattleDeployBar } from "./BattleDeployBar";
+import { BattleViewport } from "./BattleViewport";
 import { FullscreenToggle } from "../shared/FullscreenToggle";
+import type { StageDef, Unit, UnitDef } from "../../game/types";
 import type { BattleDeathEffect } from "../../game/visuals/sprites";
 import type { BattleReward } from "../../game/controllers/useBattleLoop";
-type BattleState="playing"|"victory"|"defeat"|"stageSelect";
-type DamagePopup={id:number;x:number;value:number;critical?:boolean};
-type PauseScreen=null|"menu"|"settings"|"exit";
-type Props={pauseScreen:PauseScreen;onPause:()=>void;onPauseScreen:(screen:PauseScreen)=>void;onExitBattle:()=>void;stage:StageDef;stageIndex:number;unlockedStage:number;battleState:BattleState;battleReward:BattleReward|null;castleHp:number;enemyCastleHp:number;battleGold:number;battleGoldMax:number;economyLevel:number;economyMaxLevel:number;goldPerSecond:number;economyUpgradeCost:number;waveIndex:number;gameSpeed:number;autoCom:boolean;heroes:Unit[];enemies:Unit[];deathEffects:BattleDeathEffect[];damagePopups:DamagePopup[];castleHit:"our"|"enemy"|null;bossPhaseTwo:boolean;bossDisplayIcon:string;bossDisplayName:string;bossHpPercent:number;bossUnit?:Unit;bossDefeated:boolean;bossCharge:number;bossPhase:number;waveProgress:number;notice:string;waveThreat:string;visibleDeck:UnitDef[];battleDeckPage:0|1;onDeckPage:(page:0|1)=>void;deployCooldowns:Record<string,number>;deckCount:number;deckSlotCount:number;kingdomLevel:number;ownedHeroCount:number;heroTotal:number;getUnitLevel:(id:string)=>number;onSpeed:()=>void;onAuto:()=>void;onUpgradeEconomy:()=>void;onDeploy:(hero:UnitDef)=>void;onRetry:()=>void;onStageSelect:()=>void;onNext:()=>void};
-const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
-export function BattleScreen(p:Props){const bossWave=p.stage.waveMeta[p.waveIndex]?.boss;return <main className={`game-shell ${p.pauseScreen ? "battle-paused" : ""}`}>
-<header className="topbar"><div><div className="game-title">BREAK THE WALLS</div><div className="sub-title">퓨어 월드 · STAGE {p.stage.id} · {p.stage.name}</div></div><div className="top-stats"><div className="stat-pill">🏰 우리 성 <b>{Math.ceil(p.castleHp)}</b></div><div className="stat-pill gold">🪙 Battle Gold <b>{Math.floor(p.battleGold).toLocaleString()} / {p.battleGoldMax.toLocaleString()}</b></div><div className="stat-pill">💰 지갑 <b>Lv.{p.economyLevel}/{p.economyMaxLevel}</b></div><div className="stat-pill">🗺️ STAGE <b>{p.stage.id}</b> · 🌊 <b>{Math.min(p.waveIndex+1,p.stage.waves.length)}/{p.stage.waves.length}</b></div><button className="stat-pill speed-control" disabled={!!p.pauseScreen} onClick={p.onSpeed}>⚡ {p.gameSpeed}X</button><button className={`stat-pill auto-com-control ${p.autoCom?"active":""}`} disabled={!!p.pauseScreen} onClick={p.onAuto}>🤖 AUTO {p.autoCom?"ON":"OFF"}</button><FullscreenToggle className="battle-fullscreen"/><button className="stat-pill battle-pause-btn" disabled={p.battleState!=="playing"} onClick={p.onPause} aria-label="전투 일시정지">Ⅱ</button></div></header>
-<section className="battle-card"><div className="battle-sky"><div className="pixel-sky-grid"/><div className="cloud c1"/><div className="cloud c2"/><div className="mountains"/><div className="battle-horizon"/><div className="battle-title-plate">⚔️ FRONTLINE</div>
-<div className={`castle our-castle ${p.castleHit==="our"?"castle-hit":""}`}><div className="tower">🏰</div><div className="castle-label">우리 성</div><div className="castle-hp"><span style={{width:`${clamp(p.castleHp/10,0,100)}%`}}/></div></div>
-<div className={`castle enemy-castle ${p.castleHit==="enemy"?"castle-hit":""}`}><div className="tower">🏯</div><div className="castle-label">적 성</div><div className="castle-hp enemy"><span style={{width:`${clamp(p.enemyCastleHp/18,0,100)}%`}}/></div></div>
-<div className="lane"><div className="lane-ground"/><div className="lane-grid"/><div className="lane-center-line"/><div className="castle-zone our-zone"/><div className="castle-zone enemy-zone"/>{p.heroes.map(u=><BattleUnit key={u.uid} unit={u} gameSpeed={p.gameSpeed}/>)}{p.enemies.map(u=><BattleUnit key={u.uid} unit={u} gameSpeed={p.gameSpeed}/>)}{p.deathEffects.map(e=>e.unit?<BattleUnit key={`dead-${e.id}`} unit={e.unit} gameSpeed={p.gameSpeed} dyingProgress={Math.min(0.999,1-e.life/e.duration)}/>:<div key={e.id} style={{position:"absolute",zIndex:17,left:String(e.x)+"%",top:e.team==="hero"?"42%":"48%",transform:"translate(-50%,-50%)",fontSize:25,pointerEvents:"none",opacity:Math.min(1,e.life*3)}}>{e.team==="hero"?"💥":"💢"}</div>)}{p.damagePopups.map(d=><div key={d.id} className={`damage-popup ${d.critical?"critical":""}`} style={{left:`${d.x}%`}}>-{d.value}</div>)}</div>
-{bossWave&&p.bossUnit&&<div className={`boss-bar ${p.bossPhaseTwo?"enraged":""}`}><div className="boss-title">{p.bossDisplayIcon} BOSS · {p.bossDisplayName} {p.bossPhaseTwo?"· ENRAGED":""}</div><div className="boss-hp"><span style={{width:`${p.bossHpPercent}%`}}/></div><div className="boss-hp-text">{p.bossUnit?`${Math.ceil(p.bossUnit.currentHp)} / ${p.bossUnit.hp}`:p.bossDefeated?"보스 격파":"등장 준비 중"}</div>{p.bossUnit&&<div className="boss-mechanic-status">{p.stage.id===40?`전하 ${Math.min(10,Math.floor(p.bossCharge/4))}/10`:p.stage.id===50&&p.stage.bossMechanic?.phaseElements?`현재 페이즈 · ${p.stage.bossMechanic.phaseElements[Math.max(0,p.bossPhase)]??p.stage.bossMechanic.phaseElements[0]}`:p.stage.mechanic}</div>}</div>}
-<div className="wave-banner"><div className="wave-title">STAGE {p.stage.id} · WAVE {p.waveIndex+1}/{p.stage.waves.length} · {p.stage.waveMeta[p.waveIndex]?.name}</div><div className="wave-progress"><span style={{width:`${clamp(p.waveProgress,0,100)}%`}}/></div><div className="wave-notice">{p.notice}</div>{p.waveThreat&&<div className="wave-threat">{p.waveThreat}</div>}</div></div>
-<div className="economy-panel"><div className="economy-info"><b>💰 전투 지갑 Lv.{p.economyLevel}/{p.economyMaxLevel}</b><span>초당 +{p.goldPerSecond} 🪙 · 최대 {p.battleGoldMax.toLocaleString()}</span></div><button className="economy-upgrade" disabled={!!p.pauseScreen||p.economyLevel>=p.economyMaxLevel||p.battleGold<p.economyUpgradeCost} onClick={p.onUpgradeEconomy}>{p.economyLevel>=p.economyMaxLevel?"지갑 MAX":`지갑 강화 · 🪙 ${p.economyUpgradeCost}`}</button></div>
-<div className="deck-panel"><div className="battle-deck-header"><b>⚔️ 출전 영웅 · {p.battleDeckPage===0?"1~5":"6~10"}</b><span>클릭 또는 숫자키 1~9, 0(10번) · {p.deckCount}/{p.deckSlotCount}</span></div><div className="battle-deck-pages"><button className="swap-btn" disabled={p.battleDeckPage===0} onClick={()=>p.onDeckPage(0)} aria-label="출전 슬롯 1~5">↑</button><div className="deck-slots">{p.visibleDeck.slice(p.battleDeckPage*5,p.battleDeckPage*5+5).map((hero,localIndex)=>{const slot=p.battleDeckPage*5+localIndex;const cd=p.deployCooldowns[hero.id]??0,lacks=p.battleGold<hero.cost,cooling=cd>0,disabled=lacks||cooling;return <div key={hero.id} className={`hero-card-wrap ${disabled?"disabled":""}`}><button className={`hero-card ${disabled?"disabled":""}`} title={hero.story} disabled={!!p.pauseScreen} onClick={()=>p.onDeploy(hero)}><div className={`hero-sprite ${ELEMENT_CLASS[hero.element]}`}><HeroSprite hero={hero} variant="deploy"/><span className="spark"/></div><div className="hero-name"><em>{slot===9?"0":slot+1}</em> {hero.name} <small>Lv.{p.getUnitLevel(hero.id)}</small></div><div className="hero-meta"><span>{hero.role}</span><b>🪙 {hero.cost}</b></div><div className="hero-combat-type"><span>{hero.rangeType==="melee"?"⚔️ 근접":"🏹 원거리"}</span><span>{hero.attackType==="splash"?"💥 광역":"🎯 단일"}</span></div><div className="hero-ability">{hero.ability==="guard"&&"🛡️ 피해 감소 22%"}{hero.ability==="regen"&&"✚ 초당 HP 회복"}{hero.ability==="crit"&&"⚡ 28% 치명타"}{hero.ability==="execute"&&"☠️ 저체력 적 추가 피해"}{!hero.ability&&hero.attackType==="splash"&&"💥 광역 공격"}{!hero.ability&&hero.effect==="burn"&&hero.attackType!=="splash"&&"🔥 화상"}</div><div className="cooldown">{cd>0?`⏱ ${cd.toFixed(1)}s`:lacks?`🪙 ${Math.ceil(hero.cost-p.battleGold)} 부족`:"⚔️ 출격 가능"}</div>{cooling&&<div className="cooldown-mask" style={{"--cooldown-ratio":`${Math.min(100,(cd/hero.cooldown)*100)}%`} as CSSProperties}/>}</button></div>})}</div><button className="swap-btn" disabled={p.battleDeckPage===1||p.deckCount<=5} onClick={()=>p.onDeckPage(1)} aria-label="출전 슬롯 6~10">↓</button></div></div>
-<div className="deck-indicator">영웅 편성 {p.deckCount}/{p.deckSlotCount} · 영지 Lv.{p.kingdomLevel} · 보유 {p.ownedHeroCount}/{p.heroTotal}</div></section>
-<section className="battle-info"><div><b>자동전투</b><span>영웅은 자동으로 이동·공격·스킬 발동</span></div><div><b>속성</b><span>⚪ 무속성 · 🔥 불 · 🌑 어둠</span></div><div><b>현재 적</b><span>{p.enemies.filter(e=>e.alive).length}기</span></div></section>
-{p.pauseScreen&&p.battleState==="playing"&&<div className="pause-overlay" role="dialog" aria-modal="true" aria-label="전투 일시정지"><div className="pause-menu">{p.pauseScreen==="menu"?<><h2>일시정지</h2><button onClick={()=>p.onPauseScreen(null)}>계속하기</button><button onClick={()=>p.onPauseScreen("settings")}>게임 설정</button><button onClick={()=>p.onPauseScreen("exit")}>전투 나가기</button></>:p.pauseScreen==="settings"?<><h2>게임 설정</h2><p>전투 속도 {p.gameSpeed}X · AUTO COM {p.autoCom?"ON":"OFF"}</p><button onClick={p.onSpeed}>속도 변경 · {p.gameSpeed}X</button><button onClick={p.onAuto}>AUTO COM {p.autoCom?"끄기":"켜기"}</button><button onClick={()=>p.onPauseScreen("menu")}>← 일시정지 메뉴</button></>:<><h2>전투 나가기</h2><p>전투를 종료하시겠습니까?<br/>현재 전투 진행 상황은 사라집니다.</p><button onClick={()=>p.onPauseScreen("menu")}>취소</button><button onClick={p.onExitBattle}>나가기</button></>}</div></div>}
-{p.battleState!=="playing"&&<div className="result-overlay"><div className={`result-box ${p.battleState}`}><div className="result-kicker">{p.battleState==="victory"?"STAGE CLEAR":"STAGE FAILED"}</div><h1>{p.battleState==="victory"?"적 성을 돌파했다!":"성이 함락됐다..."}</h1><p>{p.battleState==="victory"?`STAGE ${p.stage.id} 클리어! ${p.battleReward?.firstClear ? "첫 클리어" : "반복 클리어"} 보상을 받았습니다.`:"덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>{p.battleState==="victory" && p.battleReward && <div className="result-rewards"><span>🪙 Game Gold <b>+{p.battleReward.gold.toLocaleString()}</b></span><span>💎 보석 <b>+{p.battleReward.gems.toLocaleString()}</b></span></div>}<div className="result-actions"><button onClick={p.onRetry}>다시 전투</button><button onClick={p.onStageSelect}>스테이지 선택</button>{p.battleState==="victory"&&p.stageIndex+1<p.unlockedStage&&<button onClick={p.onNext}>다음 스테이지 ▶</button>}</div></div></div>}
-</main>}
+import type { BattleViewMode } from "../../game/systems/battleCamera";
+
+type BattleState = "playing" | "victory" | "defeat" | "stageSelect";
+type DamagePopup = { id: number; x: number; value: number; critical?: boolean };
+type PauseScreen = null | "menu" | "settings" | "exit";
+
+type Props = {
+  pauseScreen: PauseScreen; onPause: () => void; onPauseScreen: (screen: PauseScreen) => void; onExitBattle: () => void;
+  stage: StageDef; stageIndex: number; unlockedStage: number; battleState: BattleState; battleReward: BattleReward | null;
+  castleHp: number; enemyCastleHp: number; battleGold: number; battleGoldMax: number; economyLevel: number; economyMaxLevel: number;
+  goldPerSecond: number; economyUpgradeCost: number; waveIndex: number; gameSpeed: number; autoCom: boolean;
+  heroes: Unit[]; enemies: Unit[]; deathEffects: BattleDeathEffect[]; damagePopups: DamagePopup[];
+  castleHit: "our" | "enemy" | null; bossPhaseTwo: boolean; bossDisplayIcon: string; bossDisplayName: string;
+  bossHpPercent: number; bossUnit?: Unit; bossDefeated: boolean; bossCharge: number; bossPhase: number;
+  waveProgress: number; notice: string; waveThreat: string; visibleDeck: UnitDef[]; battleDeckPage: 0 | 1;
+  onDeckPage: (page: 0 | 1) => void; deployCooldowns: Record<string, number>; deckCount: number; deckSlotCount: number;
+  kingdomLevel: number; ownedHeroCount: number; heroTotal: number; getUnitLevel: (id: string) => number;
+  onSpeed: () => void; onAuto: () => void; onUpgradeEconomy: () => void; onDeploy: (hero: UnitDef) => void;
+  onRetry: () => void; onStageSelect: () => void; onNext: () => void;
+  battleViewMode: BattleViewMode; onToggleBattleView: () => void; battleCameraLeft: number; onCameraLeft: (left: number) => void;
+};
+
+export function BattleScreen(p: Props) {
+  return (
+    <main className={`game-shell battle-shell ${p.pauseScreen ? "battle-paused" : ""}`}>
+      <header className="topbar battle-topbar">
+        <div className="battle-brand"><div className="game-title">BREAK THE WALLS</div><div className="sub-title">퓨어 월드 · STAGE {p.stage.id} · {p.stage.name}</div></div>
+        <div className="top-stats battle-hud">
+          <div className="stat-pill gold">🪙 <span>Battle Gold</span> <b>{Math.floor(p.battleGold).toLocaleString()} / {p.battleGoldMax.toLocaleString()}</b></div>
+          <div className="stat-pill">💰 <span>지갑</span> <b>Lv.{p.economyLevel}/{p.economyMaxLevel}</b></div>
+          <div className="stat-pill stage-pill">🗺️ STAGE <b>{p.stage.id}</b> · 🌊 <b>{Math.min(p.waveIndex + 1, p.stage.waves.length)}/{p.stage.waves.length}</b></div>
+          <button className="stat-pill speed-control" disabled={!!p.pauseScreen} onClick={p.onSpeed}>⚡ {p.gameSpeed}X</button>
+          <button className={`stat-pill auto-com-control ${p.autoCom ? "active" : ""}`} disabled={!!p.pauseScreen} onClick={p.onAuto}>🤖 AUTO {p.autoCom ? "ON" : "OFF"}</button>
+          <button className="stat-pill view-mode-control" type="button" onClick={p.onToggleBattleView} aria-pressed={p.battleViewMode === "narrow"} aria-label={`전장 보기 변경, 현재 ${p.battleViewMode === "wide" ? "전체" : "근접"} 보기`}>{p.battleViewMode === "wide" ? "▱ 전체" : "▣ 근접"}</button>
+          <FullscreenToggle className="battle-fullscreen" />
+          <button className="stat-pill battle-pause-btn" disabled={p.battleState !== "playing"} onClick={p.onPause} aria-label="전투 일시정지">Ⅱ</button>
+        </div>
+      </header>
+
+      <section className="battle-card">
+        <BattleViewport
+          stage={p.stage} waveIndex={p.waveIndex} gameSpeed={p.gameSpeed} heroes={p.heroes} enemies={p.enemies}
+          deathEffects={p.deathEffects} damagePopups={p.damagePopups} castleHp={p.castleHp} enemyCastleHp={p.enemyCastleHp}
+          castleHit={p.castleHit} bossPhaseTwo={p.bossPhaseTwo} bossDisplayIcon={p.bossDisplayIcon} bossDisplayName={p.bossDisplayName}
+          bossHpPercent={p.bossHpPercent} bossUnit={p.bossUnit} bossDefeated={p.bossDefeated} bossCharge={p.bossCharge} bossPhase={p.bossPhase}
+          waveProgress={p.waveProgress} notice={p.notice} waveThreat={p.waveThreat} viewMode={p.battleViewMode}
+          cameraLeft={p.battleCameraLeft} onCameraLeft={p.onCameraLeft}
+        />
+        <div className="economy-panel">
+          <div className="economy-info"><b>💰 전투 지갑 Lv.{p.economyLevel}/{p.economyMaxLevel}</b><span>초당 +{p.goldPerSecond} 🪙 · 최대 {p.battleGoldMax.toLocaleString()}</span></div>
+          <button className="economy-upgrade" disabled={!!p.pauseScreen || p.economyLevel >= p.economyMaxLevel || p.battleGold < p.economyUpgradeCost} onClick={p.onUpgradeEconomy}>{p.economyLevel >= p.economyMaxLevel ? "지갑 MAX" : `지갑 강화 · 🪙 ${p.economyUpgradeCost}`}</button>
+        </div>
+        <BattleDeployBar
+          visibleDeck={p.visibleDeck} battleDeckPage={p.battleDeckPage} onDeckPage={p.onDeckPage} deployCooldowns={p.deployCooldowns}
+          battleGold={p.battleGold} pauseScreen={!!p.pauseScreen} deckCount={p.deckCount} deckSlotCount={p.deckSlotCount}
+          kingdomLevel={p.kingdomLevel} ownedHeroCount={p.ownedHeroCount} heroTotal={p.heroTotal} getUnitLevel={p.getUnitLevel} onDeploy={p.onDeploy}
+        />
+      </section>
+
+      {p.pauseScreen && p.battleState === "playing" && <div className="pause-overlay" role="dialog" aria-modal="true" aria-label="전투 일시정지"><div className="pause-menu">
+        {p.pauseScreen === "menu" ? <><h2>일시정지</h2><button onClick={() => p.onPauseScreen(null)}>계속하기</button><button onClick={() => p.onPauseScreen("settings")}>게임 설정</button><button onClick={() => p.onPauseScreen("exit")}>전투 나가기</button></>
+          : p.pauseScreen === "settings" ? <><h2>게임 설정</h2><p>전투 속도 {p.gameSpeed}X · AUTO COM {p.autoCom ? "ON" : "OFF"}</p><button onClick={p.onSpeed}>속도 변경 · {p.gameSpeed}X</button><button onClick={p.onAuto}>AUTO COM {p.autoCom ? "끄기" : "켜기"}</button><button onClick={() => p.onPauseScreen("menu")}>← 일시정지 메뉴</button></>
+            : <><h2>전투 나가기</h2><p>전투를 종료하시겠습니까?<br />현재 전투 진행 상황은 사라집니다.</p><button onClick={() => p.onPauseScreen("menu")}>취소</button><button onClick={p.onExitBattle}>나가기</button></>}
+      </div></div>}
+
+      {p.battleState !== "playing" && <div className="result-overlay"><div className={`result-box ${p.battleState}`}>
+        <div className="result-kicker">{p.battleState === "victory" ? "STAGE CLEAR" : "STAGE FAILED"}</div>
+        <h1>{p.battleState === "victory" ? "적 성을 돌파했다!" : "성이 함락됐다..."}</h1>
+        <p>{p.battleState === "victory" ? `STAGE ${p.stage.id} 클리어! ${p.battleReward?.firstClear ? "첫 클리어" : "반복 클리어"} 보상을 받았습니다.` : "덱과 배치 타이밍을 바꿔 다시 도전하자."}</p>
+        {p.battleState === "victory" && p.battleReward && <div className="result-rewards"><span>🪙 Game Gold <b>+{p.battleReward.gold.toLocaleString()}</b></span><span>💎 보석 <b>+{p.battleReward.gems.toLocaleString()}</b></span></div>}
+        <div className="result-actions"><button onClick={p.onRetry}>다시 전투</button><button onClick={p.onStageSelect}>스테이지 선택</button>{p.battleState === "victory" && p.stageIndex + 1 < p.unlockedStage && <button onClick={p.onNext}>다음 스테이지 ▶</button>}</div>
+      </div></div>}
+    </main>
+  );
+}
