@@ -9,7 +9,7 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
   const configuredAttack = UNIT_SPRITE_CONFIGS[unit.id]?.animations.attack;
   const configuredSkill = UNIT_SPRITE_CONFIGS[unit.id]?.animations.skill1;
   const configuredVisuals = UNIT_SPRITE_CONFIGS[unit.id]?.projectiles;
-  const configuredAttackDuration = configuredAttack ? configuredAttack.frameCount / configuredAttack.fps : undefined;
+  const configuredAttackDuration = configuredAttack ? configuredAttack.syncToAttackInterval ? unit.attackInterval : configuredAttack.frameCount / configuredAttack.fps : undefined;
   const activeAttackDuration = Math.min(unit.attackInterval, configuredAttackDuration ?? UNIT_ANIMATED_SPRITES[unit.id]?.attackDuration ?? unit.attackInterval);
   const attackAnimationActive = UNIT_ANIMATED_SPRITES[unit.id] || configuredAttack
     ? (unit.attackAnimationTimer ?? 0) > 0

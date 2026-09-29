@@ -91,11 +91,11 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
     },
   },
   HERO_003: {
-    frameWidth: 224, frameHeight: 224, scale: 1.15, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
+    frameWidth: 224, frameHeight: 224, scale: 1.3, pivotX: 0.5, pivotY: 1, facing: "RIGHT",
     animations: {
       idle: { asset: hero003Idle, frameCount: 4, fps: 6, loop: true },
       move: { asset: hero003Move, frameCount: 6, fps: 10, loop: true },
-      attack: { asset: hero003Attack, frameCount: 6, fps: 12, loop: false, impactFrame: 5, projectileSpawnFrame: 5 },
+      attack: { asset: hero003Attack, frameCount: 6, fps: 12, loop: false, syncToAttackInterval: true, impactFrame: 5, projectileSpawnFrame: 5 },
       skill1: { asset: hero003Skill1, frameCount: 8, fps: 12, loop: false, impactFrame: 6, projectileSpawnFrame: 6, skillEventFrame: 6 },
       hit: { asset: hero003Hit, frameCount: 2, fps: 10, loop: false },
       knockback: { asset: hero003Knockback, frameCount: 4, fps: 10, loop: false },

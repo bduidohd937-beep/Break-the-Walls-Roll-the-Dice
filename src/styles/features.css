@@ -100,6 +100,8 @@
 .hero-detail.locked{opacity:.65}
 .hero-detail-head{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid #294151}
 .hero-detail-head>span{font-size:58px}
+.hero-detail-head>span.hero-detail-portrait{width:76px;height:76px;flex:0 0 76px;border-radius:10px;overflow:hidden;background:#0a1620}
+.hero-detail-head>span.hero-detail-portrait .hero-ui-portrait{object-fit:cover}
 .hero-detail-head div{display:flex;flex-direction:column;gap:3px;text-align:left}
 .hero-detail-head small{color:#7894a5;font-size:8px}
 .hero-detail-head h2{margin:0;color:#f2f8fb;font-size:17px}

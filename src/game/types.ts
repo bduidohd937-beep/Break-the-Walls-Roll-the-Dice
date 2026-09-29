@@ -7,7 +7,7 @@ export type TargetPriority = "frontline" | "ranged-lowest-hp";
 export type UnitRarity = "COMMON" | "RARE" | "HEROIC" | "LEGENDARY" | "MYTHIC" | "TRANSCENDENT";
 export type UnitRace = "HUMAN" | "UNDEAD" | "DRAGON" | "GIANT" | "MACHINE" | "SPIRIT" | "ANGEL" | "DEMON" | "BEAST" | "ABERRATION";
 export type UnitCombatRole = "MELEE_DPS" | "RANGED_DPS" | "TANK" | "SUPPORT" | "HEALER" | "BUFFER" | "DEBUFFER" | "CONTROLLER";
-export type SpriteAnimationConfig = { asset: string; frameCount: number; fps: number; loop: boolean; impactFrame?: number; projectileSpawnFrame?: number; skillEventFrame?: number };
+export type SpriteAnimationConfig = { asset: string; frameCount: number; fps: number; loop: boolean; syncToAttackInterval?: boolean; impactFrame?: number; projectileSpawnFrame?: number; skillEventFrame?: number };
 export type ProjectileVisualConfig = { asset: string; trailAsset?: string; releaseAsset?: string; pierceAsset?: string; impactAsset?: string };
 export type SpriteConfig = {
   frameWidth: number; frameHeight: number; scale: number; pivotX: number; pivotY: number; facing?: "LEFT" | "RIGHT";

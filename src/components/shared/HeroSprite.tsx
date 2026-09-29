@@ -19,7 +19,7 @@ export function HeroSprite({ hero, state = "idle", deathProgress = 0, attackDura
   if (configuredAnimation?.asset) {
     const duration = configuredAnimation.fps > 0 ? configuredAnimation.frameCount / configuredAnimation.fps / gameSpeed : 0;
     return <span key={`${state}-${state === "attack" || state === "skill1" ? attackSequence : 0}`} className={`unit-animated-sprite state-${state}`} role="img" aria-label={hero.name}
-      style={{ "--sprite-image": `url("${configuredAnimation.asset}")`, "--frame-count": configuredAnimation.frameCount, "--last-frame": configuredAnimation.frameCount - 1, "--sprite-scale": configured!.scale, "--animation-duration": `${duration}s`, "--attack-duration": `${attackDuration ?? duration}s`, "--pivot-x": configured!.pivotX, "--pivot-y": configured!.pivotY, animationIterationCount: configuredAnimation.loop ? "infinite" : 1, animationFillMode: "forwards" } as CSSProperties}
+      style={{ "--sprite-image": `url("${configuredAnimation.asset}")`, "--frame-count": configuredAnimation.frameCount, "--last-frame": configuredAnimation.frameCount - 1, "--sprite-scale": configured!.scale, "--animation-duration": `${duration}s`, "--attack-duration": `${attackDuration ?? duration}s`, "--pivot-x": configured!.pivotX, "--pivot-y": configured!.pivotY, alignSelf: configured!.pivotY === 1 ? "end" : "center", justifySelf: "center", animationIterationCount: configuredAnimation.loop ? "infinite" : 1, animationFillMode: "forwards" } as CSSProperties}
       data-animated={configuredAnimation.frameCount > 1 ? "true" : undefined} data-loop={configuredAnimation.loop ? "true" : "false"} />;
   }
   const animatedSprite = UNIT_ANIMATED_SPRITES[hero.id];
