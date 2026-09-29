@@ -114,19 +114,20 @@
 .attack-effect.melee-impact{left:72%;top:20px;font-size:28px;color:#fff0a8;text-shadow:0 0 8px #ff9b35;animation:meleeImpact .18s steps(3) forwards}
 .attack-effect.fire-impact{color:#ff9a43;text-shadow:0 0 12px #ff4d1f}
 .attack-effect.projectile{z-index:10;font-size:22px;filter:drop-shadow(0 0 4px #fff);animation:projectileImpact var(--projectile-duration,.18s) linear forwards}
+.unit-sprite .attack-effect.projectile{left:calc(50% + var(--projectile-origin-x,0px));top:var(--projectile-origin-y,53%)}
 .attack-effect.projectile.has-projectile-asset{width:42px;height:20px;background-image:var(--projectile-image);background-position:center;background-size:contain;background-repeat:no-repeat;filter:drop-shadow(0 1px 2px #20150d)}
 .attack-effect.projectile.has-projectile-asset::before{content:"";position:absolute;inset:2px 24px 2px -28px;background:var(--trail-image) center/contain no-repeat;opacity:.7}
 .attack-effect.projectile.has-projectile-asset::after{content:"";position:absolute;width:28px;height:28px;right:-16px;top:-4px;background:var(--impact-image) center/contain no-repeat;opacity:.75}
 .attack-effect.projectile.piercing-projectile{width:64px;height:24px}
 .damage-popup{font-weight:1000;color:#fff;text-shadow:0 2px 0 #611,0 0 5px #ff4b4b}
 .damage-popup.critical{color:#ffe45c;font-size:24px;text-shadow:0 2px 0 #6e3d00,0 0 9px #ff9b28}
-@keyframes unitImpact{0%{transform:translateX(0) scale(1)}35%{transform:translateX(-5px) scale(1.08,.88)}70%{transform:translateX(3px) scale(.94,1.06)}100%{transform:translateX(0) scale(1)}}
+@keyframes unitImpact{0%{transform:translateX(0)}35%{transform:translateX(-5px)}70%{transform:translateX(3px)}100%{transform:translateX(0)}}
 @keyframes hpImpact{50%{filter:brightness(2);transform:scaleY(1.7)}}
-@keyframes heroStrike{0%{transform:translateX(-4px) rotate(-3deg)}55%{transform:translateX(11px) rotate(5deg) scale(1.1)}100%{transform:translateX(0)}}
-@keyframes enemyStrike{0%{transform:translateX(4px) rotate(3deg)}55%{transform:translateX(-11px) rotate(-5deg) scale(1.1)}100%{transform:translateX(0)}}
+@keyframes heroStrike{0%{transform:translateX(-4px) rotate(-3deg)}55%{transform:translateX(11px) rotate(5deg)}100%{transform:translateX(0)}}
+@keyframes enemyStrike{0%{transform:translateX(4px) rotate(3deg)}55%{transform:translateX(-11px) rotate(-5deg)}100%{transform:translateX(0)}}
 @keyframes rangedRecoil{0%{transform:translateX(0)}40%{transform:translateX(-5px)}100%{transform:translateX(0)}}
 @keyframes meleeImpact{0%{opacity:0;transform:scale(.3) rotate(-25deg)}35%{opacity:1;transform:scale(1.35) rotate(8deg)}100%{opacity:0;transform:scale(.75) rotate(25deg)}}
-@keyframes projectileImpact{0%{opacity:1;transform:translate(-50%,0) scale(.65)}80%{opacity:1;transform:translate(calc(-50% + var(--shot-x)),0) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--shot-x)),0) scale(1.55)}}
+@keyframes projectileImpact{0%{opacity:1;transform:translate(-50%,0) scaleX(var(--projectile-direction,1)) scale(.65)}80%{opacity:1;transform:translate(calc(-50% + var(--shot-x) - var(--projectile-origin-x,0px)),0) scaleX(var(--projectile-direction,1)) scale(1.15)}100%{opacity:0;transform:translate(calc(-50% + var(--shot-x) - var(--projectile-origin-x,0px)),0) scaleX(var(--projectile-direction,1)) scale(1.55)}}
 
 
 /* Strategy readability v1 */

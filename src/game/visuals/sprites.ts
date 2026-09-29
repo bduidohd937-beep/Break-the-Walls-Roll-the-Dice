@@ -93,6 +93,7 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
   },
   HERO_003: {
     frameWidth: 224, frameHeight: 224, scale: 1.3, pivotX: 0.5, pivotY: 1, groundOffsetY: 1, facing: "RIGHT",
+    projectileOrigin: { x: 0.68, y: 0.53 },
     animations: {
       idle: { asset: hero003Idle, frameCount: 4, fps: 6, loop: true },
       move: { asset: hero003Move, frameCount: 6, fps: 10, loop: true },

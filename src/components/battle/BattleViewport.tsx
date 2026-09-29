@@ -96,10 +96,10 @@ export function BattleViewport(p: Props) {
               <div className="castle-hp enemy"><span style={{ width: `${clamp(p.enemyCastleHp / 18, 0, 100)}%` }} /></div>
             </div>
           </div>
-          {p.heroes.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} worldScale={camera.worldScale} />)}
-          {p.enemies.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} worldScale={camera.worldScale} />)}
+          {p.heroes.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} />)}
+          {p.enemies.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} />)}
           {p.deathEffects.map((effect) => effect.unit
-            ? <BattleUnit key={`dead-${effect.id}`} unit={effect.unit} gameSpeed={p.gameSpeed} worldScale={camera.worldScale} dyingProgress={Math.min(0.999, 1 - effect.life / effect.duration)} />
+            ? <BattleUnit key={`dead-${effect.id}`} unit={effect.unit} gameSpeed={p.gameSpeed} dyingProgress={Math.min(0.999, 1 - effect.life / effect.duration)} />
             : <div key={effect.id} style={{ position: "absolute", zIndex: 17, left: `${effect.x}%`, top: effect.team === "hero" ? "42%" : "48%", transform: "translate(-50%,-50%)", fontSize: 25, pointerEvents: "none", opacity: Math.min(1, effect.life * 3) }}>{effect.team === "hero" ? "💥" : "💢"}</div>)}
           {p.damagePopups.map((popup) => <div key={popup.id} className={`damage-popup ${popup.critical ? "critical" : ""}`} style={{ left: `${popup.x}%` }}>-{popup.value}</div>)}
         </div>

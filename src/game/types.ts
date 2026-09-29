@@ -11,6 +11,7 @@ export type SpriteAnimationConfig = { asset: string; frameCount: number; fps: nu
 export type ProjectileVisualConfig = { asset: string; trailAsset?: string; releaseAsset?: string; pierceAsset?: string; impactAsset?: string };
 export type SpriteConfig = {
   frameWidth: number; frameHeight: number; scale: number; pivotX: number; pivotY: number; groundOffsetX?: number; groundOffsetY?: number; facing?: "LEFT" | "RIGHT";
+  projectileOrigin?: { x: number; y: number };
   animations: Partial<Record<"idle" | "move" | "attack" | "skill1" | "hit" | "knockback" | "stun" | "deploy" | "death", SpriteAnimationConfig>>;
   projectiles?: Partial<Record<"basic" | "skill1", ProjectileVisualConfig>>;
   ui?: Partial<Record<"portrait" | "deploy" | "skill1" | "soul" | "soulFragment", string>>;
