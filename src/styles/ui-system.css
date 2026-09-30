@@ -1,0 +1,28 @@
+/* UI SYSTEM V2 · phase 1 */
+.stage-select-card.main-hub-card{background:var(--btw-bg-soft);border:1px solid #2b343b;box-shadow:var(--btw-shadow);border-radius:8px}
+.kingdom-hud{align-items:center;min-height:72px;margin:0 -22px 12px;padding:10px 16px;background:linear-gradient(180deg,#17212b,#0f171f);border-bottom:1px solid var(--btw-gold-dim);box-shadow:none}
+.kingdom-hud-level{width:205px;color:var(--btw-ivory)}
+.kingdom-hud-level small{color:var(--btw-muted)}
+.kingdom-hud-track{height:7px;border:1px solid #3b3a32;background:#090d11;box-shadow:none}
+.kingdom-hud-location{font-size:20px;color:var(--btw-ivory);letter-spacing:.02em}
+.kingdom-hud-wallet{gap:4px}
+.hud-currency{min-height:38px;padding:6px 10px;background:transparent;border:0;color:var(--btw-muted);box-shadow:none}
+.hud-currency b{color:var(--btw-ivory)}
+.hud-settings,.fullscreen-toggle{border:1px solid var(--btw-border-strong);background:var(--btw-surface-1);box-shadow:none;border-radius:4px}
+.kingdom-return,.kingdom-scene-back{border:1px solid var(--btw-border-strong);background:var(--btw-surface-1);color:var(--btw-ivory);border-radius:4px}
+.kingdom-bottom-nav{gap:5px;min-height:72px;padding:6px 10px;border-top:1px solid var(--btw-gold-dim);background:#0a1118;box-shadow:0 -8px 24px #0007}
+.kingdom-menu-button{gap:4px;border:1px solid transparent;background:transparent;box-shadow:none;color:var(--btw-muted);font-size:11px;border-radius:6px;transition:.15s}
+.kingdom-menu-button:hover:not(:disabled){background:#131d25;color:var(--btw-text)}
+.kingdom-menu-button.active{background:#1b211e;border-color:var(--btw-gold);color:#ffe9ad;box-shadow:inset 0 0 0 1px #332917}
+.kingdom-menu-button.primary{transform:none;border-color:transparent;box-shadow:none}
+.kingdom-menu-button.primary.active{border-color:var(--btw-gold-bright);box-shadow:0 0 12px #b78b3330}
+.kingdom-menu-icon{font-size:20px}
+.kingdom-placeholder-panel,.kingdom-inventory,.kingdom-battle-lobby{background:transparent;border:0;padding:18px 0;margin:4px 0 16px;color:var(--btw-text)}
+.shop-shelves>div,.inventory-slot,.kingdom-chapter{background:var(--btw-surface-1);border:1px solid var(--btw-border);border-radius:6px;color:var(--btw-text)}
+.kingdom-chapter,.shop-shelves>div{box-shadow:none}
+.inventory-filters button,.kingdom-scene-footer button,.kingdom-battle-lobby button{border:1px solid var(--btw-border-strong);background:var(--btw-surface-2);color:var(--btw-text);border-radius:4px}
+.inventory-filters button.active{border-color:var(--btw-gold);background:#2e2518;color:#ffe8ad}
+.hero-mode-tabs button,.deck-builder-open,.summon-open{border-radius:4px}
+.deck-builder-card{border:1px solid var(--btw-border);background:var(--btw-surface-1);border-radius:6px}
+.deck-builder-card.selected,.deck-builder-card.focused{border-color:var(--btw-gold-bright);box-shadow:inset 0 0 0 1px #6d552d}
+.hero-power-card,.hero-trait-card,.hero-stat-grid>div,.hero-soul-panel{border-radius:6px}
