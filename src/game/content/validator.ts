@@ -1,5 +1,4 @@
-import type { StageDef, UnitDef } from "../types";
-import type { AbilityDefinition } from "../combat/abilities/types";
+import type { EnemyKey, SpriteConfig, StageDef, UnitDef } from "../types";
 
 export type ContentValidationIssue = { path: string; message: string };
 const issue = (issues: ContentValidationIssue[], path: string, message: string) => issues.push({ path, message });
@@ -25,10 +24,18 @@ export function validateSpriteConfig(unit: UnitDef, path: string, issues: Conten
   }
 }
 
-export function validateUnitRegistry(heroes: readonly UnitDef[], enemies: readonly UnitDef[], stages: readonly StageDef[], abilityIds: ReadonlySet<string>) {
+export function validateUnitRegistry(
+  heroes: readonly UnitDef[],
+  enemies: readonly UnitDef[],
+  stages: readonly StageDef[],
+  abilityIds: ReadonlySet<string>,
+  enemyMap: Readonly<Record<EnemyKey, UnitDef>>,
+  bossEnemyKeys: Readonly<Partial<Record<number, EnemyKey>>>,
+  spriteConfigs: Readonly<Record<string, SpriteConfig>>
+) {
   const issues: ContentValidationIssue[] = [];
+  const ids = new Set<string>();
   const validate = (units: readonly UnitDef[], label: string) => {
-    const ids = new Set<string>();
     units.forEach((unit, index) => {
       const path = `${label}[${index}]`;
       if (ids.has(unit.id)) issue(issues, path, `duplicate unit id ${unit.id}`);
@@ -38,14 +45,48 @@ export function validateUnitRegistry(heroes: readonly UnitDef[], enemies: readon
       if (!["melee", "ranged"].includes(unit.rangeType) || !finitePositive(unit.hp) || !finitePositive(unit.atk)) issue(issues, path, "invalid unit stats");
       for (const id of unit.abilityIds ?? []) if (!abilityIds.has(id)) issue(issues, path, `unknown ability ${id}`);
       validateSpriteConfig(unit, path, issues);
+      if (label === "heroes" && unit.spriteConfig && spriteConfigs[unit.id] !== unit.spriteConfig) issue(issues, path, `sprite config does not resolve for ${unit.id}`);
       const bounds = unit.gameplayBounds;
       if (bounds && (![bounds.width, bounds.height].every(finitePositive) || (bounds.collisionRadius !== undefined && !finitePositive(bounds.collisionRadius)))) issue(issues, path, "invalid gameplay bounds");
     });
   };
   validate(heroes, "heroes");
   validate(enemies, "enemies");
-  const enemyIds = new Set(enemies.map((unit) => unit.id));
-  stages.forEach((stage, index) => stage.waves.flat().forEach((wave) => { if (!enemyIds.has(`${wave.enemy}E`)) issue(issues, `stages[${index}]`, `unknown stage enemy ${wave.enemy}`); }));
+
+  const mappedEnemyIds = new Set<string>();
+  for (const [key, enemy] of Object.entries(enemyMap)) {
+    if (!enemies.includes(enemy)) issue(issues, `enemyMap.${key}`, `unknown enemy definition ${enemy.id}`);
+    if (mappedEnemyIds.has(enemy.id)) issue(issues, `enemyMap.${key}`, `duplicate enemy mapping ${enemy.id}`);
+    mappedEnemyIds.add(enemy.id);
+  }
+  enemies.forEach((enemy, index) => {
+    if (!mappedEnemyIds.has(enemy.id)) issue(issues, `enemies[${index}]`, `missing enemy mapping for ${enemy.id}`);
+  });
+  stages.forEach((stage, index) => {
+    stage.waves.flat().forEach((wave) => {
+      if (!enemyMap[wave.enemy]) issue(issues, `stages[${index}]`, `unknown stage enemy ${wave.enemy}`);
+    });
+    const summonEnemy = stage.bossMechanic?.summonEnemy;
+    if (summonEnemy && !enemyMap[summonEnemy]) issue(issues, `stages[${index}].bossMechanic`, `unknown summon enemy ${summonEnemy}`);
+  });
+
+  const stageById = new Map(stages.map((stage) => [stage.id, stage]));
+  for (const [rawStageId, enemyKey] of Object.entries(bossEnemyKeys)) {
+    const stageId = Number(rawStageId);
+    const stage = stageById.get(stageId);
+    if (!stage) issue(issues, `bossEnemyKeys.${rawStageId}`, `unknown boss stage ${rawStageId}`);
+    else if (stage.type !== "boss" || !stage.waveMeta.some((wave) => wave.boss)) issue(issues, `bossEnemyKeys.${rawStageId}`, `stage ${rawStageId} has no boss wave`);
+    if (enemyKey && !enemyMap[enemyKey]) issue(issues, `bossEnemyKeys.${rawStageId}`, `unknown boss enemy ${enemyKey}`);
+  }
+  stages.forEach((stage, index) => {
+    if (stage.type === "boss" && !bossEnemyKeys[stage.id]) issue(issues, `stages[${index}]`, `missing boss enemy mapping for stage ${stage.id}`);
+  });
+
+  for (const [id] of Object.entries(spriteConfigs)) {
+    const hero = heroes.find((candidate) => candidate.id === id);
+    if (!hero) issue(issues, `spriteConfigs.${id}`, `unknown hero sprite reference ${id}`);
+    else if (hero.spriteConfig !== spriteConfigs[id]) issue(issues, `spriteConfigs.${id}`, `sprite config is not registered on hero ${id}`);
+  }
   return issues;
 }
 
