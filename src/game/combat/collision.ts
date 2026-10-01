@@ -34,7 +34,7 @@ export function resolveFrontlineCollision(
   for (const hero of nextHeroes) {
     if (hero.currentHp <= 0 || hero.knockbackTimer > 0) continue;
     const frontEnemy = nextEnemies
-      .filter((enemy) => enemy.currentHp > 0 && enemy.x >= hero.x && enemy.id !== "assassinE")
+      .filter((enemy) => enemy.currentHp > 0 && enemy.x >= hero.x && enemy.targetPriority !== "ranged-lowest-hp")
       .sort((a, b) => a.x - b.x)[0];
 
     if (!frontEnemy) continue;
@@ -47,8 +47,8 @@ export function resolveFrontlineCollision(
 
   for (const enemy of nextEnemies) {
     if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0) continue;
-    // Assassins can slip through the frontline to reach ranged backliners.
-    if (enemy.id === "assassinE") continue;
+    // Backline divers (targetPriority "ranged-lowest-hp", e.g. the assassin) can slip through the frontline to reach ranged backliners.
+    if (enemy.targetPriority === "ranged-lowest-hp") continue;
 
     const frontHero = nextHeroes
       .filter((hero) => hero.currentHp > 0 && hero.x <= enemy.x)

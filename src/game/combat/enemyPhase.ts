@@ -27,7 +27,7 @@ export type EnemyPhaseResult = {
   nextCombatEventId: number;
 };
 
-/** Enemy targeting: hold the frontline against the frontmost hero; assassins dive the weakest ranged backliner. */
+/** Enemy targeting: hold the frontline against the frontmost hero; backline divers (targetPriority "ranged-lowest-hp", e.g. the assassin) dive the weakest ranged backliner. */
 export function selectEnemyTarget(enemy: Unit, heroes: Unit[]): Unit | undefined {
   const livingHeroes = heroes.filter((h) => h.currentHp > 0);
   const frontTarget = livingHeroes
@@ -35,8 +35,8 @@ export function selectEnemyTarget(enemy: Unit, heroes: Unit[]): Unit | undefined
     .sort((a, b) => b.x - a.x)[0] ?? livingHeroes
     .sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
 
-  // Enemy roles matter: assassins dive toward fragile backliners while other enemies hold the frontline.
-  const assassinTarget = enemy.id === "assassinE"
+  // Enemy roles matter: backline divers (targetPriority "ranged-lowest-hp", e.g. the assassin) dive toward fragile backliners while other enemies hold the frontline.
+  const assassinTarget = enemy.targetPriority === "ranged-lowest-hp"
     ? livingHeroes
         .filter((h) => h.rangeType === "ranged")
         .sort((a, b) => a.currentHp - b.currentHp || b.x - a.x)[0]
@@ -109,7 +109,7 @@ export function runEnemyPhase(input: EnemyPhaseInput): EnemyPhaseResult {
       const attackId = collect ? nextCombatEventId++ : 0;
       const damageEvents: CombatEvent[] = [];
       const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
-      const backlinePressure = enemy.id === "assassinE" && target.rangeType === "ranged";
+      const backlinePressure = enemy.targetPriority === "ranged-lowest-hp" && target.rangeType === "ranged";
       const attackDamage = (enragedBoss ? enemy.atk * 1.2 : enemy.atk) * (backlinePressure ? 1.2 : 1);
       const splashRadius = enemy.splashRadius ?? 0;
       const hitTargets = enemy.attackType === "splash"

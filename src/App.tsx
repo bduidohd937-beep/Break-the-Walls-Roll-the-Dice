@@ -79,6 +79,7 @@ function App() {
   const deathUidRef = useRef(1);
   const combatEventUidRef = useRef(1);
   const abilityIntegrationRef = useRef(createCombatAbilityIntegration([], { summonFactory }));
+  const enemyAbilityUidsRef = useRef(new Set<number>());
   const [battleState, setBattleState] = useState<"stageSelect" | "playing" | "victory" | "defeat">("stageSelect");
   const [battleReward, setBattleReward] = useState<BattleReward | null>(null);
   const {
@@ -307,7 +308,7 @@ function App() {
   });
 
 
-  useBattleLoop({ battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, combatEventUidRef, abilityIntegrationRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
+  useBattleLoop({ battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, combatEventUidRef, abilityIntegrationRef, enemyAbilityUidsRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward });
 
   const selectStage = (nextStageIndex: number) => {
     if (nextStageIndex < 0 || nextStageIndex >= STAGES.length || (!DEV_MODE && nextStageIndex >= unlockedStage)) return;
@@ -349,6 +350,7 @@ function App() {
     popupUidRef.current = 1;
     combatEventUidRef.current = 1;
     abilityIntegrationRef.current = createCombatAbilityIntegration([], { summonFactory });
+    enemyAbilityUidsRef.current = new Set<number>();
     setBattleReward(null);
     setBattleState("playing");
     setDeployCooldowns({});

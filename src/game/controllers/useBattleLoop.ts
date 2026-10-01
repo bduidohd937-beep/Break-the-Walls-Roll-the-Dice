@@ -9,6 +9,7 @@ import { runHeroPhase } from "../combat/heroPhase";
 import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
 import { spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, type BattleDeathEffect } from "../visuals/sprites";
+import { resolveAbilityDefinitions } from "../combat/abilities/definitions";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 import type { CombatAbilityIntegration, CombatEvent } from "../combat/abilities";
 
@@ -25,11 +26,30 @@ type BattleLoopContext = {
   spawnRef:Ref<number>; uidRef:Ref<number>; bossSpawnAnnouncedRef:Ref<boolean>; bossSummonTimerRef:Ref<number>;
   bossEnrageTriggeredRef:Ref<boolean>; bossFieldTickRef:Ref<number>; bossChargeRef:Ref<number>; bossPhaseRef:Ref<number>;
   enemyCastleRef:Ref<number>; popupUidRef:Ref<number>; castleRef:Ref<number>; deathUidRef:Ref<number>; finalClearNotifiedRef:Ref<boolean>; victoryAwardedRef:Ref<boolean>;
-  combatEventUidRef:Ref<number>; abilityIntegrationRef:Ref<CombatAbilityIntegration>;
+  combatEventUidRef:Ref<number>; abilityIntegrationRef:Ref<CombatAbilityIntegration>; enemyAbilityUidsRef:Ref<Set<number>>;
 };
 
+/**
+ * Registers enemy abilities once per living enemy uid through the existing
+ * team-agnostic integration. One sweep per tick covers every enemy spawn path
+ * (waves, boss spawn, boss/phase summons); the integration's own cleanup
+ * removes bindings for dead uids. The set is cleared at battle reset.
+ */
+export function registerEnemyAbilities(
+  integration: CombatAbilityIntegration,
+  enemies: readonly Unit[],
+  registeredUids: Set<number>
+) {
+  for (const enemy of enemies) {
+    if (registeredUids.has(enemy.uid)) continue;
+    registeredUids.add(enemy.uid);
+    const abilities = resolveAbilityDefinitions(enemy.abilityIds);
+    if (abilities.length > 0) integration.registerUnitAbilities(enemy.uid, abilities);
+  }
+}
+
 export function useBattleLoop(ctx: BattleLoopContext) {
-  const { battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, combatEventUidRef, abilityIntegrationRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward } = ctx;
+  const { battleState, paused, gameSpeed, clearedStages, setCastleHit, setDamagePopups, setDeathEffects, goldRef, battleGoldMax, goldPerSecond, setBattleGold, spawnTimerRef, setDeployCooldowns, heroesRef, enemiesRef, stageRef, waveRef, spawnRef, uidRef, bossSpawnAnnouncedRef, setNotice, bossSummonTimerRef, bossEnrageTriggeredRef, bossFieldTickRef, bossChargeRef, bossPhaseRef, enemyCastleRef, setEnemyCastleHp, popupUidRef, combatEventUidRef, abilityIntegrationRef, enemyAbilityUidsRef, castleRef, setCastleHp, deathUidRef, setHeroes, setEnemies, finalClearNotifiedRef, victoryAwardedRef, setWaveIndex, setUnlockedStage, setClearedStages, setGems, setKingdomGold, setBattleState, setBattleReward } = ctx;
   useEffect(() => {
     if (battleState !== "playing" || paused) return;
 
@@ -246,6 +266,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         .filter((unit) => unit.currentHp > 0)
         .map((unit) => ({ ...unit, alive: true }));
       if (abilitiesActive) abilityIntegrationRef.current.cleanup(new Set([...nextHeroes, ...nextEnemies].map((unit) => unit.uid)));
+      registerEnemyAbilities(abilityIntegrationRef.current, nextEnemies, enemyAbilityUidsRef.current);
 
       // Keep same-team units from stacking into the same position.
       // Allied units may overlap; only enemies keep formation spacing.

@@ -2,7 +2,18 @@ import type { AbilityDefinition } from "./types";
 
 export const ABILITY_IDS = {
   soldierHeavyStrike: "soldier-heavy-strike",
-  kingdomArcherPiercingArrow: "hero-003-piercing-arrow"
+  kingdomArcherPiercingArrow: "hero-003-piercing-arrow",
+  // PROVISIONAL VERIFICATION CONTENT: exists only to prove the Enemy Ability
+  // pipeline end-to-end. Not a finalized Chapter 1 enemy-content decision.
+  darkKnightWarCry: "dark-knight-war-cry"
+} as const;
+
+// PROVISIONAL VERIFICATION CONTENT: tuning values for the pipeline-verification
+// enemy ability only. Not a finalized Chapter 1 enemy-content decision.
+export const DARK_KNIGHT_WAR_CRY = {
+  intervalSeconds: 12,
+  atkPercent: 0.15,
+  durationSeconds: 6
 } as const;
 
 // Temporary v1 tuning value. Keep it isolated until combat balance data is finalized.
@@ -28,6 +39,21 @@ const DEFINITIONS: Readonly<Record<string, AbilityDefinition>> = {
       amount: {
         components: [{ source: "CASTER_ATK", coefficient: SOLDIER_HEAVY_STRIKE_BONUS_ATK_RATIO }]
       }
+    }]
+  },
+  // PROVISIONAL VERIFICATION CONTENT: proves enemies can register and execute
+  // abilities through the existing framework. Not a finalized skill design.
+  [ABILITY_IDS.darkKnightWarCry]: {
+    id: ABILITY_IDS.darkKnightWarCry,
+    trigger: { type: "ON_INTERVAL", intervalSeconds: DARK_KNIGHT_WAR_CRY.intervalSeconds },
+    condition: { type: "ALWAYS" },
+    target: { type: "SELF" },
+    effects: [{
+      type: "STAT_MODIFIER",
+      stat: "ATK",
+      mode: "PERCENT",
+      value: { components: [{ source: "FLAT", coefficient: DARK_KNIGHT_WAR_CRY.atkPercent }] },
+      duration: DARK_KNIGHT_WAR_CRY.durationSeconds
     }]
   },
   [ABILITY_IDS.kingdomArcherPiercingArrow]: {

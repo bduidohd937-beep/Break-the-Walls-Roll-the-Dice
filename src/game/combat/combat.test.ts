@@ -146,12 +146,35 @@ describe("battlefield collision rules", () => {
     expect(result.enemies[0].x - result.heroes[0].x).toBeCloseTo(2.8);
   });
 
-  it("allows assassin units to pass through the frontline", () => {
+  it("allows backline divers to pass through the frontline", () => {
     const result = resolveFrontlineCollision(
       [unit({ id: "assassin", uid: 1, team: "hero", x: 52 })],
-      [unit({ uid: 2, team: "enemy", x: 51 })]
+      [unit({ uid: 2, team: "enemy", x: 51, targetPriority: "ranged-lowest-hp" })]
     );
     expect(result.heroes[0].x).toBe(52);
+  });
+
+  it("still anchors the frontline for enemies without the diver flag", () => {
+    const result = resolveFrontlineCollision(
+      [unit({ uid: 1, team: "hero", x: 50 })],
+      [
+        unit({ uid: 2, team: "enemy", x: 51, targetPriority: "ranged-lowest-hp" }),
+        unit({ uid: 3, team: "enemy", x: 52, targetPriority: "frontline" })
+      ]
+    );
+    // The diver at 51 does not anchor the hero; the plain enemy at 52 does.
+    expect(result.heroes[0].x).toBe(49.2);
+    expect(result.enemies[0].x).toBe(51);
+    expect(result.enemies[1].x).toBe(52);
+  });
+
+  it("does not push backline divers out of the frontline gap", () => {
+    const result = resolveFrontlineCollision(
+      [unit({ uid: 1, team: "hero", x: 50 })],
+      [unit({ uid: 2, team: "enemy", x: 50.5, targetPriority: "ranged-lowest-hp" })]
+    );
+    // A non-diver violating the 2.8 gap would be pushed to 52.8; divers are skipped.
+    expect(result.enemies[0].x).toBe(50.5);
   });
 });
 

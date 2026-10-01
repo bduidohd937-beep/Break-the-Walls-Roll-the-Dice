@@ -115,12 +115,26 @@ describe("enemy target selection", () => {
     expect(selectEnemyTarget(enemyUnit, [far, near])).toBe(near);
   });
 
-  it("lets assassins dive the lowest-HP ranged backliner", () => {
-    const assassin = enemy({ id: "assassinE", x: 45 });
+  it("lets backline divers dive the lowest-HP ranged backliner", () => {
+    const assassin = enemy({ id: "assassinE", targetPriority: "ranged-lowest-hp", x: 45 });
     const tankyRanged = unit({ uid: 2, x: 12, rangeType: "ranged", hp: 400, currentHp: 300 });
     const weakRanged = unit({ uid: 3, x: 12, rangeType: "ranged", hp: 200, currentHp: 80 });
     const tank = unit({ uid: 4, x: 42, rangeType: "melee" });
     expect(selectEnemyTarget(assassin, [tank, tankyRanged, weakRanged])).toBe(weakRanged);
+  });
+
+  it("drives dive targeting by targetPriority, not by enemy id", () => {
+    const diver = enemy({ id: "notAnAssassin", targetPriority: "ranged-lowest-hp", x: 45 });
+    const weakRanged = unit({ uid: 2, x: 12, rangeType: "ranged", hp: 200, currentHp: 80 });
+    const tank = unit({ uid: 3, x: 42, rangeType: "melee" });
+    expect(selectEnemyTarget(diver, [tank, weakRanged])).toBe(weakRanged);
+  });
+
+  it("keeps an id-based assassin on the frontline without the targetPriority flag", () => {
+    const plainAssassin = enemy({ id: "assassinE", x: 45 });
+    const weakRanged = unit({ uid: 2, x: 12, rangeType: "ranged", hp: 200, currentHp: 80 });
+    const frontline = unit({ uid: 3, x: 42, rangeType: "melee" });
+    expect(selectEnemyTarget(plainAssassin, [weakRanged, frontline])).toBe(frontline);
   });
 
   it("ignores dead heroes when selecting targets", () => {
@@ -277,18 +291,27 @@ describe("knockback", () => {
 });
 
 describe("assassin backline pressure", () => {
-  it("multiplies assassin damage by 1.2 against ranged targets", () => {
-    const assassin = enemy({ id: "assassinE", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 });
+  it("multiplies backline divers' damage by 1.2 against ranged targets", () => {
+    const assassin = enemy({ id: "assassinE", targetPriority: "ranged-lowest-hp", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 });
     const target = unit({ uid: 2, x: 22, rangeType: "ranged", hp: 400, currentHp: 400 });
     const result = run({ heroes: [target], enemies: [assassin] });
     expect(result.heroes[0].currentHp).toBe(280);
   });
 
   it("keeps normal damage against melee targets", () => {
-    const assassin = enemy({ id: "assassinE", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 });
+    const assassin = enemy({ id: "assassinE", targetPriority: "ranged-lowest-hp", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 });
     const target = unit({ uid: 2, x: 22, rangeType: "melee", hp: 400, currentHp: 400 });
     const result = run({ heroes: [target], enemies: [assassin] });
     expect(result.heroes[0].currentHp).toBe(300);
+  });
+
+  it("drives the backline damage bonus by targetPriority, not by enemy id", () => {
+    const plainDiver = enemy({ id: "notAnAssassin", targetPriority: "ranged-lowest-hp", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 });
+    const target = unit({ uid: 2, x: 22, rangeType: "ranged", hp: 400, currentHp: 400 });
+    const result = run({ heroes: [target], enemies: [plainDiver] });
+    expect(result.heroes[0].currentHp).toBe(280);
+    const flaggedOff = run({ heroes: [target], enemies: [enemy({ id: "assassinE", x: 30, range: inRange(30, 22), atk: 100, attackTimer: 0 })] });
+    expect(flaggedOff.heroes[0].currentHp).toBe(300);
   });
 });
 
@@ -338,7 +361,12 @@ describe("status interactions", () => {
 
 describe("production data sanity", () => {
   it("keeps the assassin definition wired to the ranged-dive behavior", () => {
-    expect(ENEMIES.find((def) => def.id === "assassinE")).toBeDefined();
+    const assassin = ENEMIES.find((def) => def.id === "assassinE");
+    expect(assassin).toBeDefined();
+    expect(assassin?.targetPriority).toBe("ranged-lowest-hp");
+    // Only the assassin uses this priority today; no other production enemy
+    // should silently inherit the backline-dive behavior.
+    expect(ENEMIES.filter((def) => def.targetPriority === "ranged-lowest-hp")).toHaveLength(1);
   });
 });
 
