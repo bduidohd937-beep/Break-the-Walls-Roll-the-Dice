@@ -1,18 +1,16 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { Unit } from "../types";
 import { BOSS_ENEMY_KEYS, STAGES, STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
-import { ENEMY_MAP, MOVE_SPEED_MULTIPLIER, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
+import { ENEMY_MAP, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { makeUnit } from "../units/createUnit";
-import { applyKnockback } from "../combat/knockback";
 import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/collision";
-import { incomingDamage } from "../combat/damage";
+import { runEnemyPhase } from "../combat/enemyPhase";
 import { runHeroPhase } from "../combat/heroPhase";
 import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
 import { spawnWaveEnemy } from "../combat/waveSpawner";
-import { spriteDeathDuration, UNIT_SPRITES, type BattleDeathEffect } from "../visuals/sprites";
+import { spriteDeathDuration, type BattleDeathEffect } from "../visuals/sprites";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
 import type { CombatAbilityIntegration, CombatEvent } from "../combat/abilities";
-import { effectiveMoveSpeed, hasAbilityStatus, resolveAbilityDamage } from "../combat/abilities/effects";
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Ref<T> = MutableRefObject<T>;
@@ -198,115 +196,29 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         }
       }
 
-      // Enemies move, attack heroes, or damage our castle.
-      for (let i = 0; i < nextEnemies.length; i++) {
-        const enemy = nextEnemies[i];
-        if (enemy.currentHp <= 0 || enemy.knockbackTimer > 0 || hasAbilityStatus(enemy, "STUN")) continue;
-
-        const livingHeroes = nextHeroes.filter((h) => h.currentHp > 0);
-        const frontTarget = livingHeroes
-          .filter((h) => h.x <= enemy.x)
-          .sort((a, b) => b.x - a.x)[0] ?? livingHeroes
-          .sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
-
-        // Enemy roles matter: assassins dive toward fragile backliners while other enemies hold the frontline.
-        const assassinTarget = enemy.id === "assassinE"
-          ? livingHeroes
-              .filter((h) => h.rangeType === "ranged")
-              .sort((a, b) => a.currentHp - b.currentHp || b.x - a.x)[0]
-          : undefined;
-        const target = assassinTarget ?? frontTarget;
-
-        if (!target) {
-          if (enemy.x <= 13) {
-            if (enemy.attackTimer <= 0) {
-              const castleHpBeforeAttack = castleRef.current;
-              castleRef.current = Math.max(0, castleRef.current - enemy.atk);
-              setCastleHp(castleRef.current);
-              setCastleHit("our");
-              nextEnemies[i].attackTimer = enemy.attackInterval;
-              nextEnemies[i].attackFlash = 0.16;
-              nextEnemies[i].attackAnimationTimer = enemy.attackInterval;
-              nextEnemies[i].attackAnimationSequence = (nextEnemies[i].attackAnimationSequence ?? 0) + 1;
-              nextEnemies[i].attackTargetX = 9;
-              if (abilitiesActive) publishCombatEvent({
-                type: "CASTLE_ATTACK",
-                eventId: combatEventUidRef.current++,
-                attackId: combatEventUidRef.current++,
-                origin: "BASIC_ATTACK",
-                attackerUid: enemy.uid,
-                castle: "hero",
-                actualDamage: castleHpBeforeAttack - castleRef.current
-              });
-            }
-          } else {
-            nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - effectiveMoveSpeed(enemy) * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
-          }
-          continue;
-        }
-
-        const distance = Math.abs(target.x - enemy.x);
-        if (distance > enemy.range / 10) {
-          nextEnemies[i] = { ...enemy, x: Math.max(9, enemy.x - effectiveMoveSpeed(enemy) * (enemy.slowTimer > 0 ? enemy.slowMultiplier : 1) * MOVE_SPEED_MULTIPLIER * dt / 100) };
-        } else if (enemy.attackTimer <= 0) {
-          const attackId = abilitiesActive ? combatEventUidRef.current++ : 0;
-          const damageEvents: CombatEvent[] = [];
-          const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
-          const backlinePressure = enemy.id === "assassinE" && target.rangeType === "ranged";
-          const attackDamage = (enragedBoss ? enemy.atk * 1.2 : enemy.atk) * (backlinePressure ? 1.2 : 1);
-          const splashRadius = enemy.splashRadius ?? 0;
-          const hitTargets = enemy.attackType === "splash"
-            ? nextHeroes
-                .filter((heroTarget) => heroTarget.currentHp > 0 && Math.abs(heroTarget.x - target.x) <= splashRadius)
-                .map((heroTarget) => heroTarget.uid)
-            : [target.uid];
-
-          for (const targetUid of hitTargets) {
-            const hitIndex = nextHeroes.findIndex((heroTarget) => heroTarget.uid === targetUid);
-            if (hitIndex < 0) continue;
-            const damage = incomingDamage(nextHeroes[hitIndex], attackDamage);
-            const hpBeforeHit = nextHeroes[hitIndex].currentHp;
-            const isPrimaryTarget = targetUid === target.uid;
-            const impactAtk = enemy.attackType === "splash" && !isPrimaryTarget ? attackDamage * 0.65 : attackDamage;
-            const resolvedDamage = resolveAbilityDamage(nextHeroes[hitIndex], damage, enemy);
-            const hitHero = applyKnockback(
-              resolvedDamage.unit,
-              nextHeroes[hitIndex].currentHp - resolvedDamage.hpDamage,
-              "enemy",
-              impactAtk,
-            );
-            nextHeroes[hitIndex] = enemy.effect === "burn"
-              ? { ...hitHero, burnTimer: 3, burnDamage: Math.max(hitHero.burnDamage, enemy.atk * 0.12), hitFlash: 0.14 }
-              : hitHero;
-            if (abilitiesActive) damageEvents.push({
-              type: "DAMAGE_APPLIED",
-              eventId: combatEventUidRef.current++,
-              attackId,
-              origin: "BASIC_ATTACK",
-              sourceUid: enemy.uid,
-              targetUid,
-              actualDamage: Math.max(0, hpBeforeHit - Math.max(0, hitHero.currentHp))
-            });
-            const popupId = popupUidRef.current++;
-            const popupX = hitHero.x;
-            setDamagePopups((popups) => [...popups.slice(-24), { id: popupId, x: popupX, value: Math.max(1, Math.round(damage)), critical: false }]);
-          }
-          nextEnemies[i].attackTimer = enragedBoss ? enemy.attackInterval * 0.65 : enemy.attackInterval;
-          nextEnemies[i].attackFlash = enragedBoss ? 0.22 : 0.16;
-          nextEnemies[i].attackAnimationTimer = enemy.attackInterval;
-              nextEnemies[i].attackAnimationSequence = (nextEnemies[i].attackAnimationSequence ?? 0) + 1;
-          nextEnemies[i].attackTargetX = target.x;
-          if (abilitiesActive) publishCombatEvent({
-            type: "BASIC_ATTACK",
-            eventId: combatEventUidRef.current++,
-            attackId,
-            origin: "BASIC_ATTACK",
-            attackerUid: enemy.uid,
-            targetUid: target.uid
-          });
-          if (abilitiesActive) for (const event of damageEvents) publishCombatEvent(event);
-        }
+      // Enemies move, attack heroes, or damage our castle (pure phase, heroPhase precedent).
+      const enemyPhase = runEnemyPhase({
+        heroes: nextHeroes,
+        enemies: nextEnemies,
+        dt,
+        castleHp: castleRef.current,
+        nextPopupUid: popupUidRef.current,
+        nextCombatEventId: combatEventUidRef.current,
+        collectCombatEvents: abilitiesActive
+      });
+      nextHeroes = enemyPhase.heroes;
+      nextEnemies = enemyPhase.enemies;
+      castleRef.current = enemyPhase.castleHp;
+      popupUidRef.current = enemyPhase.nextPopupUid;
+      combatEventUidRef.current = enemyPhase.nextCombatEventId;
+      if (enemyPhase.castleHit) {
+        setCastleHp(castleRef.current);
+        setCastleHit("our");
       }
+      for (const popup of enemyPhase.damagePopups) {
+        setDamagePopups((popups) => [...popups.slice(-24), popup]);
+      }
+      for (const event of enemyPhase.combatEvents) publishCombatEvent(event);
 
       // Remove defeated units before collision and wave checks.
       const defeatedUnits = [...nextHeroes.filter((u) => u.currentHp <= 0), ...nextEnemies.filter((u) => u.currentHp <= 0)];
@@ -319,7 +231,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
             unitUid: unit.uid
           });
         }
-        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: spriteDeathDuration(unit.id), duration: spriteDeathDuration(unit.id), unit: UNIT_SPRITES[unit.id] ? { ...unit, alive: false, currentHp: 0 } : undefined }))].slice(-20));
+        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: spriteDeathDuration(unit.id), duration: spriteDeathDuration(unit.id) }))].slice(-20));
       }
       const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {

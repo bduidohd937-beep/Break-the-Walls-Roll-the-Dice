@@ -16,21 +16,6 @@ export function useHeroFormation(ownedHeroes: string[]) {
   const [formationPage, setFormationPage] = useState<0 | 1>(0);
   const formationTouchY = useRef<number | null>(null);
 
-  const toggleDeckHero = (id: string) => {
-    if (!ownedHeroes.includes(id)) return;
-    if (deckIds.includes(id)) {
-      if (deckIds.length <= 1) return;
-      const next = deckIds.filter((value) => value !== id);
-      setDeckIds(next);
-      saveJson(STORAGE_KEYS.deckIds, next);
-      return;
-    }
-    if (deckIds.length >= DECK_SLOT_COUNT) return;
-    const next = [...deckIds, id];
-    setDeckIds(next);
-    saveJson(STORAGE_KEYS.deckIds, next);
-  };
-
   const setDeckSlot = (slotIndex: number, heroId: string) => {
     if (!ownedHeroes.includes(heroId)) return;
     if (!deckIds.includes(heroId) && deckIds.length >= DECK_SLOT_COUNT) {
@@ -69,7 +54,6 @@ export function useHeroFormation(ownedHeroes: string[]) {
   return {
     deckIds,
     deckSlotCount: DECK_SLOT_COUNT,
-    toggleDeckHero,
     setDeckSlot,
     removeDeckSlot,
     selectedHeroId, setSelectedHeroId,

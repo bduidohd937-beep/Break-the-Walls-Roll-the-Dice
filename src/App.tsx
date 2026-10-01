@@ -20,7 +20,7 @@ import { getHeroGrade, GRADE_GROWTH, getSoulBonuses as calculateSoulBonuses, get
 import { getProgressionGoals } from "./game/systems/progression";
 import { type SummonStorageItem } from "./game/systems/summon";
 import { ECONOMY_MAX_LEVEL, getBattleEconomy } from "./game/systems/battleEconomy";
-import { DEV_MODE, STORAGE_KEYS, saveJson, saveNumber } from "./game/storage";
+import { DEV_MODE } from "./game/storage";
 import { useKingdomController } from "./game/controllers/useKingdomController";
 import { useGatheringController } from "./game/controllers/useGatheringController";
 import { useSummonController } from "./game/controllers/useSummonController";
@@ -97,7 +97,7 @@ function App() {
   } = useKingdomProfile();
   const {
     deckIds, deckSlotCount,
-    toggleDeckHero, setDeckSlot, removeDeckSlot,
+    setDeckSlot, removeDeckSlot,
     selectedHeroId, setSelectedHeroId,
     heroMode, setHeroMode,
     dragHeroId, setDragHeroId,
@@ -188,12 +188,8 @@ function App() {
     if (level >= 10 || kingdomGold < cost) return;
     const next = { ...unitLevels, [id]: level + 1 };
     setUnitLevels(next);
-    setKingdomGold((gold) => {
-      const nextGold = gold - cost;
-      saveNumber(STORAGE_KEYS.kingdomGold, nextGold);
-      return nextGold;
-    });
-    saveJson(STORAGE_KEYS.unitLevels, next);
+    // unitLevels and kingdomGold persist via usePlayerProgress sync effects.
+    setKingdomGold((gold) => gold - cost);
     setNotice(`${HEROES.find((hero) => hero.id === id)?.name ?? id} 강화 Lv.${level + 1}!`);
   };
 
@@ -395,21 +391,9 @@ function App() {
     if (!goal.done || claimedGoals.includes(goal.id)) return;
     const nextClaimed = [...claimedGoals, goal.id];
     setClaimedGoals(nextClaimed);
-    saveJson(STORAGE_KEYS.claimedGoals, nextClaimed);
-    if (goal.gold > 0) {
-      setKingdomGold((current) => {
-        const next = current + goal.gold;
-        saveNumber(STORAGE_KEYS.kingdomGold, next);
-        return next;
-      });
-    }
-    if (goal.gems > 0) {
-      setGems((current) => {
-        const next = current + goal.gems;
-        saveNumber(STORAGE_KEYS.gems, next);
-        return next;
-      });
-    }
+    // claimedGoals, kingdomGold and gems persist via usePlayerProgress sync effects.
+    if (goal.gold > 0) setKingdomGold((current) => current + goal.gold);
+    if (goal.gems > 0) setGems((current) => current + goal.gems);
   };
 
   const currentWaveTotal = currentWave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
@@ -477,7 +461,7 @@ function App() {
             nextGoalText={nextProgressionGoal?.text ?? "현재 준비된 진행 목표 완료"} kingdomUnlocks={kingdomUnlocks}
             nextKingdomUnlock={nextKingdomUnlock} kingdomMilestone={kingdomMilestone} facilityDefs={facilityDefs} facilityLevels={facilityLevels}
             kingdomUpgradeCost={kingdomUpgradeCost} facilityUpgradeCost={facilityUpgradeCost} onClaimGoal={claimGoalReward}
-            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onBattle={() => navigateHub("battle")} onGather={() => navigateHub("gather")}
+            onUpgradeKingdom={upgradeKingdom} onUpgradeFacility={upgradeFacility} onGather={() => navigateHub("gather")}
           />}
 
           {mainTab === "gather" && <GatheringPanel

@@ -2,7 +2,7 @@ import React from "react";
 import type { Unit } from "../../game/types";
 import { ELEMENT_CLASS, clamp } from "../../game/constants";
 import { HeroSprite } from "../shared/HeroSprite";
-import { UNIT_ANIMATED_SPRITES, UNIT_SPRITE_CONFIGS } from "../../game/visuals/sprites";
+import { UNIT_SPRITE_CONFIGS } from "../../game/visuals/sprites";
 import { getMovementAnimationRate } from "../../game/visuals/movementAnimation";
 import { getAttackPresentationElapsed, isAttackPresentationActive } from "../../game/visuals/attackPresentation";
 import type { AbilityUnit } from "../../game/combat/abilities/types";
@@ -13,12 +13,11 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
   const configuredSkill = UNIT_SPRITE_CONFIGS[unit.id]?.animations.skill1;
   const configuredVisuals = UNIT_SPRITE_CONFIGS[unit.id]?.projectiles;
   const configuredAttackDuration = configuredAttack ? configuredAttack.syncToAttackInterval ? unit.attackInterval : configuredAttack.frameCount / configuredAttack.fps : undefined;
-  const activeAttackDuration = Math.min(unit.attackInterval, configuredAttackDuration ?? UNIT_ANIMATED_SPRITES[unit.id]?.attackDuration ?? unit.attackInterval);
-  const spriteAttack = UNIT_ANIMATED_SPRITES[unit.id];
+  const activeAttackDuration = Math.min(unit.attackInterval, configuredAttackDuration ?? unit.attackInterval);
   const spriteAttackElapsed = getAttackPresentationElapsed(unit.attackInterval, unit.attackAnimationTimer);
   const targetInRange = Math.abs(unit.attackTargetX - unit.x) <= unit.range / 10;
   const attackInterrupted = unit.hitFlash > 0 || unit.knockbackTimer > 0;
-  const attackAnimationActive = spriteAttack || configuredAttack
+  const attackAnimationActive = configuredAttack
     ? isAttackPresentationActive({
         attackInterval: unit.attackInterval,
         attackAnimationTimer: unit.attackAnimationTimer,
@@ -29,7 +28,7 @@ export function BattleUnit({ unit, dyingProgress, gameSpeed = 1 }: { unit: Unit;
       })
     : unit.attackFlash > 0 && targetInRange && !unit.moving && !attackInterrupted;
   const projectileWindup = configuredAttack?.projectileSpawnFrame !== undefined ? configuredAttack.projectileSpawnFrame / configuredAttack.frameCount * activeAttackDuration : activeAttackDuration * 0.33;
-  const projectileActive = spriteAttack || configuredAttack
+  const projectileActive = configuredAttack
     ? attackAnimationActive && spriteAttackElapsed >= projectileWindup && spriteAttackElapsed < projectileWindup + 0.35
     : unit.attackFlash > 0 && targetInRange && !unit.moving && !attackInterrupted;
   const skillAnimationActive = (unit.abilityAnimationTimer ?? 0) > 0 && unit.abilityAnimationState === "skill1";

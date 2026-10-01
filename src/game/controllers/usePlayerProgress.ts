@@ -32,7 +32,9 @@ export function usePlayerProgress() {
   useEffect(() => { saveNumber(STORAGE_KEYS.unlockedStage, unlockedStage); }, [unlockedStage]);
   useEffect(() => { saveNumber(STORAGE_KEYS.kingdomGold, kingdomGold); }, [kingdomGold]);
   useEffect(() => { saveNumber(STORAGE_KEYS.gems, gems); }, [gems]);
+  useEffect(() => { saveJson(STORAGE_KEYS.unitLevels, unitLevels); }, [unitLevels]);
   useEffect(() => { saveJson(STORAGE_KEYS.clearedStages, clearedStages); }, [clearedStages]);
+  useEffect(() => { saveJson(STORAGE_KEYS.claimedGoals, claimedGoals); }, [claimedGoals]);
 
   return {
     unlockedStage, setUnlockedStage,

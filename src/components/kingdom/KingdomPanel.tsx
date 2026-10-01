@@ -13,7 +13,7 @@ type Props = {
   nextKingdomUnlock?:Unlock; kingdomMilestone:string; facilityDefs:Record<FacilityKey,Facility>;
   facilityLevels:Record<FacilityKey,number>; kingdomUpgradeCost:number;
   facilityUpgradeCost:(key:FacilityKey)=>number; onClaimGoal:(goal:ProgressionGoal)=>void;
-  onUpgradeKingdom:()=>void; onUpgradeFacility:(key:FacilityKey)=>void; onBattle:()=>void; onGather:()=>void;
+  onUpgradeKingdom:()=>void; onUpgradeFacility:(key:FacilityKey)=>void; onGather:()=>void;
 };
 
 export function KingdomPanel(p:Props){

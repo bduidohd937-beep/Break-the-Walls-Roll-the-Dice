@@ -31,44 +31,6 @@ import type { SpriteConfig } from "../types";
 
 export type BattleDeathEffect = { id: number; x: number; team: "hero" | "enemy"; life: number; duration: number; unit?: Unit };
 
-export type Frame = readonly [column: number, y: number];
-export type SpriteSheet = {
-  image: string;
-  idle: Frame[];
-  walk: Frame[];
-  attack: Frame[];
-  hit: Frame[];
-  death: {
-    fall: Frame[];
-    corpse: Frame;
-    soul: Frame;
-    fallSeconds: number;
-    corpseSeconds: number;
-    soulSeconds: number;
-  };
-};
-
-export type AnimatedSprite = {
-  // Square horizontal atlas cells; source resolution is independent of display size.
-  displayScale?: number;
-  idle: string;
-  walk: string;
-  attack: string;
-  frameCount: number;
-  walkDuration: number;
-  attackDuration: number;
-};
-
-const row = (y: number, count: number): Frame[] => Array.from({ length: count }, (_, x) => [x, y]);
-
-export const UNIT_SPRITES: Record<string, SpriteSheet> = {
-};
-
-// Animated sprites keep each unit's source assets separate, so later skills can
-// add their own cast, hit, and death clips without changing battle data.
-export const UNIT_ANIMATED_SPRITES: Record<string, AnimatedSprite> = {
-};
-
 export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
   traineeSword: {
     // Source-cell transparent pixels below the foot baseline, measured from the runtime sheets.
@@ -113,7 +75,5 @@ export const UNIT_SPRITE_CONFIGS: Record<string, SpriteConfig> = {
 
 export const spriteDeathDuration = (id: string) => {
   const configuredDeath = UNIT_SPRITE_CONFIGS[id]?.animations.death;
-  if (configuredDeath) return configuredDeath.frameCount / configuredDeath.fps;
-  const death = UNIT_SPRITES[id]?.death;
-  return death ? Math.round((death.fallSeconds + death.corpseSeconds + death.soulSeconds) * 1000) / 1000 : 0.42;
+  return configuredDeath ? configuredDeath.frameCount / configuredDeath.fps : 0.42;
 };

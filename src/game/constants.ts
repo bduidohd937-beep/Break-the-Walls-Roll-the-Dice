@@ -1,4 +1,4 @@
-import type { ElementType, UnitDef, Wave } from "./types";
+import type { ElementType, UnitDef } from "./types";
 import { ABILITY_IDS } from "./combat/abilities/definitions";
 import { UNIT_SPRITE_CONFIGS } from "./visuals/sprites";
 
@@ -41,22 +41,6 @@ export const ENEMY_MAP = {
   voltras: ENEMIES[10],
   arcanon: ENEMIES[11],
 } as const;
-
-export const WAVES: Wave[] = [
-  [{ enemy: "goblin", count: 8, gap: 0.9 }],
-  [{ enemy: "goblin", count: 5, gap: 0.6 }, { enemy: "orc", count: 3, gap: 1.2 }],
-  [{ enemy: "goblin", count: 7, gap: 0.55 }, { enemy: "darkKnight", count: 1, gap: 2 }],
-  [{ enemy: "orc", count: 5, gap: 0.8 }, { enemy: "goblin", count: 10, gap: 0.45 }],
-  [{ enemy: "goblin", count: 8, gap: 0.45 }, { enemy: "orc", count: 4, gap: 0.9 }, { enemy: "fireOgre", count: 1, gap: 2.2 }],
-];
-
-export const WAVE_META: import("./types").WaveMeta[] = [
-  { name: "고블린 습격", reward: 80 },
-  { name: "오크 전열", reward: 110 },
-  { name: "다크 나이트 출현", reward: 140 },
-  { name: "끝없는 행군", reward: 180 },
-  { name: "화염의 거인", reward: 300, boss: true },
-];
 
 export const WAVE_HP_SCALE = 0.08;
 export const WAVE_ATK_SCALE = 0.05;
