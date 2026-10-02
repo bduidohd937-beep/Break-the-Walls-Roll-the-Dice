@@ -8,6 +8,20 @@ export function hasAbilityStatus(unit: AbilityUnit, status: AbilityStatusId): bo
   return Boolean(unit.abilityEffectState?.statuses.some((entry) => entry.id === status && entry.remaining > 0));
 }
 
+// V1-B cast gate. STUN is the only implemented interrupting status.
+export function hasActiveCast(unit: AbilityUnit): boolean {
+  const c = unit.abilityActiveCast;
+  if (!c) return false;
+  if (c.phase === "windup" && c.windupRemaining > 0) return true;
+  if (c.phase === "cast" && c.windupRemaining > 0) return true;
+  if (c.phase === "recovery" && c.recoveryRemaining != null && c.recoveryRemaining > 0) return true;
+  return false;
+}
+
+export function isBlockedFromCast(unit: AbilityUnit): boolean {
+  return hasAbilityStatus(unit, "STUN") || hasActiveCast(unit);
+}
+
 export function effectiveMoveSpeed(unit: AbilityUnit): number {
   const slows = unit.abilityEffectState?.statuses.filter((entry) => entry.id === "SLOW" && entry.remaining > 0) ?? [];
   const multiplier = slows.length === 0 ? 1 : Math.min(...slows.map((entry) => entry.potency));
@@ -172,7 +186,6 @@ export type EffectContext = {
   statusHandlers: StatusHandlerRegistry;
   sourceAbilityId?: string;
 };
-
 export const legacyStatusHandlers: StatusHandlerRegistry = {
   burn: (target, duration, potency) => ({
     ...target,

@@ -16,6 +16,26 @@ export type TimedDamageDealtModifier = { multiplier: number; remaining: number }
 export type TimedCooldownModifier = { multiplier: number; remaining: number } & RemovableEffectMeta;
 export type AbilityStatusId = "STUN" | "SLOW";
 export type TimedAbilityStatus = { id: AbilityStatusId; sourceUid: number; sourceAbilityId?: string; potency: number; remaining: number; removable?: boolean };
+
+export type AbilityCastPhase = "windup" | "cast" | "recovery";
+export type ActiveCastState = {
+  abilityId: string;
+  casterUid: number;
+  targetUid?: number;
+  targetX: number;
+  lockedAtX: number;
+  windupRemaining: number;
+  castSeconds?: number;
+  recoveryRemaining?: number;
+  resolved: boolean;
+  missed: boolean;
+  phase: AbilityCastPhase;
+};
+export type AbilityDefinitionCast = {
+  windupSeconds: number;
+  castSeconds?: number;
+  recoverySeconds?: number;
+};
 export type PeriodicEffectId = "DOT" | "HOT";
 export type TimedPeriodicEffect = { id: PeriodicEffectId; amount: number; interval: number; elapsed: number; remaining: number; sourceUid: number; sourceAbilityId?: string; removable?: boolean };
 export type AbilityEffectState = {
@@ -40,6 +60,7 @@ export type AbilityUnit = Unit & {
   statusImmunities?: readonly AbilityStatusId[];
   statusDurationMultiplier?: Partial<Record<AbilityStatusId, number>>;
   knockbackImmune?: boolean;
+  abilityActiveCast?: ActiveCastState;
 };
 
 export type SummonRequest = { summonUnitId: string; count: number; duration?: number; ownerUid: number; sourceAbilityId: string; team: Unit["team"]; x: number; uidStart: number };
@@ -117,6 +138,7 @@ export type AbilityDefinition = {
   effects: readonly EffectDefinition[];
   tags?: readonly AbilityTag[];
   visual?: { animation: "skill1"; durationSeconds: number };
+  cast?: AbilityDefinitionCast;
 };
 
 export type AbilityBinding = { ownerUid: number; ability: AbilityDefinition };
