@@ -261,7 +261,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
             unitUid: unit.uid
           });
         }
-        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: spriteDeathDuration(unit.id), duration: spriteDeathDuration(unit.id) }))].slice(-20));
+        setDeathEffects((effects) => [...effects, ...defeatedUnits.map((unit) => ({ id: deathUidRef.current++, x: unit.x, team: unit.team, life: spriteDeathDuration(unit.id), duration: spriteDeathDuration(unit.id), unit: unit }))].slice(-20));
       }
       const defeatedEnemies = nextEnemies.filter((e) => e.currentHp <= 0).length;
       if (defeatedEnemies > 0) {

@@ -93,7 +93,7 @@ export function BattleViewport(p: Props) {
             <div className="castle-visual">
               <div className="tower"><span className="castle-glyph">🏯</span></div>
               <div className="castle-label">적 성</div>
-              <div className="castle-hp enemy"><span style={{ width: `${clamp(p.enemyCastleHp / 18, 0, 100)}%` }} /></div>
+              <div className="castle-hp enemy"><span style={{ width: `${clamp((p.enemyCastleHp / p.stage.enemyCastleHp) * 100, 0, 100)}%` }} /></div>
             </div>
           </div>
           {p.heroes.map((unit) => <BattleUnit key={unit.uid} unit={unit} gameSpeed={p.gameSpeed} />)}

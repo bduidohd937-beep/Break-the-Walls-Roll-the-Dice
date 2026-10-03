@@ -57,7 +57,7 @@ main → app/root → feature components → controllers → systems/combat → 
 
 ## Ability Framework v1 원칙
 
-능력은 `Trigger → Condition → Target → Effect → Scaling` 순서로 실행합니다. 런타임은 전투 이벤트별로 등록된 능력만 확인하며, 기존 기본 공격과 이동에는 아직 연결하지 않습니다.
+능력은 `Trigger → Condition → Target → Effect → Scaling` 순서로 실행합니다. 런타임은 전투 이벤트별로 등록된 능력만 확인합니다.
 
 - Role ≠ Ability: 역할은 표시·검색·AI 참고용 분류이며 능력을 자동 부여하지 않습니다.
 - Tag ≠ Effect: 태그는 분류 정보이며 피해·회복·상태 효과를 자동 발생시키지 않습니다.
