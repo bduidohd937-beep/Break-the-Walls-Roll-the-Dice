@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AbilityUnit } from "./types";
+import type { AbilityDefinition, AbilityUnit } from "./types";
 import type { Unit } from "../../types";
 import { ENEMIES, ENEMY_MAP } from "../../constants";
 import { ABILITY_IDS, DARK_KNIGHT_WAR_CRY, resolveAbilityDefinitions } from "./definitions";
@@ -26,6 +26,24 @@ const unit = (uid: number, overrides: Partial<Unit> = {}): AbilityUnit => ({
 // enemy-content decision, and these tests verify pipeline mechanics, not skill design.
 
 describe("enemy ability registration sweep", () => {
+  it("fires an enemy ON_DEPLOY ability exactly once after registration", () => {
+    const deployAbility: AbilityDefinition = {
+      id: "enemy-deploy-buff",
+      trigger: { type: "ON_DEPLOY" },
+      target: { type: "SELF" },
+      effects: [{ type: "STAT_MODIFIER", stat: "ATK", mode: "PERCENT", value: { components: [{ source: "FLAT", coefficient: 0.5 }] }, duration: 10 }]
+    };
+    const integration = createCombatAbilityIntegration([]);
+    const enemy = unit(1);
+    integration.registerUnitAbilities(enemy.uid, [deployAbility]);
+
+    const first = integration.publish({ type: "UNIT_DEPLOYED", unitUid: enemy.uid, eventId: 1, origin: "SYSTEM" }, [enemy]);
+    expect(first.units[0].atk).toBe(123);
+    const duplicate = integration.publish({ type: "UNIT_DEPLOYED", unitUid: enemy.uid, eventId: 2, origin: "SYSTEM" }, first.units);
+    expect(duplicate.units[0].atk).toBe(123);
+    expect(duplicate.activationCount).toBe(0);
+  });
+
   it("registers an enemy's resolved abilities exactly once", () => {
     const integration = createCombatAbilityIntegration([]);
     const registered = new Set<number>();

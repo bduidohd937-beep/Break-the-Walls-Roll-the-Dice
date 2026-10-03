@@ -83,6 +83,16 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           setBattleGold(Math.floor(goldRef.current));
         }
       };
+      const deployEnemy = (enemy: Unit) => {
+        nextEnemies.push(enemy);
+        registerEnemyAbilities(abilityIntegrationRef.current, [enemy], enemyAbilityUidsRef.current);
+        publishCombatEvent({
+          type: "UNIT_DEPLOYED",
+          unitUid: enemy.uid,
+          eventId: combatEventUidRef.current++,
+          origin: "SYSTEM"
+        });
+      };
 
       if (abilitiesActive) publishCombatEvent({
         type: "SIMULATION_TICK",
@@ -121,7 +131,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       });
       const totalInWave = spawnResult.totalInWave;
       if (spawnResult.enemy) {
-        nextEnemies.push(spawnResult.enemy);
+        deployEnemy(spawnResult.enemy);
         uidRef.current += 1;
         spawnRef.current = spawnResult.spawnedInWave;
         spawnTimerRef.current = spawnResult.spawnTimer;
@@ -139,7 +149,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           const summonDef = ENEMY_MAP[bossMechanic.summonEnemy];
           const summonScale = 1 + stageRef.current * STAGE_HP_SCALE;
           const summon = makeUnit({ ...summonDef, hp: Math.round(summonDef.hp * summonScale), atk: Math.round(summonDef.atk * summonScale) }, "enemy", 91, 1000 + uidRef.current++);
-          nextEnemies.push(summon);
+          deployEnemy(summon);
           bossSummonTimerRef.current = bossMechanic.summonInterval;
           setNotice(`${stage.bossName ?? "BOSS"} · 증원!`);
         }
@@ -211,7 +221,7 @@ export function useBattleLoop(ctx: BattleLoopContext) {
           setNotice(`${stage.bossName ?? "BOSS"} · ${phase} 페이즈`);
           if (phaseIndex > 0 && bossMechanic.summonEnemy) {
             const phaseDef = ENEMY_MAP[bossMechanic.summonEnemy];
-            nextEnemies.push(makeUnit({ ...phaseDef, hp: Math.round(phaseDef.hp * (1 + phaseIndex * 0.35)), atk: Math.round(phaseDef.atk * (1 + phaseIndex * 0.25)) }, "enemy", 90, 1000 + uidRef.current++));
+            deployEnemy(makeUnit({ ...phaseDef, hp: Math.round(phaseDef.hp * (1 + phaseIndex * 0.35)), atk: Math.round(phaseDef.atk * (1 + phaseIndex * 0.25)) }, "enemy", 90, 1000 + uidRef.current++));
           }
         }
       }

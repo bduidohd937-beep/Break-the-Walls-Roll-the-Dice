@@ -136,7 +136,13 @@ export function advanceAbilityEffectDurations(unit: AbilityUnit, dt: number): Ab
     statModifiers: state.statModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     damageTakenModifiers: state.damageTakenModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0)
     ,statuses: state.statuses.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
-    periodicEffects: state.periodicEffects.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
+    periodicEffects: state.periodicEffects
+      .map((entry) => ({
+        ...entry,
+        elapsed: entry.elapsed + Math.min(dt, entry.remaining),
+        remaining: entry.remaining - dt
+      }))
+      .filter((entry) => entry.remaining > 0),
     attackSpeedModifiers: state.attackSpeedModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     moveSpeedModifiers: state.moveSpeedModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
     damageDealtModifiers: state.damageDealtModifiers.map((entry) => ({ ...entry, remaining: entry.remaining - dt })).filter((entry) => entry.remaining > 0),
@@ -162,7 +168,8 @@ export function applyPeriodicEffects(unit: AbilityUnit, dt: number): { unit: Abi
   const applications: Array<{ ownerUid: number; abilityId?: string; effectType: "DOT" | "HOT"; hpDelta: number }> = [];
   for (const effect of original) {
     const activeDelta = Math.min(dt, effect.remaining);
-    const ticks = Math.floor((effect.elapsed + activeDelta) / effect.interval) - Math.floor(effect.elapsed / effect.interval);
+    const completedIntervals = (elapsed: number) => Math.floor((elapsed + effect.interval * 1e-9) / effect.interval);
+    const ticks = completedIntervals(effect.elapsed + activeDelta) - completedIntervals(effect.elapsed);
     for (let index = 0; index < ticks; index++) {
       if (next.currentHp <= 0) continue;
       const before = next.currentHp;
