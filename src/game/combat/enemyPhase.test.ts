@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Unit } from "../types";
-import { ENEMIES } from "../constants";
+import { ENEMIES, ENEMY_MAP } from "../constants";
 import { runEnemyPhase, selectEnemyTarget, type EnemyPhaseInput } from "./enemyPhase";
 
 function unit(overrides: Partial<Unit> = {}): Unit {
@@ -316,8 +316,10 @@ describe("assassin backline pressure", () => {
 });
 
 describe("enraged fireOgre", () => {
+  const lowHpEnrage = { hpThreshold: 0.5, attackMultiplier: 1.2, attackIntervalMultiplier: 0.65, attackFlash: 0.22 };
+
   it("deals 1.2x damage and attacks 0.65x faster at or below 50% HP", () => {
-    const ogre = enemy({ id: "fireOgreE", x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 500, attackInterval: 2, attackTimer: 0 });
+    const ogre = enemy({ ...ENEMY_MAP.fireOgre, x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 500, attackInterval: 2, attackTimer: 0 });
     const target = unit({ uid: 2, x: 22, hp: 4000, currentHp: 4000 });
     const result = run({ heroes: [target], enemies: [ogre] });
     expect(result.heroes[0].currentHp).toBe(3880);
@@ -326,9 +328,26 @@ describe("enraged fireOgre", () => {
   });
 
   it("stays normal above 50% HP", () => {
-    const ogre = enemy({ id: "fireOgreE", x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 501, attackInterval: 2, attackTimer: 0 });
+    const ogre = enemy({ ...ENEMY_MAP.fireOgre, x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 501, attackInterval: 2, attackTimer: 0 });
     const target = unit({ uid: 2, x: 22, hp: 4000, currentHp: 4000 });
     const result = run({ heroes: [target], enemies: [ogre] });
+    expect(result.heroes[0].currentHp).toBe(3900);
+    expect(result.enemies[0].attackTimer).toBe(2);
+    expect(result.enemies[0].attackFlash).toBe(0.16);
+  });
+
+  it("drives enrage from data for an enemy with a different id", () => {
+    const configuredEnemy = enemy({ id: "configuredEnemy", lowHpEnrage, x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 500, attackInterval: 2, attackTimer: 0 });
+    const target = unit({ uid: 2, x: 22, hp: 4000, currentHp: 4000 });
+    const result = run({ heroes: [target], enemies: [configuredEnemy] });
+    expect(result.heroes[0].currentHp).toBe(3880);
+    expect(result.enemies[0].attackTimer).toBeCloseTo(1.3, 10);
+  });
+
+  it("does not enrage an enemy without enrage data", () => {
+    const unconfiguredEnemy = enemy({ id: "fireOgreE", x: 30, range: inRange(30, 22), atk: 100, hp: 1000, currentHp: 500, attackInterval: 2, attackTimer: 0 });
+    const target = unit({ uid: 2, x: 22, hp: 4000, currentHp: 4000 });
+    const result = run({ heroes: [target], enemies: [unconfiguredEnemy] });
     expect(result.heroes[0].currentHp).toBe(3900);
     expect(result.enemies[0].attackTimer).toBe(2);
     expect(result.enemies[0].attackFlash).toBe(0.16);

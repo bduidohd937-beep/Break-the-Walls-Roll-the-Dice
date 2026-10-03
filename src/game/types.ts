@@ -4,6 +4,12 @@ export type AttackType = "single" | "splash";
 export type RangeType = "melee" | "ranged";
 export type AbilityType = "guard" | "crit" | "regen" | "execute";
 export type TargetPriority = "frontline" | "ranged-lowest-hp";
+export type LowHpEnrage = {
+  hpThreshold: number;
+  attackMultiplier: number;
+  attackIntervalMultiplier: number;
+  attackFlash: number;
+};
 export type UnitRarity = "COMMON" | "RARE" | "HEROIC" | "LEGENDARY" | "MYTHIC" | "TRANSCENDENT";
 export type UnitRace = "HUMAN" | "UNDEAD" | "DRAGON" | "GIANT" | "MACHINE" | "SPIRIT" | "ANGEL" | "DEMON" | "BEAST" | "ABERRATION";
 export type UnitCombatRole = "MELEE_DPS" | "RANGED_DPS" | "TANK" | "SUPPORT" | "HEALER" | "BUFFER" | "DEBUFFER" | "CONTROLLER";
@@ -41,6 +47,7 @@ export type UnitDef = {
   ability?: AbilityType;
   abilityValue?: number;
   targetPriority?: TargetPriority;
+  lowHpEnrage?: LowHpEnrage;
   abilityIds?: readonly string[];
   spriteConfig?: SpriteConfig;
   gameplayBounds?: { width: number; height: number; collisionRadius?: number };

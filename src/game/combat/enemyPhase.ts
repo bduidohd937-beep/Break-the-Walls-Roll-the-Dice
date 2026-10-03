@@ -108,9 +108,10 @@ export function runEnemyPhase(input: EnemyPhaseInput): EnemyPhaseResult {
     } else if (enemy.attackTimer <= 0) {
       const attackId = collect ? nextCombatEventId++ : 0;
       const damageEvents: CombatEvent[] = [];
-      const enragedBoss = enemy.id === "fireOgreE" && enemy.currentHp / enemy.hp <= 0.5;
+      const enrage = enemy.lowHpEnrage;
+      const enragedBoss = Boolean(enrage && enemy.currentHp / enemy.hp <= enrage.hpThreshold);
       const backlinePressure = enemy.targetPriority === "ranged-lowest-hp" && target.rangeType === "ranged";
-      const attackDamage = (enragedBoss ? enemy.atk * 1.2 : enemy.atk) * (backlinePressure ? 1.2 : 1);
+      const attackDamage = (enragedBoss ? enemy.atk * enrage!.attackMultiplier : enemy.atk) * (backlinePressure ? 1.2 : 1);
       const splashRadius = enemy.splashRadius ?? 0;
       const hitTargets = enemy.attackType === "splash"
         ? nextHeroes
@@ -150,8 +151,8 @@ export function runEnemyPhase(input: EnemyPhaseInput): EnemyPhaseResult {
       }
       nextEnemies[i] = {
         ...enemy,
-        attackTimer: enragedBoss ? enemy.attackInterval * 0.65 : enemy.attackInterval,
-        attackFlash: enragedBoss ? 0.22 : 0.16,
+        attackTimer: enragedBoss ? enemy.attackInterval * enrage!.attackIntervalMultiplier : enemy.attackInterval,
+        attackFlash: enragedBoss ? enrage!.attackFlash : 0.16,
         attackAnimationTimer: enemy.attackInterval,
         attackAnimationSequence: (enemy.attackAnimationSequence ?? 0) + 1,
         attackTargetX: target.x
