@@ -65,7 +65,7 @@ function App() {
     clearedStages, setClearedStages,
     claimedGoals, setClaimedGoals
   } = usePlayerProgress();
-  const [battleGold, setBattleGold] = useState(300);
+  const [battleGold, setBattleGold] = useState(0);
   const [economyLevel, setEconomyLevel] = useState(1);
   const [waveIndex, setWaveIndex] = useState(0);
   const [heroes, setHeroes] = useState<Unit[]>([]);
