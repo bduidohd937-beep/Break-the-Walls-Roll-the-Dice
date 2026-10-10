@@ -4,7 +4,7 @@ import { resolveFrontlineCollision, resolveSameTeamSpacing } from "./collision";
 import { incomingDamage, outgoingDamage, regenAmount } from "./damage";
 import { applyKnockback, updateKnockback } from "./knockback";
 import { advanceEnemyStatus, advanceHeroStatus } from "./statusTick";
-import { spawnWaveEnemy } from "./waveSpawner";
+import { ENEMY_FIELD_CAP, spawnWaveEnemy } from "./waveSpawner";
 import { ENEMY_MAP, WAVE_ATK_SCALE, WAVE_HP_SCALE } from "../constants";
 import { STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import type { Wave, WaveMeta } from "../types";
@@ -237,5 +237,38 @@ describe("wave spawning rules", () => {
     const atkScale = 1 + stageIndex * STAGE_ATK_SCALE + waveIndex * WAVE_ATK_SCALE + 0.15;
     expect(result.enemy?.hp).toBe(Math.round(ENEMY_MAP.goblin.hp * hpScale));
     expect(result.enemy?.atk).toBe(Math.round(ENEMY_MAP.goblin.atk * atkScale));
+  });
+
+  it("pauses ordinary spawning at the global field cap without consuming the pending spawn", () => {
+    const result = spawnWaveEnemy({
+      stageIndex: 0,
+      waveIndex: 0,
+      wave: [{ enemy: "goblin", count: 2, gap: 0.4 }],
+      waveMeta: { name: "cap", reward: 0 },
+      spawnedInWave: 0,
+      spawnTimer: 0,
+      activeEnemyCount: ENEMY_FIELD_CAP,
+      uid: 1000,
+      random: () => 0,
+    });
+    expect(result.enemy).toBeUndefined();
+    expect(result.spawnedInWave).toBe(0);
+    expect(result.spawnTimer).toBe(0);
+  });
+
+  it("resumes the next queued enemy in order after a field slot opens", () => {
+    const result = spawnWaveEnemy({
+      stageIndex: 0,
+      waveIndex: 0,
+      wave: [{ enemy: "goblin", count: 1, gap: 0.4 }, { enemy: "orc", count: 1, gap: 0.8 }],
+      waveMeta: { name: "resume", reward: 0 },
+      spawnedInWave: 1,
+      spawnTimer: 0,
+      activeEnemyCount: ENEMY_FIELD_CAP - 1,
+      uid: 1001,
+      random: () => 0,
+    });
+    expect(result.enemy?.id).toBe(ENEMY_MAP.orc.id);
+    expect(result.spawnedInWave).toBe(2);
   });
 });

@@ -3,6 +3,9 @@ import { STAGE_ATK_SCALE, STAGE_HP_SCALE } from "../stages";
 import type { Unit, Wave, WaveMeta } from "../types";
 import { makeUnit } from "../units/createUnit";
 
+/** Temporary global field cap for ordinary enemies. This is a test value, not balance policy. */
+export const ENEMY_FIELD_CAP = 30;
+
 type SpawnWaveEnemyInput = {
   stageIndex: number;
   waveIndex: number;
@@ -10,6 +13,8 @@ type SpawnWaveEnemyInput = {
   waveMeta: WaveMeta | undefined;
   spawnedInWave: number;
   spawnTimer: number;
+  activeEnemyCount?: number;
+  enemyFieldCap?: number;
   uid: number;
   random?: () => number;
 };
@@ -23,6 +28,10 @@ export type SpawnWaveEnemyResult = {
 
 export function spawnWaveEnemy(input: SpawnWaveEnemyInput): SpawnWaveEnemyResult {
   const totalInWave = input.wave?.reduce((sum, group) => sum + group.count, 0) ?? 0;
+  const enemyFieldCap = input.enemyFieldCap ?? ENEMY_FIELD_CAP;
+  if ((input.activeEnemyCount ?? 0) >= enemyFieldCap) {
+    return { totalInWave, spawnedInWave: input.spawnedInWave, spawnTimer: input.spawnTimer };
+  }
   if (!input.wave || input.spawnedInWave >= totalInWave || input.spawnTimer > 0) {
     return { totalInWave, spawnedInWave: input.spawnedInWave, spawnTimer: input.spawnTimer };
   }

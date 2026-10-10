@@ -7,7 +7,7 @@ import { resolveFrontlineCollision, resolveSameTeamSpacing } from "../combat/col
 import { runEnemyPhase } from "../combat/enemyPhase";
 import { runHeroPhase } from "../combat/heroPhase";
 import { advanceEnemyStatus, advanceHeroStatus } from "../combat/statusTick";
-import { spawnWaveEnemy } from "../combat/waveSpawner";
+import { ENEMY_FIELD_CAP, spawnWaveEnemy } from "../combat/waveSpawner";
 import { spriteDeathDuration, type BattleDeathEffect } from "../visuals/sprites";
 import { resolveAbilityDefinitions } from "../combat/abilities/definitions";
 import type { BattleReward, BattleState, DamagePopup } from "../combat/types";
@@ -62,7 +62,13 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       goldRef.current = Math.min(battleGoldMax, goldRef.current + dt * goldPerSecond);
       setBattleGold(goldRef.current);
 
-      spawnTimerRef.current -= dt;
+      const stage = STAGES[stageRef.current];
+      const bossKey = BOSS_ENEMY_KEYS[stage.id];
+      const bossId = bossKey ? ENEMY_MAP[bossKey].id : undefined;
+
+      // Preserve the pending spawn interval while the ordinary-enemy field cap is full.
+      // Bosses use their existing reserved path and are not counted here.
+      if (enemiesRef.current.filter((enemy) => enemy.id !== bossId).length < ENEMY_FIELD_CAP) spawnTimerRef.current -= dt;
 
       setDeployCooldowns((cooldowns) => {
         const next = { ...cooldowns };
@@ -117,7 +123,6 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       }
 
       // Spawn the current wave with gentle per-wave scaling.
-      const stage = STAGES[stageRef.current];
       const wave = stage.waves[waveRef.current];
       const waveMeta = stage.waveMeta[waveRef.current];
       const spawnResult = spawnWaveEnemy({
@@ -126,7 +131,9 @@ export function useBattleLoop(ctx: BattleLoopContext) {
         wave,
         waveMeta,
         spawnedInWave: spawnRef.current,
-        spawnTimer: spawnTimerRef.current,
+        spawnTimer: Math.max(0, spawnTimerRef.current),
+        activeEnemyCount: nextEnemies.filter((enemy) => enemy.id !== bossId).length,
+        enemyFieldCap: ENEMY_FIELD_CAP,
         uid: 1000 + uidRef.current
       });
       const totalInWave = spawnResult.totalInWave;
@@ -139,8 +146,6 @@ export function useBattleLoop(ctx: BattleLoopContext) {
 
       const bossMechanic = stage.bossMechanic;
       const bossWaveActive = Boolean(waveMeta?.boss && bossMechanic);
-      const bossKey = BOSS_ENEMY_KEYS[stage.id];
-      const bossId = bossKey ? ENEMY_MAP[bossKey].id : undefined;
       const livingBoss = nextEnemies.find((enemy) => enemy.id === bossId && enemy.currentHp > 0);
       const bossAlive = bossWaveActive && Boolean(livingBoss);
       if (bossAlive && bossMechanic?.summonEnemy && bossMechanic.summonInterval) {
@@ -291,14 +296,15 @@ export function useBattleLoop(ctx: BattleLoopContext) {
       setHeroes(nextHeroes);
       setEnemies(nextEnemies);
 
-      const waveCleared = spawnRef.current >= totalInWave && nextEnemies.length === 0;
+      const waveCleared = spawnRef.current >= totalInWave;
       if (waveCleared && waveRef.current < stage.waves.length - 1) {
         const reward = stage.waveMeta[waveRef.current]?.reward ?? 0;
         goldRef.current = Math.min(battleGoldMax, goldRef.current + reward);
         setBattleGold(Math.floor(goldRef.current));
         waveRef.current += 1;
         spawnRef.current = 0;
-        spawnTimerRef.current = 1.4;
+        // Continue the next scheduled wave without a forced inter-wave pause.
+        spawnTimerRef.current = 0;
         setWaveIndex(waveRef.current);
         setNotice(`WAVE ${waveRef.current + 1} · ${stage.waveMeta[waveRef.current]?.name ?? "다음 전투"}`);
       } else if (waveCleared && waveRef.current === stage.waves.length - 1 && !finalClearNotifiedRef.current) {
