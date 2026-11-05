@@ -32,16 +32,16 @@ test("ordinary profile: formation persists through reload and battle entry", asy
 
   await page.goto("/?dev=0");
   await expect(page.getByRole("navigation", { name: "왕국 하단 메뉴" })).toBeVisible();
-  await expect.poll(async () => (await profile(page)).deck.length).toBeGreaterThan(1);
-  const initial = await profile(page);
-
   await page.getByRole("button", { name: "영웅", exact: true }).click();
   await page.getByRole("button", { name: /출전 편성/ }).click();
-  await expect(page.locator(".formation-slot.filled")).toHaveCount(initial.deck.length);
+  const initialCount = await page.locator(".formation-slot.filled").count();
+  expect(initialCount).toBeGreaterThan(1);
   await page.locator(".formation-slot.filled").last().click();
 
-  const expectedDeck = initial.deck.slice(0, -1);
-  await expect.poll(async () => (await profile(page)).deck).toEqual(expectedDeck);
+  // A fresh default deck is held in React state; a storage key is written
+  // only after a formation change. Do not require an initial persisted key.
+  await expect.poll(async () => (await profile(page)).deck.length).toBe(initialCount - 1);
+  const expectedDeck = (await profile(page)).deck;
 
   await page.reload();
   await expect(page.getByRole("navigation", { name: "왕국 하단 메뉴" })).toBeVisible();
@@ -63,7 +63,7 @@ test("developer profile: first clear, repeat reward and reload persistence", asy
 
   await page.goto("/?dev=1");
   await expect(page.getByRole("navigation", { name: "왕국 하단 메뉴" })).toBeVisible();
-  await expect.poll(async () => (await profile(page, "btw-dev-")).deck.length).toBeGreaterThan(0);
+  // The default developer deck may not have been written to localStorage.
   const before = await profile(page, "btw-dev-");
 
   await openStageOne(page);
