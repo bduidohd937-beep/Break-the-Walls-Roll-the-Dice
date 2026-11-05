@@ -5,6 +5,7 @@ const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.e2e.mjs",
   timeout: 240_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
